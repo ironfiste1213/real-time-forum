@@ -2,17 +2,17 @@ package main
 
 import (
 	"database/sql"
+	_ "github.com/mattn/go-sqlite3"
 	"log"
-	_ "github.com/mattn/go-sqlite3" 
 )
 
 var DB *sql.DB
 
-func initialdb()  error{
+func initialdb() error {
 	var err error
 
 	DB, err = sql.Open("sqlite3", "./forum.db")
-	
+
 	if err != nil {
 		return err
 	}
@@ -119,12 +119,12 @@ CREATE TABLE IF NOT EXISTS sessions (
     FOREIGN KEY (user_id) REFERENCES users (id)
 ); `
 
-_, err := DB.Exec(query)
-if err != nil{
-	return err
-}
-log.Println("all forum tables created seccessfully !")
-return nil
+	_, err := DB.Exec(query)
+	if err != nil {
+		return err
+	}
+	log.Println("all forum tables created seccessfully !")
+	return nil
 }
 
 func Closdb() {
