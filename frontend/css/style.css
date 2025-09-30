@@ -10,10 +10,10 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    font-family: "Roboto", sans-serif;
 }
 
 body {
-    font-family: Arial, sans-serif;
     background-color: #f4f4f4;
     color: #333;
     display: flex;
@@ -31,11 +31,10 @@ body {
 }
 
 #register, #login, #posts-container {
-    background-color: #fff;
+    /* background-color: #fff; */
     padding: 20px 30px;
     margin: 20px 0;
     border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
     width: 350px;
 }
 
@@ -43,6 +42,7 @@ body {
 /* Headings */
 #register h2, #login h2 {
     text-align: center;
+    font-size: 48px;
     margin-bottom: 15px;
 }
 
@@ -53,22 +53,24 @@ form input, form select {
     padding: 10px;
     margin-bottom: 10px;
     border-radius: 4px;
-    border: 1px solid #ccc;
+    border: 2px solid #333;
+    background-color: #f4f4f4;
 }
 
 /* Buttons */
 form button {
     width: 100%;
     padding: 10px;
-    background-color: #007bff;
-    color: #fff;
+    background-color: #333;
+    color: #f4f4f4;
     border: none;
     border-radius: 4px;
     cursor: pointer;
 }
 
 form button:hover {
-    background-color: #0056b3;
+    background-color: #f4f4f4;
+    color: #333;
 }
 
 /* Optional: focus on inputs */
@@ -107,4 +109,20 @@ nav {
 #posts-container {
     width: 100%;
     max-width: 800px;
+}
+
+#logfromreg{
+    color: #333;
+    font-weight: bold;
+}
+#logfromreg:hover{
+    text-decoration: underline;
+    cursor: pointer;
+}
+
+.subtxt{
+    display: block;
+    text-align: center;
+    padding: 20px;
+    color: #a7a7a7;
 }

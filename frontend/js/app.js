@@ -5,6 +5,25 @@ const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const logoutButton = document.getElementById('logout-button');
 const welcomeMessage = document.getElementById('welcome-message');
+const register = document.getElementById("register")
+const login = document.getElementById("login")
+const logfromreg = document.getElementById("logfromreg")
+const regfromlog = document.getElementById("regfromlog")
+
+login.style.display = "none"
+logfromreg.onclick = showlog
+regfromlog.onclick = showreg
+
+
+function showlog(){
+    register.style.display = "none"
+    login.style.display = "flex"
+}
+
+function showreg(){
+    register.style.display = "flex"
+    login.style.display = "none"
+}
 
 // --- View Management ---
 
