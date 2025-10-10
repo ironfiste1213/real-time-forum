@@ -3,19 +3,17 @@
     display: none !important;
 }
 
-/* css/style.css */
-
 /* Basic reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Roboto", sans-serif;
+    font-family: "Urbanist", sans-serif;
 }
 
 body {
-    background-color: #f4f4f4;
-    color: #333;
+    background-color: #f2f2f2;
+    color: #3AA0FF;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -31,19 +29,21 @@ body {
 }
 
 #register, #login, #posts-container {
-    /* background-color: #fff; */
     padding: 20px 30px;
     margin: 20px 0;
     border-radius: 8px;
-    width: 350px;
 }
 
-
 /* Headings */
-#register h2, #login h2 {
+h1{
     text-align: center;
-    font-size: 48px;
-    margin-bottom: 15px;
+    font-size: 92px;
+    /* margin-bottom: 80px; */
+}
+h2{
+    text-align: center;
+    font-size: 32px;
+    margin-bottom: 40px;
 }
 
 /* Inputs */
@@ -52,16 +52,18 @@ form input, form select {
     width: 100%;
     padding: 10px;
     margin-bottom: 10px;
-    border-radius: 4px;
-    border: 2px solid #333;
+    border: none;
+    border-bottom: 2px solid #424242;
     background-color: #f4f4f4;
+    /* text-align: center; */
 }
 
 /* Buttons */
 form button {
     width: 100%;
     padding: 10px;
-    background-color: #333;
+    margin-top: 40px;
+    background-color: #424242;
     color: #f4f4f4;
     border: none;
     border-radius: 4px;
@@ -69,13 +71,13 @@ form button {
 }
 
 form button:hover {
-    background-color: #f4f4f4;
-    color: #333;
+    background-color: #3AA0FF;
+    color: #424242;
 }
 
 /* Optional: focus on inputs */
 form input:focus, form select:focus {
-    border-color: #007bff;
+    border-color: #3AA0FF;
     outline: none;
 }
 
@@ -83,7 +85,7 @@ form input:focus, form select:focus {
 nav {
     width: 100%;
     max-width: 800px;
-    background-color: #007bff;
+    background-color: #3AA0FF;
     color: white;
     padding: 10px 20px;
     display: flex;
@@ -97,7 +99,7 @@ nav {
     background-color: #dc3545;
     color: white;
     border: none;
-    padding: 8px 12px;
+    padding: 20px 12px;
     border-radius: 4px;
     cursor: pointer;
 }
@@ -111,16 +113,17 @@ nav {
     max-width: 800px;
 }
 
-#logfromreg{
-    color: #333;
+#logfromreg, #regfromlog {
+    color: #3AA0FF;
     font-weight: bold;
 }
-#logfromreg:hover{
+
+#logfromreg:hover, #regfromlog:hover {
     text-decoration: underline;
     cursor: pointer;
 }
 
-.subtxt{
+.subtxt {
     display: block;
     text-align: center;
     padding: 20px;

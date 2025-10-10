@@ -5,25 +5,23 @@ const loginForm = document.getElementById('loginForm');
 const registerForm = document.getElementById('registerForm');
 const logoutButton = document.getElementById('logout-button');
 const welcomeMessage = document.getElementById('welcome-message');
-const register = document.getElementById("register")
-const login = document.getElementById("login")
-const logfromreg = document.getElementById("logfromreg")
-const regfromlog = document.getElementById("regfromlog")
+const register = document.getElementById("register");
+const login = document.getElementById("login");
+const logfromreg = document.getElementById("logfromreg");
+const regfromlog = document.getElementById("regfromlog");
 
-login.style.display = "none"
-logfromreg.onclick = showlog
-regfromlog.onclick = showreg
+// Make sure login is hidden by default in your HTML by adding class="hidden" to login div
 
+// Event listeners to toggle forms
+logfromreg.addEventListener("click", () => {
+  register.classList.add("hidden");
+  login.classList.remove("hidden");
+});
 
-function showlog(){
-    register.style.display = "none"
-    login.style.display = "flex"
-}
-
-function showreg(){
-    register.style.display = "flex"
-    login.style.display = "none"
-}
+regfromlog.addEventListener("click", () => {
+  login.classList.add("hidden");
+  register.classList.remove("hidden");
+});
 
 // --- View Management ---
 
@@ -74,8 +72,9 @@ registerForm.addEventListener('submit', async function(e) {
         if (response.ok) {
             alert('Registration successful!');
             registerForm.reset();
-            // For now, we'll just switch to the login form. A better UX would be to auto-login.
-            // Or, we can directly show the main view if the backend returns a session.
+            // Optionally switch to login form after registration
+            register.classList.add("hidden");
+            login.classList.remove("hidden");
         } else {
             alert('Registration failed: ' + (result.message || 'Unknown error'));
         }
@@ -116,7 +115,6 @@ loginForm.addEventListener('submit', async function(e) {
             alert('Login successful!');
             loginForm.reset();
             // On successful login, hide auth forms and show the main app
-            // The 'result' object should contain user info from the backend
             showMainView(result.user || {});
         } else {
             alert('Login failed: ' + (result.message || 'Unknown error'));
