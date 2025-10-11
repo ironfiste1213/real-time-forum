@@ -1,11 +1,24 @@
-import { handleRegister, handleLogin } from './ui/auth.js';
+import { handleLogin, handleRegister, showLoginForm, showRegisterForm } from './ui/auth.js';
 
-// Get the registration form
-const registerForm = document.getElementById('registerForm');
-const loginForm = document.getElementById('loginForm');
+function initializeAuthRouting() {
+    const registerForm = document.getElementById('registerForm');
+    const loginForm = document.getElementById('loginForm');
+    const linkToLogin = document.getElementById('logfromreg');
+    const linkToRegister = document.getElementById('regfromlog');
 
-// Handle registration form submission
-registerForm.addEventListener('submit', handleRegister);
+    // Attach form submission handlers
+    registerForm?.addEventListener('submit', handleRegister);
+    loginForm?.addEventListener('submit', handleLogin);
 
-// Handle login form submission
-loginForm.addEventListener('submit', handleLogin);
+    // Attach view-switching handlers
+    linkToLogin?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLoginForm();
+    });
+    linkToRegister?.addEventListener('click', (e) => {
+        e.preventDefault();
+        showRegisterForm();
+    });
+}
+
+document.addEventListener('DOMContentLoaded', initializeAuthRouting);

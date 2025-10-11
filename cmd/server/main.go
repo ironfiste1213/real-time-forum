@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
-	httpInternal "real-time-forum/internal/http"
+	httpInternal "real-time-forum/internal/http/handler"
 	"real-time-forum/internal/repo"
 )
 
@@ -21,13 +21,16 @@ func main() {
 		log.Fatalf("Failed to run database migrations: %v", err)
 	}
 
-	// Serve static files (CSS, JS, images) from the public directory.
-	// The README mentions a 'public' directory for the frontend.
-	http.Handle("/", http.FileServer(http.Dir("./public")))
+	// Serve static assets (CSS, JS) from the /public directory.
+	fs := http.FileServer(http.Dir("./public"))
+	http.Handle("/css/", fs)
+	http.Handle("/js/", fs)
 
 	// API endpoints
 	http.HandleFunc("/register", httpInternal.RegisterHandler)
 	http.HandleFunc("/login", httpInternal.LoginHandler)
+	// The root handler serves the main index.html for the SPA.
+	http.HandleFunc("/", httpInternal.IndexHandler)
 
 	// TODO: Add WebSocket endpoint /ws
 	log.Println("Starting server on http://localhost:8080")

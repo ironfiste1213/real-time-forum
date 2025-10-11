@@ -1,24 +1,46 @@
-/**
- * Handles the registration form submission.
- * @param {Event} e - The form submission event.
- */
+// --- DOM Elements ---
+const DOMElements = {
+    registerView: document.getElementById("register"),
+    loginView: document.getElementById("login"),
+    registerForm: document.getElementById('registerForm'),
+    loginForm: document.getElementById('loginForm'),
+    authContainer: document.getElementById('auth-container'),
+    mainContainer: document.getElementById('main-container'),
+    welcomeMessage: document.getElementById('welcome-message'),
+};
+
+// --- View Toggling ---
+export function showLoginForm() {
+    if (DOMElements.registerView) DOMElements.registerView.style.display = "none";
+    if (DOMElements.loginView) DOMElements.loginView.style.display = "flex";
+}
+
+export function showRegisterForm() {
+    if (DOMElements.registerView) DOMElements.registerView.style.display = "flex";
+    if (DOMElements.loginView) DOMElements.loginView.style.display = "none";
+}
+
+// --- View Management ---
+export function showMainView(user) {
+    DOMElements.welcomeMessage.textContent = `Welcome, ${user.nickname || 'User'}!`;
+    DOMElements.authContainer.classList.add('hidden');
+    DOMElements.mainContainer.classList.remove('hidden');
+}
+
+export function showAuthView() {
+    DOMElements.authContainer.classList.remove('hidden');
+    DOMElements.mainContainer.classList.add('hidden');
+    showRegisterForm(); // Default to register view on logout
+}
+
+// --- Event Handlers ---
+
+// Handle registration form submission
 export async function handleRegister(e) {
     e.preventDefault();
-    console.log('Form submitted!');
-    
-    const registerForm = e.target;
-    const formData = new FormData(registerForm);
-    const userData = {
-        nickname: formData.get('nickname'),
-        age: parseInt(formData.get('age')),
-        gender: formData.get('gender'),
-        firstName: formData.get('firstName'),
-        lastName: formData.get('lastName'),
-        email: formData.get('email'),
-        password: formData.get('password')
-    };
-
-    console.log('Sending data:', userData);
+    const formData = new FormData(DOMElements.registerForm);
+    const userData = Object.fromEntries(formData.entries());
+    userData.age = parseInt(userData.age, 10);
 
     try {
         const response = await fetch('/register', {
@@ -30,7 +52,8 @@ export async function handleRegister(e) {
         const result = await response.json();
         if (response.ok) {
             alert('Registration successful!');
-            registerForm.reset();
+            DOMElements.registerForm.reset();
+            showLoginForm(); // Switch to login form after successful registration
         } else {
             alert('Registration failed: ' + (result.message || 'Unknown error'));
         }
@@ -40,14 +63,10 @@ export async function handleRegister(e) {
     }
 }
 
-/**
- * Handles the login form submission.
- * @param {Event} e - The form submission event.
- */
+// Handle login form submission
 export async function handleLogin(e) {
     e.preventDefault();
-    const loginForm = e.target;
-    const formData = new FormData(loginForm);
+    const formData = new FormData(DOMElements.loginForm);
     const loginData = Object.fromEntries(formData.entries());
 
     try {
@@ -56,9 +75,15 @@ export async function handleLogin(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(loginData)
         });
+
         const result = await response.json();
-        alert(result.message);
-        if (response.ok) loginForm.reset();
+        if (response.ok) {
+            alert('Login successful!');
+            DOMElements.loginForm.reset();
+            showMainView(result.user || {});
+        } else {
+            alert('Login failed: ' + (result.message || 'Unknown error'));
+        }
     } catch (error) {
         console.error('Login error:', error);
         alert('Network error during login. Please try again.');

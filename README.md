@@ -1,60 +1,60 @@
 real-time-forum/
 ├── cmd/
 │   └── server/
-│       └── main.go
+│       └── main.go         # Main application entry point
 ├── internal/
 │   ├── http/
-│   │   ├── middleware.go
-│   │   ├── routes.go
-│   │   └── responses.go
+│   │   ├── middleware.go   # HTTP middleware (e.g., auth, logging)
+│   │   ├── routes.go       # Route definitions and handlers mapping
+│   │   └── responses.go    # Standardized JSON response helpers
 │   ├── auth/
-│   │   ├── session.go
-│   │   └── password.go
+│   │   ├── session.go      # Session and cookie management
+│   │   └── password.go     # Password hashing and validation
 │   ├── ws/
-│   │   ├── hub.go
-│   │   ├── client.go
-│   │   └── events.go
+│   │   ├── hub.go          # Central hub for managing WebSocket clients
+│   │   ├── client.go       # Represents a single WebSocket client
+│   │   └── events.go       # Defines and handles WebSocket event logic
 │   ├── repo/
-│   │   ├── db.go
-│   │   ├── users.go
-│   │   ├── posts.go
-│   │   ├── comments.go
-│   │   └── messages.go
+│   │   ├── db.go           # Database connection and migration logic
+│   │   ├── users.go        # User-related database queries
+│   │   ├── posts.go        # Post-related database queries
+│   │   ├── comments.go     # Comment-related database queries
+│   │   └── messages.go     # Private message database queries
 │   ├── models/
-│   │   ├── user.go
-│   │   ├── post.go
-│   │   ├── comment.go
-│   │   └── message.go
+│   │   ├── user.go         # User and Session data models
+│   │   ├── post.go         # Post and Category data models
+│   │   ├── comment.go      # Comment data model
+│   │   └── message.go      # Private Message data model
 │   └── util/
-│       ├── id.go
-│       └── time.go
+│       ├── id.go           # Utility for generating unique IDs
+│       └── time.go         # Time formatting and helper functions
 ├── migrations/
-│   └── 001_init.sql
+│   └── 001_init.sql      # Initial database schema migration
 ├── public/
-│   ├── index.html
+│   ├── index.html        # The single HTML file for the SPA
 │   ├── css/
-│   │   └── style.css
+│   │   └── style.css     # Main stylesheet
 │   └── js/
-│       ├── app.js
-│       ├── router.js
-│       ├── api.js
-│       ├── ws.js
-│       ├── state.js
+│       ├── app.js          # Main frontend application logic
+│       ├── router.js       # Client-side router for SPA navigation
+│       ├── api.js          # Client-side API request handler
+│       ├── ws.js           # WebSocket connection and event handling
+│       ├── state.js        # Global state management for the frontend
 │       ├── utils/
-│       │   ├── debounce.js
-│       │   ├── throttle.js
-│       │   ├── time.js
-│       │   └── dom.js
+│       │   ├── debounce.js   # Debounce utility function
+│       │   ├── throttle.js   # Throttle utility function
+│       │   ├── time.js       # Time formatting helpers
+│       │   └── dom.js        # DOM manipulation helpers
 │       └── ui/
-│           ├── auth.js
-│           ├── sidebar.js
-│           ├── feed.js
-│           ├── postDetail.js
-│           └── chat.js
-├── go.mod
-├── go.sum
-├── Makefile
-└── README.md
+│           ├── auth.js       # Renders and manages auth forms
+│           ├── sidebar.js    # Renders the user list/sidebar
+│           ├── feed.js       # Renders the post feed
+│           ├── postDetail.js # Renders a single post and its comments
+│           └── chat.js       # Renders the real-time chat interface
+├── go.mod                  # Go module dependencies
+├── go.sum                  # Go module checksums
+├── Makefile                # Helper commands for building/running the project
+└── README.md               # This file! Project overview and documentation
 
 ---
 
