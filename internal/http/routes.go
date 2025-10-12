@@ -2,7 +2,7 @@ package http
 
 import (
 	"net/http"
-	handler "real-time-forum/internal/http/handler"
+	"real-time-forum/internal/http/handler"
 )
 
 // RegisterRoutes sets up all the application's routes.
@@ -17,5 +17,6 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/register", handler.RegisterHandler)
 	mux.HandleFunc("/login", handler.LoginHandler)
 	mux.HandleFunc("/logout", handler.LogoutHandler)
+
 	mux.HandleFunc("/", handler.IndexHandler)
 }

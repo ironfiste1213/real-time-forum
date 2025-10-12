@@ -1,12 +1,14 @@
-package http
+package handler
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
+	"log"
 	"net/http"
 	"real-time-forum/internal/auth"
-	"real-time-forum/internal/repo"
-
 	"real-time-forum/internal/models"
+	"real-time-forum/internal/repo"
 )
 
 // IndexHandler serves the main index.html file for all non-api routes.
@@ -27,7 +29,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	// check if the request method is POST
 	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
 
@@ -35,41 +37,41 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	var req models.RegisterRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
 
 	// Step 3: Validate the input data using our new helper
 	if err := auth.ValidateRegisterRequest(&req); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
 
 	// Step 4: Check for duplicate email or nickname before proceeding
 	existingUser, err := repo.GetUserByEmail(req.Email)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 	if existingUser != nil {
-		http.Error(w, "Email is already in use", http.StatusConflict)
+		RespondWithError(w, http.StatusConflict, "Email is already in use")
 		return
 	}
 
 	existingUser, err = repo.GetUserByNickname(req.Nickname)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 	if existingUser != nil {
-		http.Error(w, "Nickname is already in use", http.StatusConflict)
+		RespondWithError(w, http.StatusConflict, "Nickname is already in use")
 		return
 	}
 
 	// Step 5: Hash the password using our new helper
 	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -87,9 +89,9 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err = repo.CreateUser(user)
 	if err != nil {
 		if err == repo.ErrDuplicateEntry {
-			http.Error(w, "Email or nickname is already in use", http.StatusConflict)
+			RespondWithError(w, http.StatusConflict, "Email or nickname is already in use")
 		} else {
-			http.Error(w, "Internal server error", http.StatusInternalServerError)
+			RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
@@ -103,45 +105,58 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 // LoginHandler handles user login.
 // Placeholder function.
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
-	// Set the content type to application/json
-	w.Header().Set("Content-Type", "application/json")
+	log.Println("--- LOGIN HANDLER: Request received ---")
 
 	// 1. Parse the request
 	var req models.LoginRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
-	if err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+
+	// Read the body and then create a new reader for decoding, so we can log the raw body
+	bodyBytes, _ := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Restore the body
+	log.Printf("LOGIN HANDLER: Raw request body: %s", string(bodyBytes))
+
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		log.Printf("LOGIN HANDLER: ERROR decoding JSON: %v", err)
+		RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
+	log.Printf("LOGIN HANDLER: Decoded request: Identifier=[%s]", req.Identifier)
 
 	// 2. Look up the user by email or nickname
 	user, err := repo.GetUserByEmailOrNickname(req.Identifier)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		log.Printf("LOGIN HANDLER: ERROR during user lookup: %v", err)
+		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 	if user == nil {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		log.Printf("LOGIN HANDLER: User not found for identifier: %s", req.Identifier)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
+	log.Printf("LOGIN HANDLER: User found: %s (ID: %d)", user.Nickname, user.ID)
 
 	// 3. Verify the password
 	if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
-		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		log.Printf("LOGIN HANDLER: Invalid password for user: %s", user.Nickname)
+		RespondWithError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
 
 	// 4. Create a new session
 	sessionToken, err := auth.CreateSession(user.ID)
 	if err != nil {
-		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		log.Printf("LOGIN HANDLER: ERROR creating session: %v", err)
+		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	// 5. Set the session cookie
 	auth.SetSessionCookie(w, sessionToken)
+	log.Printf("LOGIN HANDLER: Session created successfully for user: %s", user.Nickname)
 
 	// 6. Send a success response
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
 	// Define the user details you want to send in the response
@@ -177,7 +192,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		// For other errors, it might be a bad request.
-		http.Error(w, "Bad request", http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Bad request")
 		return
 	}
 

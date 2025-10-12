@@ -10,7 +10,7 @@ type RegisterRequest struct {
 	Gender    string `json:"gender"`
 }
 
-type loginRequest struct {
-	Identifier string `json:"Identifier"` // Can be either nickname or email
+type LoginRequest struct {
+	Identifier string `json:"identifier"` // Can be either nickname or email
 	Password   string `json:"password"`
 }

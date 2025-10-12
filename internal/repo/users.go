@@ -84,7 +84,7 @@ func GetUserByNickname(nickname string) (*models.User, error) {
 // This is primarily used for the login process.
 func GetUserByEmailOrNickname(identifier string) (*models.User, error) {
 	stmt, err := DB.Prepare(`
-		SELECT id, nickname, email, password_hash, first_name, last_name, age, gender, created_at
+		SELECT id, nickname, email, password_hash, first_name, last_name, age, gender, created_at, last_login, is_online
 		FROM users
 		WHERE email = ? OR nickname = ?
 	`)
@@ -94,7 +94,7 @@ func GetUserByEmailOrNickname(identifier string) (*models.User, error) {
 	defer stmt.Close()
 
 	user := &models.User{}
-	err = stmt.QueryRow(identifier, identifier).Scan(&user.ID, &user.Nickname, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName, &user.Age, &user.Gender, &user.CreatedAt)
+	err = stmt.QueryRow(identifier, identifier).Scan(&user.ID, &user.Nickname, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName, &user.Age, &user.Gender, &user.CreatedAt, &user.LastLogin, &user.IsOnline)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil // No user found, which is a valid case for a login attempt
@@ -102,4 +102,37 @@ func GetUserByEmailOrNickname(identifier string) (*models.User, error) {
 		return nil, err
 	}
 	return user, nil
+}
+
+// GetAllUsers retrieves all users from the database.
+// It returns a slice of User models, excluding sensitive information.
+func GetAllUsers() ([]*models.User, error) {
+	rows, err := DB.Query(`
+		SELECT id, nickname, email, first_name, last_name, age, gender
+		FROM users
+		ORDER BY nickname ASC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*models.User
+	for rows.Next() {
+		user := &models.User{}
+		if err := rows.Scan(
+			&user.ID,
+			&user.Nickname,
+			&user.Email,
+			&user.FirstName,
+			&user.LastName,
+			&user.Age,
+			&user.Gender,
+		); err != nil {
+			return nil, err
+		}
+		users = append(users, user)
+	}
+
+	return users, rows.Err()
 }

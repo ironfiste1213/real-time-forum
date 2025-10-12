@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 	router "real-time-forum/internal/http"
@@ -15,6 +16,21 @@ func main() {
 		log.Fatalf("Failed to initialize database: %v", err)
 	}
 	defer repo.CloseDB()
+
+	// --- Print all users to the terminal for debugging ---
+	users, err := repo.GetAllUsers()
+	if err != nil {
+		log.Printf("Could not retrieve users for debug printing: %v", err)
+	} else {
+		log.Println("--- Registered Users ---")
+		if len(users) == 0 {
+			log.Println("No users found in the database.")
+		}
+		for _, user := range users {
+			fmt.Printf("  - ID: %d, Nickname: %s, Email: %s\n", user.ID, user.Nickname, user.Email)
+		}
+		log.Println("------------------------")
+	}
 
 	// Create a new ServeMux to handle routes.
 	mux := http.NewServeMux()

@@ -67,7 +67,11 @@ export async function handleRegister(e) {
 export async function handleLogin(e) {
     e.preventDefault();
     const formData = new FormData(DOMElements.loginForm);
-    const loginData = Object.fromEntries(formData.entries());
+    // Convert form data keys to lowercase to match backend struct tags
+    const loginData = {};
+    for (const [key, value] of formData.entries()) {
+        loginData[key.toLowerCase()] = value;
+    }
 
     try {
         const response = await fetch('/login', {
