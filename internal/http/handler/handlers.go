@@ -45,14 +45,35 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Step 4: Hash the password using our new helper
+	// Step 4: Check for duplicate email or nickname before proceeding
+	existingUser, err := repo.GetUserByEmail(req.Email)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	if existingUser != nil {
+		http.Error(w, "Email is already in use", http.StatusConflict)
+		return
+	}
+
+	existingUser, err = repo.GetUserByNickname(req.Nickname)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	if existingUser != nil {
+		http.Error(w, "Nickname is already in use", http.StatusConflict)
+		return
+	}
+
+	// Step 5: Hash the password using our new helper
 	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
 		http.Error(w, "Internal server error", http.StatusInternalServerError)
 		return
 	}
 
-	// Step 5: Create a user model and save it to the database
+	// Step 6: Create a user model and save it to the database
 	user := &models.User{
 		Nickname:     req.Nickname,
 		Email:        req.Email,
@@ -85,14 +106,99 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// Set the content type to application/json
 	w.Header().Set("Content-Type", "application/json")
 
-	// TODO: Implement actual user login logic (parsing, validation, session creation)
+	// 1. Parse the request
+	var req models.LoginRequest
+	err := json.NewDecoder(r.Body).Decode(&req)
+	if err != nil {
+		http.Error(w, "Invalid request payload", http.StatusBadRequest)
+		return
+	}
 
-	// For now, send a valid JSON success response with dummy user data
+	// 2. Look up the user by email or nickname
+	user, err := repo.GetUserByEmailOrNickname(req.Identifier)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+	if user == nil {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	// 3. Verify the password
+	if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
+		http.Error(w, "Invalid credentials", http.StatusUnauthorized)
+		return
+	}
+
+	// 4. Create a new session
+	sessionToken, err := auth.CreateSession(user.ID)
+	if err != nil {
+		http.Error(w, "Internal server error", http.StatusInternalServerError)
+		return
+	}
+
+	// 5. Set the session cookie
+	auth.SetSessionCookie(w, sessionToken)
+
+	// 6. Send a success response
 	w.WriteHeader(http.StatusOK)
-	json.NewEncoder(w).Encode(map[string]interface{}{"message": "Login successful!", "user": map[string]string{"nickname": "TestUser"}})
+
+	// Define the user details you want to send in the response
+	userDetails := map[string]interface{}{
+		"id":        user.ID,
+		"nickname":  user.Nickname,
+		"firstName": user.FirstName,
+		"lastName":  user.LastName,
+		"age":       user.Age,
+		"gender":    user.Gender,
+		"email":     user.Email,
+	}
+
+	// Create the response payload
+	response := map[string]interface{}{
+		"message": "Login successful!",
+		"user":    userDetails,
+	}
+
+	json.NewEncoder(w).Encode(response)
 }
 
-func logoutHandler(w http.ResponseWriter, r *http.Request) {
+func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. Get the session cookie from the request
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		// If the cookie is not found, the user is effectively logged out.
+		// We can just send a success response.
+		if err == http.ErrNoCookie {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte(`{"message": "Already logged out"}`))
+			return
+		}
+		// For other errors, it might be a bad request.
+		http.Error(w, "Bad request", http.StatusBadRequest)
+		return
+	}
+
+	// 2. Delete the session from the database
+	sessionToken := cookie.Value
+	auth.DeleteSession(sessionToken) // We can ignore the error here, as the main goal is to delete the cookie
+
+	// Expire the session cookie by setting its MaxAge to a negative value
+	sessionCookie := &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // This tells the browser to delete the cookie
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+	}
+	http.SetCookie(w, sessionCookie)
+
 	// Set the content type to application/json
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`{"message": "Logout successful"}`))
 }

@@ -84,7 +84,7 @@ The folder layout follows a clean separation between backend logic and frontend 
 - `internal/models/`: data models
 - `internal/util/`: helper utilities (ID generation, time)
 - `migrations/`: SQL schema and migrations
-- `public/`: frontend (HTML, CSS, JS)
+- `public/`: frontend (HTML, CSS, JS) 
 
 ---
 

@@ -3,7 +3,6 @@ package repo
 import (
 	"database/sql"
 	"log"
-	"os"
 
 	_ "github.com/mattn/go-sqlite3" // SQLite driver
 )
@@ -25,6 +24,68 @@ func InitDB(dataSourceName string) error {
 		return err
 	}
 
+	// Create tables if they don't exist. This makes the app self-contained.
+	schema := `
+		CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			nickname TEXT NOT NULL UNIQUE,
+			email TEXT NOT NULL UNIQUE,
+			password_hash TEXT NOT NULL,
+			first_name TEXT,
+			last_name TEXT,
+			age INTEGER,
+			gender TEXT,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			last_login DATETIME,
+			is_online BOOLEAN DEFAULT FALSE
+		);
+
+		CREATE TABLE IF NOT EXISTS sessions (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			token TEXT NOT NULL UNIQUE,
+			expiry DATETIME NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS categories (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			name TEXT NOT NULL UNIQUE
+		);
+
+		CREATE TABLE IF NOT EXISTS posts (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			user_id INTEGER NOT NULL,
+			title TEXT NOT NULL,
+			content TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS post_categories (
+			post_id INTEGER NOT NULL,
+			category_id INTEGER NOT NULL,
+			PRIMARY KEY (post_id, category_id),
+			FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE,
+			FOREIGN KEY (category_id) REFERENCES categories (id) ON DELETE CASCADE
+		);
+
+		CREATE TABLE IF NOT EXISTS comments (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			post_id INTEGER NOT NULL,
+			user_id INTEGER NOT NULL,
+			content TEXT NOT NULL,
+			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			FOREIGN KEY (post_id) REFERENCES posts (id) ON DELETE CASCADE,
+			FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE
+		);
+	`
+	_, err = DB.Exec(schema)
+	if err != nil {
+		return err
+	}
+
 	log.Println("Database connected successfully!")
 	return nil
 }
@@ -32,19 +93,4 @@ func InitDB(dataSourceName string) error {
 // CloseDB closes the database connection.
 func CloseDB() {
 	DB.Close()
-}
-
-// MigrateDB executes the SQL migration script to set up the database schema.
-func MigrateDB(filepath string) error {
-	query, err := os.ReadFile(filepath)
-	if err != nil {
-		return err
-	}
-
-	if _, err := DB.Exec(string(query)); err != nil {
-		return err
-	}
-
-	log.Println("Database migration completed successfully!")
-	return nil
 }

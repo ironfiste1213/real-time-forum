@@ -19,6 +19,6 @@ type User struct {
 type Session struct {
 	UserID    int
 	Token     string
-	ExpiresAt time.Time
+	Expiry    time.Time
 	CreatedAt time.Time
 }

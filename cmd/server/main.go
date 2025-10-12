@@ -3,7 +3,7 @@ package main
 import (
 	"log"
 	"net/http"
-	httpInternal "real-time-forum/internal/http/handler"
+	router "real-time-forum/internal/http"
 	"real-time-forum/internal/repo"
 )
 
@@ -16,25 +16,15 @@ func main() {
 	}
 	defer repo.CloseDB()
 
-	// Run database migrations.
-	if err := repo.MigrateDB("./migrations/001_init.sql"); err != nil {
-		log.Fatalf("Failed to run database migrations: %v", err)
-	}
+	// Create a new ServeMux to handle routes.
+	mux := http.NewServeMux()
 
-	// Serve static assets (CSS, JS) from the /public directory.
-	fs := http.FileServer(http.Dir("./public"))
-	http.Handle("/css/", fs)
-	http.Handle("/js/", fs)
-
-	// API endpoints
-	http.HandleFunc("/register", httpInternal.RegisterHandler)
-	http.HandleFunc("/login", httpInternal.LoginHandler)
-	// The root handler serves the main index.html for the SPA.
-	http.HandleFunc("/", httpInternal.IndexHandler)
+	// Register all our routes using the function from routes.go.
+	router.RegisterRoutes(mux)
 
 	// TODO: Add WebSocket endpoint /ws
 	log.Println("Starting server on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":8080", mux); err != nil {
 		log.Fatalf("Could not start server: %s\n", err)
 	}
 }
