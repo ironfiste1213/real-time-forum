@@ -1,33 +1,54 @@
-// --- DOM Elements ---
+// --- DOM Elements (populated after DOMContentLoaded) ---
 const DOMElements = {
-    registerView: document.getElementById("register"),
-    loginView: document.getElementById("login"),
-    registerForm: document.getElementById('registerForm'),
-    loginForm: document.getElementById('loginForm'),
-    authContainer: document.getElementById('auth-container'),
-    mainContainer: document.getElementById('main-container'),
-    welcomeMessage: document.getElementById('welcome-message'),
+    registerView: null,
+    loginView: null,
+    registerForm: null,
+    loginForm: null,
+    authContainer: null,
+    mainContainer: null,
+    welcomeMessage: null,
 };
+
+// Populate DOMElements once the DOM is ready. Call this from the entrypoint.
+export function initDOMElements() {
+    DOMElements.registerView = document.getElementById("register");
+    DOMElements.loginView = document.getElementById("login");
+    DOMElements.registerForm = document.getElementById('registerForm');
+    DOMElements.loginForm = document.getElementById('loginForm');
+    DOMElements.authContainer = document.getElementById('auth-container');
+    DOMElements.mainContainer = document.getElementById('main-container');
+    DOMElements.welcomeMessage = document.getElementById('welcome-message');
+}
 
 // --- View Toggling ---
 export function showLoginForm() {
-    if (DOMElements.registerView) DOMElements.registerView.style.display = "none";
-    if (DOMElements.loginView) DOMElements.loginView.style.display = "flex";
+    // Query again as a safety, in case init wasn't called
+    if (!DOMElements.registerView) DOMElements.registerView = document.getElementById("register");
+    if (!DOMElements.loginView) DOMElements.loginView = document.getElementById("login");
+    if (DOMElements.registerView) DOMElements.registerView.classList.add('hidden');
+    if (DOMElements.loginView) DOMElements.loginView.classList.remove('hidden');
 }
 
 export function showRegisterForm() {
-    if (DOMElements.registerView) DOMElements.registerView.style.display = "flex";
-    if (DOMElements.loginView) DOMElements.loginView.style.display = "none";
+    if (!DOMElements.registerView) DOMElements.registerView = document.getElementById("register");
+    if (!DOMElements.loginView) DOMElements.loginView = document.getElementById("login");
+    if (DOMElements.registerView) DOMElements.registerView.classList.remove('hidden');
+    if (DOMElements.loginView) DOMElements.loginView.classList.add('hidden');
 }
 
 // --- View Management ---
 export function showMainView(user) {
+    if (!DOMElements.welcomeMessage) DOMElements.welcomeMessage = document.getElementById('welcome-message');
+    if (!DOMElements.authContainer) DOMElements.authContainer = document.getElementById('auth-container');
+    if (!DOMElements.mainContainer) DOMElements.mainContainer = document.getElementById('main-container');
     DOMElements.welcomeMessage.textContent = `Welcome, ${user.nickname || 'User'}!`;
     DOMElements.authContainer.classList.add('hidden');
     DOMElements.mainContainer.classList.remove('hidden');
 }
 
 export function showAuthView() {
+    if (!DOMElements.authContainer) DOMElements.authContainer = document.getElementById('auth-container');
+    if (!DOMElements.mainContainer) DOMElements.mainContainer = document.getElementById('main-container');
     DOMElements.authContainer.classList.remove('hidden');
     DOMElements.mainContainer.classList.add('hidden');
     showRegisterForm(); // Default to register view on logout
@@ -52,6 +73,7 @@ export async function handleRegister(e) {
         const result = await response.json();
         if (response.ok) {
             alert('Registration successful!');
+            if (!DOMElements.registerForm) DOMElements.registerForm = document.getElementById('registerForm');
             DOMElements.registerForm.reset();
             showLoginForm(); // Switch to login form after successful registration
         } else {
@@ -66,6 +88,7 @@ export async function handleRegister(e) {
 // Handle login form submission
 export async function handleLogin(e) {
     e.preventDefault();
+    if (!DOMElements.loginForm) DOMElements.loginForm = document.getElementById('loginForm');
     const formData = new FormData(DOMElements.loginForm);
     // Convert form data keys to lowercase to match backend struct tags
     const loginData = {};

@@ -217,3 +217,48 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Logout successful"}`))
 }
+
+// MeHandler returns the current authenticated user's details based on session cookie.
+func MeHandler(w http.ResponseWriter, r *http.Request) {
+	// 1. Get the session cookie from the request
+	cookie, err := r.Cookie("session_token")
+	if err != nil {
+		if err == http.ErrNoCookie {
+			RespondWithError(w, http.StatusUnauthorized, "Not authenticated")
+			return
+		}
+		RespondWithError(w, http.StatusBadRequest, "Bad request")
+		return
+	}
+
+	sessionToken := cookie.Value
+
+	// 2. Look up session in DB to get user ID
+	session, err := repo.GetSessionByToken(sessionToken)
+	if err != nil || session == nil {
+		RespondWithError(w, http.StatusUnauthorized, "Invalid session")
+		return
+	}
+
+	// 3. Fetch user by ID
+	user, err := repo.GetUserByID(session.UserID)
+	if err != nil || user == nil {
+		RespondWithError(w, http.StatusUnauthorized, "Invalid session user")
+		return
+	}
+
+	// 4. Return user details
+	userDetails := map[string]interface{}{
+		"id":        user.ID,
+		"nickname":  user.Nickname,
+		"firstName": user.FirstName,
+		"lastName":  user.LastName,
+		"age":       user.Age,
+		"gender":    user.Gender,
+		"email":     user.Email,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(map[string]interface{}{"user": userDetails})
+}

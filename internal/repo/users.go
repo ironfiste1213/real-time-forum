@@ -136,3 +136,49 @@ func GetAllUsers() ([]*models.User, error) {
 
 	return users, rows.Err()
 }
+
+// GetUserByID fetches a user by its numeric ID.
+func GetUserByID(id int) (*models.User, error) {
+	stmt, err := DB.Prepare(`
+		SELECT id, nickname, email, password_hash, first_name, last_name, age, gender
+		FROM users
+		WHERE id = ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	user := &models.User{}
+	err = stmt.QueryRow(id).Scan(&user.ID, &user.Nickname, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName, &user.Age, &user.Gender)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
+// GetSessionByToken retrieves a session row by its token.
+func GetSessionByToken(token string) (*models.Session, error) {
+	stmt, err := DB.Prepare(`
+		SELECT user_id, token, expiry, created_at
+		FROM sessions
+		WHERE token = ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	s := &models.Session{}
+	err = stmt.QueryRow(token).Scan(&s.UserID, &s.Token, &s.Expiry, &s.CreatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return s, nil
+}
