@@ -136,3 +136,28 @@ func GetAllUsers() ([]*models.User, error) {
 
 	return users, rows.Err()
 }
+
+// GetUserByID retrieves a user by their ID.
+func GetUserByID(id int) (*models.User, error) {
+	stmt, err := DB.Prepare(`
+		SELECT id, nickname, email, password_hash, first_name, last_name, age, gender, created_at, last_login, is_online
+		FROM users
+		WHERE id = ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	user := &models.User{}
+	err = stmt.QueryRow(id).Scan(&user.ID, &user.Nickname, &user.Email, &user.PasswordHash, &user.FirstName, &user.LastName, &user.Age, &user.Gender, &user.CreatedAt, &user.LastLogin, &user.IsOnline)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, nil // No user found
+		}
+		return nil, err
+	}
+	return user, nil
+}
+
+var ErrNoRows = sql.ErrNoRows

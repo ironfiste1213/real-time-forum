@@ -19,4 +19,9 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/logout", handler.LogoutHandler)
 
 	mux.HandleFunc("/", handler.IndexHandler)
+
+	// Example of a protected route.
+	// Any handler wrapped with `AuthMiddleware` will require a valid session.
+	// mux.Handle("/api/posts/create", AuthMiddleware(http.HandlerFunc(handler.CreatePostHandler)))
+	// mux.Handle("/api/user/profile", AuthMiddleware(http.HandlerFunc(handler.GetUserProfileHandler)))
 }

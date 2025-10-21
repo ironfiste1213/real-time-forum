@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
 	"time"
 
@@ -61,4 +62,28 @@ func DeleteSession(token string) error {
 
 	_, err = stmt.Exec(token)
 	return err
+}
+
+// GetSessionByToken retrieves a session from the database and checks its validity.
+func GetSessionByToken(token string) (*models.Session, error) {
+	stmt, err := repo.DB.Prepare(`
+		SELECT user_id, token, expiry, created_at
+		FROM sessions
+		WHERE token = ?
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer stmt.Close()
+
+	session := &models.Session{}
+	err = stmt.QueryRow(token).Scan(&session.UserID, &session.Token, &session.Expiry, &session.CreatedAt)
+	if err != nil {
+		if err == repo.ErrNoRows {
+			return nil, nil // Session not found, not a server error
+		}
+		return nil, err
+	}
+
+	return session, nil
 }

@@ -198,7 +198,12 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	// 2. Delete the session from the database
 	sessionToken := cookie.Value
-	auth.DeleteSession(sessionToken) // We can ignore the error here, as the main goal is to delete the cookie
+	err = auth.DeleteSession(sessionToken)
+	if err != nil {
+		// Log the error for debugging, but continue to ensure the client-side cookie is removed.
+		// This makes the logout process more resilient.
+		log.Printf("LOGOUT HANDLER: Failed to delete session from database: %v", err)
+	}
 
 	// Expire the session cookie by setting its MaxAge to a negative value
 	sessionCookie := &http.Cookie{

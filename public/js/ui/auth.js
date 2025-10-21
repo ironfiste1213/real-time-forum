@@ -7,6 +7,7 @@ const DOMElements = {
     authContainer: document.getElementById('auth-container'),
     mainContainer: document.getElementById('main-container'),
     welcomeMessage: document.getElementById('welcome-message'),
+    logoutButton: document.getElementById('logout-button')
 };
 
 // --- View Toggling ---
@@ -92,4 +93,13 @@ export async function handleLogin(e) {
         console.error('Login error:', error);
         alert('Network error during login. Please try again.');
     }
+}
+
+
+
+export function handleLogout() {
+    // Clear any session data if necessary (e.g., tokens)
+    // For this example, we simply switch views
+    alert('You have been logged out.');
+    showAuthView();    
 }
