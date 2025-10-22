@@ -45,23 +45,23 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		if err != nil {
 			// This covers cases where the session is not found or other DB errors
 			log.Printf("AuthMiddleware: Error retrieving session: %v", err)
-			clearSessionCookie(w) // Clear potentially invalid cookie
+			auth.ClearSessionCookie(w) // Clear potentially invalid cookie
 			handler.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 			return
 		}
 		if session == nil {
 			// Session token not found in DB
 			log.Printf("AuthMiddleware: Session token not found in database: %s", sessionToken)
-			clearSessionCookie(w)
+			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusUnauthorized, "Invalid session")
 			return
 		}
 
 		// Check if the session has expired
 		if session.Expiry.Before(time.Now()) {
-			log.Printf("AuthMiddleware: Session expired for user ID: %d", session.UserID)
+			log.Printf("AuthMiddleware: Session expired for user ID: %d, token: %s", session.UserID, sessionToken)
 			_ = auth.DeleteSession(sessionToken) // Clean up expired session from DB
-			clearSessionCookie(w)
+			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusUnauthorized, "Session expired")
 			return
 		}
@@ -70,15 +70,15 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		user, err := repo.GetUserByID(session.UserID)
 		if err != nil {
 			log.Printf("AuthMiddleware: Error retrieving user for session %s (UserID: %d): %v", sessionToken, session.UserID, err)
-			clearSessionCookie(w)
+			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 			return
 		}
 		if user == nil {
 			// User associated with session not found (e.g., user deleted but session remains)
 			log.Printf("AuthMiddleware: User (ID: %d) not found for session %s", session.UserID, sessionToken)
-			_ = auth.DeleteSession(sessionToken) // Invalidate the session as it points to a non-existent user
-			clearSessionCookie(w)
+			_ = auth.DeleteSession(sessionToken) // Invalidate the session as it points to a non-existent user, and clear the client cookie
+			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusUnauthorized, "User not found for session")
 			return
 		}
@@ -96,17 +96,4 @@ func AuthMiddleware(next http.Handler) http.Handler {
 func GetUserFromContext(ctx context.Context) (*models.User, bool) {
 	user, ok := ctx.Value(UserContextKey).(*models.User)
 	return user, ok
-}
-
-// clearSessionCookie removes the session cookie from the client's browser.
-func clearSessionCookie(w http.ResponseWriter) {
-	http.SetCookie(w, &http.Cookie{
-		Name:     "session_token",
-		Value:    "",
-		Path:     "/",
-		MaxAge:   -1, // This tells the browser to delete the cookie
-		HttpOnly: true,
-		Secure:   false, // Set to true in production with HTTPS
-		SameSite: http.SameSiteLaxMode,
-	})
 }

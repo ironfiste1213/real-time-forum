@@ -1,226 +1,95 @@
-real-time-forum/
-├── cmd/
-│   └── server/
-│       └── main.go         # Main application entry point
-├── internal/
-│   ├── http/
-│   │   ├── middleware.go   # HTTP middleware (e.g., auth, logging)
-│   │   ├── routes.go       # Route definitions and handlers mapping
-│   │   └── responses.go    # Standardized JSON response helpers
-│   ├── auth/
-│   │   ├── session.go      # Session and cookie management
-│   │   └── password.go     # Password hashing and validation
-│   ├── ws/
-│   │   ├── hub.go          # Central hub for managing WebSocket clients
-│   │   ├── client.go       # Represents a single WebSocket client
-│   │   └── events.go       # Defines and handles WebSocket event logic
-│   ├── repo/
-│   │   ├── db.go           # Database connection and migration logic
-│   │   ├── users.go        # User-related database queries
-│   │   ├── posts.go        # Post-related database queries
-│   │   ├── comments.go     # Comment-related database queries
-│   │   └── messages.go     # Private message database queries
-│   ├── models/
-│   │   ├── user.go         # User and Session data models
-│   │   ├── post.go         # Post and Category data models
-│   │   ├── comment.go      # Comment data model
-│   │   └── message.go      # Private Message data model
-│   └── util/
-│       ├── id.go           # Utility for generating unique IDs
-│       └── time.go         # Time formatting and helper functions
-├── migrations/
-│   └── 001_init.sql      # Initial database schema migration
-├── public/
-│   ├── index.html        # The single HTML file for the SPA
-│   ├── css/
-│   │   └── style.css     # Main stylesheet
-│   └── js/
-│       ├── app.js          # Main frontend application logic
-│       ├── router.js       # Client-side router for SPA navigation
-│       ├── api.js          # Client-side API request handler
-│       ├── ws.js           # WebSocket connection and event handling
-│       ├── state.js        # Global state management for the frontend
-│       ├── utils/
-│       │   ├── debounce.js   # Debounce utility function
-│       │   ├── throttle.js   # Throttle utility function
-│       │   ├── time.js       # Time formatting helpers
-│       │   └── dom.js        # DOM manipulation helpers
-│       └── ui/
-│           ├── auth.js       # Renders and manages auth forms
-│           ├── sidebar.js    # Renders the user list/sidebar
-│           ├── feed.js       # Renders the post feed
-│           ├── postDetail.js # Renders a single post and its comments
-│           └── chat.js       # Renders the real-time chat interface
-├── go.mod                  # Go module dependencies
-├── go.sum                  # Go module checksums
-├── Makefile                # Helper commands for building/running the project
-└── README.md               # This file! Project overview and documentation
+## real-time-forum
 
----
+Remember the forum you did a while ago? Well it's time to make one even better also using JS, private messages, real time actions, live sharing video and live screen sharing too. Well, maybe not the last two. To get things straight there is a list below of what you will have to do.
 
-# README.md
+### Objectives
 
-## Project: Real-Time Forum
+On this project you will have to focus on a few points:
 
-### Overview
-This project is a **single-page real-time forum** built with **Go (backend)** and **Vanilla JS (frontend)**. It includes authentication, post and comment management, and a real-time private messaging system using WebSockets.
+- Registration and Login
+- Creation of posts
+  - Commenting posts
+- Private Messages
 
-### Tech Stack
-- **Backend:** Go, Gorilla/WebSocket, SQLite, bcrypt, uuid
-- **Frontend:** HTML, CSS, Vanilla JavaScript (no frameworks)
-- **Database:** SQLite
-- **Architecture:** SPA (Single Page Application)
+As you already did the first forum you can use part of the code, but not all of it. Your new forum will have five different parts:
 
----
+- **SQLite**, in which you will store data, just like in the [previous forum](../forum/README.md#Communication)
+- **Golang**, in which you will handle data and Websockets (Backend)
+- **Javascript**, in which you will handle all the Frontend events and clients Websockets
+- **HTML**, in which you will organize the elements of the page
+- **CSS**, in which you will stylize the elements of the page
 
-## Folder Structure
-The folder layout follows a clean separation between backend logic and frontend resources.
+You will have only one HTML file, so every change of page you want to do, should be handled in the Javascript. This can be called having a [single page application](https://en.wikipedia.org/wiki/Single-page_application).
 
-- `cmd/server/`: entry point (main.go)
-- `internal/http/`: HTTP handlers, routing, middleware
-- `internal/auth/`: session and password management
-- `internal/ws/`: WebSocket hub, clients, and events
-- `internal/repo/`: database interactions (users, posts, comments, messages)
-- `internal/models/`: data models
-- `internal/util/`: helper utilities (ID generation, time)
-- `migrations/`: SQL schema and migrations
-- `public/`: frontend (HTML, CSS, JS) 
+#### Registration and Login
 
----
+To be able to use the new and upgraded forum users will have to register and login, otherwise they will only see the registration or login page. This is premium stuff. The registration and login process should take in consideration the following features:
 
-## Project Objectives
-- User registration & authentication
-- Create/view posts with comments
-- Private messages between users (real-time)
-- Online/offline presence tracking
-- Single-page navigation (handled by JS)
+- Users must be able to fill a register form to register into the forum. They will have to provide at least:
+  - Nickname
+  - Age
+  - Gender
+  - First Name
+  - Last Name
+  - E-mail
+  - Password
+- The user must be able to connect using either the nickname or the e-mail combined with the password.
+- The user must be able to log out from any page on the forum.
 
----
+#### Posts and Comments
 
-## Architecture Overview
+This part is pretty similar to the first forum. Users must be able to:
 
-### Backend (Go)
-- REST API for auth, posts, comments, messages
-- WebSocket hub to manage:
-  - Online users
-  - Private messages
-  - Presence updates
-- SQLite storage for persistence
-- Secure session cookies (HttpOnly)
+- Create posts
+  - Posts will have categories as in the first forum
+- Create comments on the posts
+- See posts in a feed display
+  - See comments only if they click on a post
 
-### Frontend (JS)
-- One HTML file (`index.html`) containing placeholders for dynamic views
-- JS handles routing, DOM updates, and WebSocket communication
-- Components for:
-  - Auth forms (login/register)
-  - Feed (posts & comments)
-  - Chat interface (real-time PMs)
-  - Sidebar (online users)
+#### Private Messages
 
----
+Users will be able to send private messages to each other, so you will need to create a chat, where it will exist :
 
-## Team Roles & Tasks
+- A section to show who is online/offline and able to talk to:
 
-### Member A — Backend Developer (Go)
+  - This section must be organized by the last message sent (just like discord). If the user is new and does not present messages you must organize it in alphabetic order.
+  - The user must be able to send private messages to the users who are online.
+  - This section must be visible at all times.
 
-#### Global Tasks
-- Build and maintain the backend logic
-- Manage database, API routes, and WebSocket communication
-- Ensure session management and data security
+- A section that when clicked on the user that you want to send a message, reloads the past messages. Chats between users must:
 
-#### Detailed Tasks
-1. **Setup & Configuration**
-   - Initialize Go module, SQLite connection, and server structure
-   - Create `migrations/001_init.sql`
-2. **Authentication System**
-   - Implement user registration, login, logout
-   - Password hashing (bcrypt)
-   - Session creation and validation (cookies)
-3. **Forum APIs**
-   - CRUD for posts and comments
-   - Category management
-4. **WebSocket Hub**
-   - Create `hub.go`, `client.go`, and `events.go`
-   - Handle presence updates and private messages
-5. **Database Repository**
-   - Implement `users.go`, `posts.go`, `comments.go`, `messages.go`
-6. **Testing & Documentation**
-   - Write unit/integration tests
-   - Document APIs in README
+  - Be visible, for this you will have to be able to see the previous messages that you had with the user
+  - Reload the last 10 messages and when scrolled up to see more messages you must provide the user with 10 more, without spamming the scroll event. **Do not forget what you learned!! (`Throttle`, `Debounce`)**
 
----
+- Messages must have a specific format:
+  - A **`date`** that shows when the message was sent
+  - The **`user name`**, that identifies the user that sent the message
 
-### Member B — Frontend Developer (JS)
+As it is expected, the messages should work in real time, in other words, if a user sends a message, the other user should receive the notification of the new message without refreshing the page. Again this is possible through the usage of WebSockets in backend and frontend.
 
-#### Global Tasks
-- Handle all user interactions and UI updates
-- Implement SPA routing, WebSocket events, and dynamic rendering
+### Allowed Packages
 
-#### Detailed Tasks
-1. **Structure & Base**
-   - Build `index.html`, `style.css`, and base layout
-   - Implement router (`router.js`) and API client (`api.js`)
-2. **Auth Pages**
-   - Registration & login forms with validation
-   - Manage login state and logout
-3. **Feed (Posts & Comments)**
-   - Render posts list, category filters, and post details
-   - Add comment creation and display logic
-4. **Chat (Private Messages)**
-   - Create sidebar for users (online/offline)
-   - Implement chat view, message history (load 10 by 10)
-   - Real-time updates via `ws.js`
-5. **Utilities & Enhancements**
-   - Throttle and debounce scroll/search
-   - DOM helpers for cleaner rendering
-   - Time formatting (e.g., '5 min ago')
+- All [standard go](https://golang.org/pkg/) packages are allowed.
+- [Gorilla websocket](https://pkg.go.dev/github.com/gorilla/websocket)
+- [sqlite3](https://github.com/mattn/go-sqlite3)
+- [bcrypt](https://pkg.go.dev/golang.org/x/crypto/bcrypt)
+- [gofrs/uuid](https://github.com/gofrs/uuid) or [google/uuid](https://github.com/google/uuid)
 
----
+> You must not use any frontend libraries or frameworks like React, Angular, Vue etc.
 
-## Workflow & Collaboration
+This project will help you learn about:
 
-- **Branches**: each member has their own branch (`backend-dev`, `frontend-dev`)
-- **Commits**: meaningful and frequent (e.g., `feat(auth): implement login form`)
-- **Merging**: use PRs to main branch after testing integration
-- **Communication**: daily sync on API/WS contract alignment
-
----
-
-## Run & Build Instructions
-
-1. **Setup**
-   ```bash
-   make migrate
-   go run ./cmd/server
-   ```
-   Opens server at: http://localhost:8080
-
-2. **Frontend Access**
-   Open `http://localhost:8080` in browser.
-
-3. **WebSocket**
-   Auto-connects after login via `/ws` endpoint.
-
----
-
-## Success Criteria
-- Only one `index.html` (SPA)
-- Secure registration/login with bcrypt + sessions
-- Real-time chat and online presence updates
-- Posts & comments CRUD via API
-- Clean architecture and separation of concerns
-
----
-
-## Suggested Timeline
-| Day | Member A (Backend) | Member B (Frontend) |
-|-----|--------------------|---------------------|
-| 1-2 | Auth system & sessions | Layout & auth UI |
-| 3-4 | Posts & comments APIs | Feed & post detail |
-| 5-6 | WebSocket chat hub | Chat UI integration |
-| 7 | Testing & docs | Styling & UX polish |
-
----
-
-## License
-MIT License (for educational use).
+- The basics of web :
+  - HTML
+  - HTTP
+  - [Sessions](https://cheatsheetseries.owasp.org/cheatsheets/Session_Management_Cheat_Sheet.html#session-management-waf-protections) and [cookies](https://developer.mozilla.org/en-US/docs/Web/HTTP/Cookies)
+  - CSS
+  - Backend and Frontend
+  - DOM
+- [Go routines](https://golangbot.com/goroutines/)
+- [Go channels](https://medium.com/rungo/anatomy-of-channels-in-go-concurrency-in-go-1ec336086adb)
+- [WebSockets](https://en.wikipedia.org/wiki/WebSocket):
+  - Go Websockets
+  - JS Websockets
+- SQL language
+  - Manipulation of databases

@@ -52,6 +52,19 @@ func SetSessionCookie(w http.ResponseWriter, token string) {
 	})
 }
 
+// ClearSessionCookie removes the session cookie from the client's browser.
+func ClearSessionCookie(w http.ResponseWriter) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "session_token",
+		Value:    "",
+		Path:     "/",
+		MaxAge:   -1, // This tells the browser to delete the cookie
+		HttpOnly: true,
+		Secure:   false, // Set to true in production with HTTPS
+		SameSite: http.SameSiteLaxMode,
+	})
+}
+
 // DeleteSession removes a session from the database based on its token.
 func DeleteSession(token string) error {
 	stmt, err := repo.DB.Prepare("DELETE FROM sessions WHERE token = ?")

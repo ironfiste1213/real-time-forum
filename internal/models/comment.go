@@ -9,4 +9,5 @@ type Comment struct {
 	UserID    int       `json:"userId"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"createdAt"`
+	Author    *User     `json:"author"` // To hold author's details like nickname
 }
