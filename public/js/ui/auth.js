@@ -1,4 +1,4 @@
- import { loadPosts } from "./posts.js"; 
+ import { loadPosts, loadCategories } from "./posts.js"; 
  // --- DOM Elements ---
 const DOMElements = {
     registerView: document.getElementById("register"),
@@ -28,6 +28,7 @@ export function showMainView(user) {
     DOMElements.authContainer.classList.add('hidden');
     DOMElements.mainContainer.classList.remove('hidden');
     loadPosts(); // Load posts when showing the main view
+    loadCategories(); // Load categories for the create post form
 }
 
 export function showAuthView() {

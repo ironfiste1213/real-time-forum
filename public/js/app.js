@@ -1,4 +1,5 @@
 import { handleLogin, handleRegister, showLoginForm, showRegisterForm, handleLogout } from './ui/auth.js';
+import { handleCreatePost } from './ui/posts.js';
 
 function initializeAuthRouting() {
     const registerForm = document.getElementById('registerForm');
@@ -6,6 +7,7 @@ function initializeAuthRouting() {
     const linkToLogin = document.getElementById('logfromreg');
     const linkToRegister = document.getElementById('regfromlog');
     const logoutButton = document.getElementById('logout-button');
+    const createPostForm = document.getElementById('create-post-form');
 
     // Attach logout handler
     logoutButton?.addEventListener('click', (e) => {
@@ -16,6 +18,7 @@ function initializeAuthRouting() {
     // Attach form submission handlers
     registerForm?.addEventListener('submit', handleRegister);
     loginForm?.addEventListener('submit', handleLogin);
+    createPostForm?.addEventListener('submit', handleCreatePost);
 
 
     // Attach view-switching handlers

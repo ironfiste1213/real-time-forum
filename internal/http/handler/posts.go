@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
@@ -11,11 +12,7 @@ import (
 // CreatePostHandler handles the creation of a new post.
 // It requires authentication via the AuthMiddleware.
 func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
-	// 1. Check if the request method is POST
-	if r.Method != http.MethodPost {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
+	log.Println("CreatePostHandler: Received request")
 
 	// 2. Ensure the user is authenticated
 	user, ok := auth.GetUserFromContext(r.Context())
@@ -24,10 +21,13 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("CreatePostHandler: Authenticated user ID: %d, Nickname: %s", user.ID, user.Nickname)
+
 	// 3. Parse the JSON request body
 	var req models.CreatePostRequest
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		log.Printf("CreatePostHandler: Error decoding request body: %v", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
@@ -39,13 +39,18 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		Content: req.Content,
 	}
 
+	// --- DEBUG: Log the parsed data ---
+	log.Printf("CreatePostHandler: Parsed post data: Title='%s', Content='%s', CategoryIDs=%v", post.Title, post.Content, req.CategoryIDs)
+
 	// 5. Save the post to the database
 	postID, err := repo.CreatePost(post, req.CategoryIDs)
 	if err != nil {
+		log.Printf("CreatePostHandler: Error calling repo.CreatePost: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to create post")
 		return
 	}
 
+	log.Printf("CreatePostHandler: Successfully created post with ID: %d", postID)
 	// 6. Send a success response
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
@@ -57,11 +62,6 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 // GetAllPostsHandler retrieves all posts for the main feed.
 func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
-		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
-		return
-	}
-
 	posts, err := repo.GetAllPosts()
 	if err != nil {
 		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve posts")

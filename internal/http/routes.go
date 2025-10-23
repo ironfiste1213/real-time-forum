@@ -18,11 +18,21 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/login", handler.LoginHandler)
 	mux.HandleFunc("/logout", handler.LogoutHandler)
 
-	mux.HandleFunc("/api/posts", handler.GetAllPostsHandler)
+	// Handle /api/posts, routing by method.
+	// This keeps middleware application out of the handler package.
+	mux.HandleFunc("/api/posts", func(w http.ResponseWriter, r *http.Request) {
+		switch r.Method {
+		case http.MethodGet:
+			handler.GetAllPostsHandler(w, r)
+		case http.MethodPost:
+			// Apply AuthMiddleware only for the POST method.
+			AuthMiddleware(http.HandlerFunc(handler.CreatePostHandler)).ServeHTTP(w, r)
+		default:
+			handler.RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		}
+	})
+
 	mux.HandleFunc("/api/categories", handler.GetAllCategoriesHandler)
 
 	mux.HandleFunc("/", handler.IndexHandler)
-
-	// Protected route for creating a post. Requires a valid session.
-	mux.Handle("/api/posts/create", AuthMiddleware(http.HandlerFunc(handler.CreatePostHandler)))
 }
