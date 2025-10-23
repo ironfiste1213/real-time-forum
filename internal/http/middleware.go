@@ -79,6 +79,8 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), models.UserContextKey, user)
 		r = r.WithContext(ctx)
 
+		log.Printf("AuthMiddleware: User %s (ID: %d) authenticated successfully. Proceeding to handler.", user.Nickname, user.ID)
+
 		// 5. Call the next handler in the chain
 		next.ServeHTTP(w, r)
 	})

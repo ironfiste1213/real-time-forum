@@ -2,6 +2,7 @@ package repo
 
 import (
 	"database/sql"
+	"log"
 	"real-time-forum/internal/models"
 	"strings"
 	"time"
@@ -125,4 +126,46 @@ func GetAllCategories() ([]*models.Category, error) {
 		categories = append(categories, category)
 	}
 	return categories, rows.Err()
+}
+
+// GetPostByID retrieves a single post from the database by its ID.
+func GetPostByID(id int64) (*models.Post, error) {
+	query := `
+		SELECT
+			p.id, p.user_id, p.title, p.content, p.created_at,
+			u.nickname,
+			GROUP_CONCAT(c.name)
+		FROM posts p
+		JOIN users u ON p.user_id = u.id
+		LEFT JOIN post_categories pc ON p.id = pc.post_id
+		LEFT JOIN categories c ON pc.category_id = c.id
+		WHERE p.id = ?
+		GROUP BY p.id
+	`
+	row := DB.QueryRow(query, id)
+
+	post := &models.Post{Author: &models.User{}}
+	var categories sql.NullString
+
+	err := row.Scan(
+		&post.ID, &post.UserID, &post.Title, &post.Content, &post.CreatedAt,
+		&post.Author.Nickname,
+		&categories,
+	)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			log.Printf("GetPostByID: No post found for ID: %d", id)
+		} else {
+			log.Printf("GetPostByID: Error scanning post data for ID %d: %v", id, err)
+		}
+		return nil, err
+	}
+
+	if categories.Valid {
+		post.Categories = strings.Split(categories.String, ",")
+	} else {
+		post.Categories = []string{}
+	}
+
+	return post, nil
 }

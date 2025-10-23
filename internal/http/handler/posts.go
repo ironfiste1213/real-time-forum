@@ -7,6 +7,8 @@ import (
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
+	"strconv"
+	"strings"
 )
 
 // CreatePostHandler handles the creation of a new post.
@@ -71,4 +73,30 @@ func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(posts)
+}
+
+// GetPostByIDHandler retrieves a single post by its ID.
+func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
+	// Extract post ID from URL path, e.g., /api/posts/123
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/posts/")
+	postID, err := strconv.ParseInt(idStr, 10, 64)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	log.Printf("GetPostByIDHandler: Fetching post with ID: %d", postID)
+
+	post, err := repo.GetPostByID(postID)
+	if err != nil {
+		// The repo layer will log the specific DB error. This log is for the handler context.
+		log.Printf("GetPostByIDHandler: repo.GetPostByID failed for ID %d: %v", postID, err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve post")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	log.Printf("GetPostByIDHandler: Successfully retrieved and sent post ID: %d", postID)
+	json.NewEncoder(w).Encode(post)
 }

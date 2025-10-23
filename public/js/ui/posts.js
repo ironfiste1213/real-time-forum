@@ -1,11 +1,15 @@
  const postFeed = document.getElementById('post-feed');
  const createPostForm = document.getElementById('create-post-form');
  const categoriesContainer = document.getElementById('categories-container');
+ const singlePostView = document.getElementById('single-post-view');
+ const mainFeedView = document.getElementById('main-feed-view'); // Assuming you wrap your feed/form in this
 
  function createPostElement(post) {
     const postElement = document.createElement('div');
     postElement.classList.add('post');
     postElement.dataset.postId = post.id; // Store post ID for later use (e.g., clicking to see comments)
+
+    postElement.addEventListener('click', () => showSinglePostView(post.id));
 
     const title = document.createElement('h3');
     title.textContent = post.title;
@@ -37,7 +41,7 @@
 
  export async function loadPosts() { 
     try {
-        const response = await fetch('/api/posts');
+        const response = await fetch('/api/posts/');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -108,7 +112,7 @@ export async function handleCreatePost(e) {
     console.log('Attempting to create post. Sending data:', JSON.stringify(postData, null, 2));
 
     try {
-        const response = await fetch('/api/posts', {
+        const response = await fetch('/api/posts/', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(postData),
@@ -136,4 +140,58 @@ export async function handleCreatePost(e) {
         console.error('A network or parsing error occurred during post creation:', error);
         alert('An error occurred. Please check the console for details.');
     }
+}
+
+async function showSinglePostView(postId) {
+    console.log(`Fetching post with ID: ${postId}`);
+    try {
+        const response = await fetch(`/api/posts/${postId}/`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch post. Status: ${response.status}`);
+        }
+        const post = await response.json();
+
+        // --- DEBUG: Log the fetched post data ---
+        console.log('Successfully fetched post data:', post);
+
+        // Hide main feed and show single post view
+        mainFeedView.classList.add('hidden');
+        singlePostView.classList.remove('hidden');
+
+        // Render the single post
+        singlePostView.innerHTML = `
+            <div class="post-full">
+                <button id="back-to-feed">← Back to Feed</button>
+                <h2>${post.title}</h2>
+                <p class="post-meta">
+                    by ${post.author.nickname} on ${new Date(post.created_at).toLocaleString()}
+                </p>
+                <div class="post-content">
+                    ${post.content.replace(/\n/g, '<br>')}
+                </div>
+                <div class="categories">
+                    ${post.categories.map(cat => `<span class="category">${cat}</span>`).join('')}
+                </div>
+                <hr>
+                <h3>Comments</h3>
+                <div id="comments-section">
+                    <!-- Comments will be loaded here -->
+                    <p>Comments are coming soon!</p>
+                </div>
+            </div>
+        `;
+
+        // Add event listener for the back button
+        document.getElementById('back-to-feed').addEventListener('click', showMainFeedView);
+
+    } catch (error) {
+        console.error('Error showing single post:', error);
+        alert('Could not load the post. Please try again.');
+    }
+}
+
+function showMainFeedView() {
+    singlePostView.classList.add('hidden');
+    mainFeedView.classList.remove('hidden');
+    singlePostView.innerHTML = ''; // Clear the single post view content
 }

@@ -165,6 +165,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("--- LOGOUT HANDLER: Request received ---")
 	// 1. Get the session cookie from the request
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
@@ -174,6 +175,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusOK)
 			w.Write([]byte(`{"message": "Already logged out"}`))
+			log.Println("LOGOUT HANDLER: No session cookie found, user is already logged out.")
 			return
 		}
 		// For other errors, it might be a bad request.
@@ -195,4 +197,5 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`{"message": "Logout successful"}`))
+	log.Printf("LOGOUT HANDLER: Successfully processed logout for session token: %s", sessionToken)
 }

@@ -100,9 +100,21 @@ export async function handleLogin(e) {
 
 
 
-export function handleLogout() {
-    // Clear any session data if necessary (e.g., tokens)
-    // For this example, we simply switch views
-    alert('You have been logged out.');
-    showAuthView();    
+export async function handleLogout() {
+    try {
+        const response = await fetch('/logout', {
+            method: 'POST', // Or GET, depending on your server route's expectation
+        });
+
+        if (!response.ok) {
+            const result = await response.json();
+            console.error('Logout failed on server:', result.message);
+        }
+    } catch (error) {
+        console.error('Network error during logout:', error);
+    } finally {
+        // Always switch the view, even if the server call fails, to ensure the user is logged out on the frontend.
+        alert('You have been logged out.');
+        showAuthView();
+    }
 }
