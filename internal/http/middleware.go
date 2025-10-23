@@ -6,17 +6,9 @@ import (
 	"net/http"
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/http/handler"
-	"real-time-forum/internal/models"
+	"real-time-forum/internal/models" // Import models for UserContextKey
 	"real-time-forum/internal/repo"
 	"time"
-)
-
-// ContextKey is a custom type for context keys to avoid collisions.
-type ContextKey string
-
-const (
-	// UserContextKey is the key used to store the authenticated user in the request context.
-	UserContextKey ContextKey = "authenticatedUser"
 )
 
 // AuthMiddleware is an HTTP middleware that validates session cookies and authenticates users.
@@ -84,16 +76,10 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 
 		// 4. Add the user to the request context
-		ctx := context.WithValue(r.Context(), UserContextKey, user)
+		ctx := context.WithValue(r.Context(), models.UserContextKey, user)
 		r = r.WithContext(ctx)
 
 		// 5. Call the next handler in the chain
 		next.ServeHTTP(w, r)
 	})
-}
-
-// GetUserFromContext is a helper function to retrieve the authenticated user from the request context.
-func GetUserFromContext(ctx context.Context) (*models.User, bool) {
-	user, ok := ctx.Value(UserContextKey).(*models.User)
-	return user, ok
 }

@@ -9,9 +9,9 @@ import (
 // It uses a ServeMux for better modularity and to avoid using the default global multiplexer.
 func RegisterRoutes(mux *http.ServeMux) {
 	// Serve static assets (CSS, JS) from the /public directory.
-	fs := http.FileServer(http.Dir("./public"))
-	mux.Handle("/css/", fs)
-	mux.Handle("/js/", fs)
+	fileServer := http.FileServer(http.Dir("./public"))
+	mux.Handle("/css/", fileServer)
+	mux.Handle("/js/", fileServer)
 
 	// API and page routes
 	mux.HandleFunc("/register", handler.RegisterHandler)

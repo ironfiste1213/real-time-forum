@@ -1,4 +1,5 @@
-// --- DOM Elements ---
+ import { loadPosts } from "./posts.js"; 
+ // --- DOM Elements ---
 const DOMElements = {
     registerView: document.getElementById("register"),
     loginView: document.getElementById("login"),
@@ -26,6 +27,7 @@ export function showMainView(user) {
     DOMElements.welcomeMessage.textContent = `Welcome, ${user.nickname || 'User'}!`;
     DOMElements.authContainer.classList.add('hidden');
     DOMElements.mainContainer.classList.remove('hidden');
+    loadPosts(); // Load posts when showing the main view
 }
 
 export function showAuthView() {
