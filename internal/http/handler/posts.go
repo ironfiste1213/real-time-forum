@@ -78,12 +78,16 @@ func GetAllPostsHandler(w http.ResponseWriter, r *http.Request) {
 // GetPostByIDHandler retrieves a single post by its ID.
 func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
 	// Extract post ID from URL path, e.g., /api/posts/123
-	idStr := strings.TrimPrefix(r.URL.Path, "/api/posts/")
-	postID, err := strconv.ParseInt(idStr, 10, 64)
+	log.Println("GetPostByIDHandler: Received request")
+	idStr := strings.TrimPrefix(r.URL.Path, "/api/posts/") // e.g., "123" or "123/"
+	idStr = strings.TrimSuffix(idStr, "/")                 // Remove trailing slash if it exists
+	id, err := strconv.Atoi(idStr)
 	if err != nil {
+		log.Printf("GetPostByIDHandler: Invalid post ID format: %s", idStr)
 		RespondWithError(w, http.StatusBadRequest, "Invalid post ID")
 		return
 	}
+	postID := int64(id) // Convert int to int64 for the repository function
 
 	log.Printf("GetPostByIDHandler: Fetching post with ID: %d", postID)
 

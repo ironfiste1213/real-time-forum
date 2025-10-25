@@ -55,6 +55,12 @@
       <button id="logout-button">Logout</button>
     </nav>
 
+    <!-- This div will contain the main feed (post creation and list) -->
+    <button id="logout-button">Logout</button>
+  </nav>
+
+  <!-- This div will contain the main feed (post creation and list) -->
+  <div id="main-feed-view">
     <main class="main-content">
       <!-- Section for creating a new post -->
       <section id="create-post-section" class="card">
@@ -86,7 +92,15 @@
     </main>
   </div>
 
-  <script type="module" src="/js/app.js"></script>
+  <!-- This div will be used to show a single post's details -->
+  <div id="single-post-view" class="hidden">
+    <!-- Single post content will be injected here by postDetail.js -->
+  </div>
+</div>
+
+<script type="module" src="/js/app.js"></script>
+
+
 </body>
 
 </html>
