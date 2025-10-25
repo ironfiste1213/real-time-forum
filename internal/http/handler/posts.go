@@ -14,6 +14,12 @@ import (
 // CreatePostHandler handles the creation of a new post.
 // It requires authentication via the AuthMiddleware.
 func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// 1. Log the incoming request
 	log.Println("CreatePostHandler: Received request")
 
 	// 2. Ensure the user is authenticated

@@ -11,3 +11,9 @@ type Comment struct {
 	CreatedAt time.Time `json:"createdAt"`
 	Author    *User     `json:"author"` // To hold author's details like nickname
 }
+
+// CreateCommentRequest defines the expected structure for a new comment request from the client.
+type CreateCommentRequest struct {
+	PostID  int    `json:"post_id"`
+	Content string `json:"content"`
+}
