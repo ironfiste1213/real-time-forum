@@ -7,6 +7,8 @@ import (
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
+	"strconv"
+	"strings"
 )
 
 func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -50,4 +52,36 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		"message":   "Comment created successfully",
 		"commentId": commentID,
 	})
+}
+
+func GetCommentsByPostIDHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	// The URL is expected to be like /api/posts/123/comments
+	path := strings.TrimSuffix(r.URL.Path, "/comments")
+	path = strings.TrimSuffix(path, "/")             
+	idStr := strings.TrimPrefix(path, "/api/posts/") 
+
+	postID, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("GetCommentsByPostIDHandler: Invalid post ID format: %s", idStr)
+		RespondWithError(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
+
+	log.Printf("GetCommentsByPostIDHandler: Fetching comments for post ID: %d", postID)
+
+	comments, err := repo.GetCommentsByPostID(postID)
+	if err != nil {
+		log.Printf("GetCommentsByPostIDHandler: repo.GetCommentsByPostID failed for post ID %d: %v", postID, err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve comments")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(comments)
 }
