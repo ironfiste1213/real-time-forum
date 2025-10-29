@@ -1,36 +1,24 @@
-import { handleLogin, handleRegister, showLoginForm, showRegisterForm, handleLogout } from './ui/auth.js';
+import { handleLogin, handleRegister, handleLogout } from './ui/auth.js';
 import { handleCreatePost } from './ui/posts.js';
+import { initializeRouter } from './router.js';
 
-function initializeAuthRouting() {
+function initializeApp() {
     const registerForm = document.getElementById('registerForm');
     const loginForm = document.getElementById('loginForm');
-    const linkToLogin = document.getElementById('logfromreg');
-    const linkToRegister = document.getElementById('regfromlog');
     const logoutButton = document.getElementById('logout-button');
     const createPostForm = document.getElementById('create-post-form');
 
-    // Attach logout handler
+    // Initialize the client-side router
+    initializeRouter();
+
+    // Attach event handlers that don't involve navigation
     logoutButton?.addEventListener('click', (e) => {
         e.preventDefault();
         handleLogout();
     });
-
-    // Attach form submission handlers
     registerForm?.addEventListener('submit', handleRegister);
     loginForm?.addEventListener('submit', handleLogin);
     createPostForm?.addEventListener('submit', handleCreatePost);
-
-
-    // Attach view-switching handlers
-    linkToLogin?.addEventListener('click', (e) => {
-        e.preventDefault();
-        showLoginForm();
-    });
-    linkToRegister?.addEventListener('click', (e) => {
-        e.preventDefault();
-        showRegisterForm();
-    });
-
 }
 
-document.addEventListener('DOMContentLoaded', initializeAuthRouting);
+document.addEventListener('DOMContentLoaded', initializeApp);

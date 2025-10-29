@@ -1,8 +1,10 @@
 package http
 
 import (
+	"encoding/json"
 	"log"
 	"net/http"
+	"real-time-forum/internal/auth"
 	"real-time-forum/internal/http/handler"
 	"strings"
 )
@@ -19,6 +21,22 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/register", handler.RegisterHandler)
 	mux.HandleFunc("/login", handler.LoginHandler)
 	mux.HandleFunc("/logout", handler.LogoutHandler)
+
+	// Add a new route to check authentication status
+	mux.HandleFunc("/api/auth/status", func(w http.ResponseWriter, r *http.Request) {
+		// This handler is wrapped by the AuthMiddleware.
+		// If the middleware passes, it means the user is authenticated.
+		statusHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			user, ok := auth.GetUserFromContext(r.Context())
+			if !ok {
+				// This case should theoretically not be reached if AuthMiddleware is working correctly.
+				handler.RespondWithError(w, http.StatusInternalServerError, "Could not retrieve user from context")
+				return
+			}
+			json.NewEncoder(w).Encode(map[string]interface{}{"isAuthenticated": true, "user": user})
+		})
+		AuthMiddleware(statusHandler).ServeHTTP(w, r)
+	})
 
 	// Handle all /api/posts/... routes
 	mux.HandleFunc("/api/posts/", func(w http.ResponseWriter, r *http.Request) {

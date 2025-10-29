@@ -71,7 +71,6 @@ async function handleCreateComment(event, postId) {
     }
 
     const commentData = {
-        postId: postId,
         content: content,
     };
 

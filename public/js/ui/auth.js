@@ -1,40 +1,25 @@
- import { loadPosts, loadCategories } from "./posts.js"; 
+import { showMainFeedView, showAuthView } from "./views.js";
+import { checkSession, getCurrentUser } from "../session.js";
  // --- DOM Elements ---
 const DOMElements = {
     registerView: document.getElementById("register"),
     loginView: document.getElementById("login"),
     registerForm: document.getElementById('registerForm'),
     loginForm: document.getElementById('loginForm'),
-    authContainer: document.getElementById('auth-container'),
-    mainContainer: document.getElementById('main-container'),
-    welcomeMessage: document.getElementById('welcome-message'),
     logoutButton: document.getElementById('logout-button')
 };
 
 // --- View Toggling ---
 export function showLoginForm() {
+    showAuthView();
     if (DOMElements.registerView) DOMElements.registerView.style.display = "none";
     if (DOMElements.loginView) DOMElements.loginView.style.display = "flex";
 }
 
 export function showRegisterForm() {
+    showAuthView();
     if (DOMElements.registerView) DOMElements.registerView.style.display = "flex";
     if (DOMElements.loginView) DOMElements.loginView.style.display = "none";
-}
-
-// --- View Management ---
-export function showMainView(user) {
-    DOMElements.welcomeMessage.textContent = `Welcome, ${user.nickname || 'User'}!`;
-    DOMElements.authContainer.classList.add('hidden');
-    DOMElements.mainContainer.classList.remove('hidden');
-    loadPosts(); // Load posts when showing the main view
-    loadCategories(); // Load categories for the create post form
-}
-
-export function showAuthView() {
-    DOMElements.authContainer.classList.remove('hidden');
-    DOMElements.mainContainer.classList.add('hidden');
-    showRegisterForm(); // Default to register view on logout
 }
 
 // --- Event Handlers ---
@@ -57,7 +42,9 @@ export async function handleRegister(e) {
         if (response.ok) {
             alert('Registration successful!');
             DOMElements.registerForm.reset();
-            showLoginForm(); // Switch to login form after successful registration
+            // Use router to navigate to login page
+            window.history.pushState({}, "", "/login");
+            showLoginForm();
         } else {
             alert('Registration failed: ' + (result.message || 'Unknown error'));
         }
@@ -86,9 +73,12 @@ export async function handleLogin(e) {
 
         const result = await response.json();
         if (response.ok) {
+            await checkSession(); // Update the session state with the new user
             alert('Login successful!');
             DOMElements.loginForm.reset();
-            showMainView(result.user || {});
+            // Use router to navigate to the main feed
+            window.history.pushState({}, "", "/");
+            showMainFeedView(getCurrentUser());
         } else {
             alert('Login failed: ' + (result.message || 'Unknown error'));
         }
@@ -115,6 +105,9 @@ export async function handleLogout() {
     } finally {
         // Always switch the view, even if the server call fails, to ensure the user is logged out on the frontend.
         alert('You have been logged out.');
-        showAuthView();
+        await checkSession(); // This will clear the currentUser
+        // Use router to navigate to the login page
+        window.history.pushState({}, "", "/login");
+        showLoginForm();
     }
 }

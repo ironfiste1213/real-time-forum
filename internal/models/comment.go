@@ -14,6 +14,5 @@ type Comment struct {
 
 // CreateCommentRequest defines the expected structure for a new comment request from the client.
 type CreateCommentRequest struct {
-	PostID  int    `json:"postId"`
 	Content string `json:"content"`
 }

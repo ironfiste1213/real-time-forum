@@ -23,17 +23,26 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		RespondWithError(w, http.StatusUnauthorized, "Authentication required")
 		return
 	}
+	path := strings.TrimSuffix(r.URL.Path, "/comments")
+	path = strings.TrimSuffix(path, "/")             
+	idStr := strings.TrimPrefix(path, "/api/posts/")
+	PostID, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Printf("CreateCommentHandler: Invalid post ID format: %s", idStr)
+		RespondWithError(w, http.StatusBadRequest, "Invalid post ID")
+		return
+	}
 	log.Printf("CreateCommentHandler: Authenticated user ID: %d, Nickname: %s", user.ID, user.Nickname)
 	var req models.CreateCommentRequest
-	err := json.NewDecoder(r.Body).Decode(&req)
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		log.Printf("CreateCommentHandler: Error decoding request body: %v", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
-	log.Printf("CreateCommentHandler: Parsed comment data: PostID=%d, Content='%s'", req.PostID, req.Content)
+	log.Printf("CreateCommentHandler: Parsed comment data: PostID=%d, Content='%s'", PostID, req.Content)
 	comment := &models.Comment{
-		PostID:  req.PostID,
+		PostID:  PostID,
 		UserID:  user.ID,
 		Content: req.Content,
 	}
