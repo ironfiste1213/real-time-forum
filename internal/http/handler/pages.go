@@ -31,30 +31,16 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Check if the path starts with /api/
+	// Check if this is an API request
 	if strings.HasPrefix(r.URL.Path, "/api/") {
-		// For API routes, return a HTML 404 error page
-		w.Header().Set("Content-Type", "text/html")
+		// For API requests that don't match any route, return JSON 404
+		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusNotFound)
-		w.Write([]byte(`
-<!DOCTYPE html>
-<html>
-<head>
-    <title>404 Not Found</title>
-    <style>
-        body { font-family: Arial, sans-serif; text-align: center; padding: 50px; }
-        h1 { color: #d9534f; }
-    </style>
-</head>
-<body>
-    <h1>404 Not Found</h1>
-    <p>The requested API endpoint was not found.</p>
-</body>
-</html>
-		`))
+		w.Write([]byte(`{"message": "API endpoint not found"}`))
 		return
 	}
 
-	// For non-API routes, serve index.html (SPA routing)
+	// For non-API routes, always serve index.html (SPA routing)
+	// The frontend router will handle showing 404 for invalid routes
 	http.ServeFile(w, r, "./public/index.html")
 }

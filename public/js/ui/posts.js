@@ -54,18 +54,27 @@ import { handleLogout } from './auth.js';
         }
         const posts = await response.json();
 
-        postFeed.innerHTML = ''; // Clear previous content
+        // Clear previous content
+        while (postFeed.firstChild) {
+            postFeed.removeChild(postFeed.firstChild);
+        }
+
         if (posts && posts.length > 0) {
             posts.forEach(post => {
                 const postElement = createPostElement(post);
                 postFeed.appendChild(postElement);
             });
         } else {
-            postFeed.innerHTML = '<p>No posts yet. Be the first to create one!</p>';
+            const emptyState = document.createElement('p');
+            emptyState.setAttribute('data-empty-state', '');
+            emptyState.textContent = 'No posts yet. Be the first to create one!';
+            postFeed.appendChild(emptyState);
         }
     } catch (error) {
         console.error('Error loading posts:', error);
-        postFeed.innerHTML = '<p>Error loading posts. Please try again later.</p>';
+        const errorElement = document.createElement('p');
+        errorElement.textContent = 'Error loading posts. Please try again later.';
+        postFeed.appendChild(errorElement);
     }
  }
 
@@ -79,7 +88,10 @@ import { handleLogout } from './auth.js';
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const categories = await response.json();
-        categoriesContainer.innerHTML = ''; // Clear existing
+        // Clear existing categories
+        while (categoriesContainer.firstChild) {
+            categoriesContainer.removeChild(categoriesContainer.firstChild);
+        }
 
         if (categories && categories.length > 0) {
             categories.forEach(cat => {
@@ -99,11 +111,15 @@ import { handleLogout } from './auth.js';
                 categoriesContainer.appendChild(checkboxWrapper);
             });
         } else {
-            categoriesContainer.innerHTML = '<span>No categories available.</span>';
+            const noCategories = document.createElement('span');
+            noCategories.textContent = 'No categories available.';
+            categoriesContainer.appendChild(noCategories);
         }
     } catch (error) {
         console.error('Error loading categories:', error);
-        categoriesContainer.innerHTML = '<span>Error loading categories.</span>';
+        const errorSpan = document.createElement('span');
+        errorSpan.textContent = 'Error loading categories.';
+        categoriesContainer.appendChild(errorSpan);
     }
 }
 

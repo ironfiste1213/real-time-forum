@@ -41,10 +41,17 @@ function createMainFeedContent(user) {
     const mainContent = document.createElement('main');
     mainContent.className = 'main-content';
 
-    // Create post section
+    // Create post toggle button
+    const createPostToggle = document.createElement('button');
+    createPostToggle.id = 'create-post-toggle';
+    createPostToggle.textContent = '+ Create Post';
+    createPostToggle.className = 'create-post-toggle-btn';
+    mainContent.appendChild(createPostToggle);
+
+    // Create post section (initially hidden)
     const createPostSection = document.createElement('section');
     createPostSection.id = 'create-post-section';
-    createPostSection.className = 'card';
+    createPostSection.className = 'card hidden';
 
     const createPostHeading = document.createElement('h3');
     createPostHeading.textContent = 'Create a New Post';
@@ -56,24 +63,32 @@ function createMainFeedContent(user) {
     // Title input
     const titleGroup = document.createElement('div');
     titleGroup.className = 'form-group';
+    const titleLabel = document.createElement('label');
+    titleLabel.setAttribute('for', 'post-title');
+    titleLabel.textContent = 'Title';
     const titleInput = document.createElement('input');
     titleInput.type = 'text';
     titleInput.id = 'post-title';
     titleInput.name = 'title';
     titleInput.placeholder = 'Post Title';
     titleInput.required = true;
+    titleGroup.appendChild(titleLabel);
     titleGroup.appendChild(titleInput);
     createPostForm.appendChild(titleGroup);
 
     // Content textarea
     const contentGroup = document.createElement('div');
     contentGroup.className = 'form-group';
+    const contentLabel = document.createElement('label');
+    contentLabel.setAttribute('for', 'post-content');
+    contentLabel.textContent = 'Content';
     const contentTextarea = document.createElement('textarea');
     contentTextarea.id = 'post-content';
     contentTextarea.name = 'content';
     contentTextarea.placeholder = 'What\'s on your mind?';
     contentTextarea.rows = 4;
     contentTextarea.required = true;
+    contentGroup.appendChild(contentLabel);
     contentGroup.appendChild(contentTextarea);
     createPostForm.appendChild(contentGroup);
 
@@ -137,6 +152,7 @@ export function showMainFeedView(user) {
     const logoutButton = document.getElementById('logout-button');
     const createPostForm = document.getElementById('create-post-form');
     const chatToggleBtn = document.getElementById('chat-toggle-btn');
+    const createPostToggle = document.getElementById('create-post-toggle');
 
     if (logoutButton) {
         logoutButton.addEventListener('click', (e) => {
@@ -152,6 +168,23 @@ export function showMainFeedView(user) {
     if (chatToggleBtn) {
         chatToggleBtn.addEventListener('click', () => {
             chatWS.toggleChat();
+        });
+    }
+
+    if (createPostToggle) {
+        createPostToggle.addEventListener('click', () => {
+            const createPostSection = document.getElementById('create-post-section');
+            const isHidden = createPostSection.classList.contains('hidden');
+
+            if (isHidden) {
+                createPostSection.classList.remove('hidden');
+                createPostToggle.textContent = '- Hide Create Post';
+                createPostToggle.classList.add('active');
+            } else {
+                createPostSection.classList.add('hidden');
+                createPostToggle.textContent = '+ Create Post';
+                createPostToggle.classList.remove('active');
+            }
         });
     }
 
