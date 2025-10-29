@@ -259,3 +259,39 @@ nav {
     cursor: pointer;
     color: #007bff; /* Highlight on hover */
 }
+
+/* 404 Not Found Page Styles */
+#not-found-view {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background-color: #e0e0e0;
+}
+
+#not-found-view .card {
+    text-align: center;
+    max-width: 500px;
+}
+
+#not-found-view h1 {
+    font-size: 3em;
+    color: #d9534f;
+    margin-bottom: 20px;
+}
+
+#not-found-view p {
+    font-size: 1.2em;
+    color: #555;
+    margin-bottom: 20px;
+}
+
+#not-found-view a {
+    color: #007bff;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+#not-found-view a:hover {
+    text-decoration: underline;
+}

@@ -1,5 +1,5 @@
 import { showLoginForm, showRegisterForm} from './ui/auth.js';
-import { showMainFeedView } from './ui/views.js';
+import { showMainFeedView, show404View } from './ui/views.js';
 import { checkSession, getCurrentUser } from './session.js';
 
 // 1. Define Routes: Map paths to view-rendering functions.
@@ -38,7 +38,7 @@ const handleLocation = async () => {
     }
 
     // Find the handler for the current path.
-    const handler = routes[path] || showLoginForm; // Default to login form if route not found
+    const handler = routes[path] || show404View; // Default to 404 view if route not found
 
     handler();
 };

@@ -14,82 +14,26 @@
 <body>
   <!-- Authentication container (visible by default) -->
   <div id="auth-container">
-    <!-- Registration form -->
-    <div id="register">
-      <h2>Create your account.</h2>
-      <form id="registerForm">
-        <input type="text" name="nickname" placeholder="Nickname" required>
-        <input type="number" name="age" placeholder="Age" required>
-        <select name="gender" required>
-          <option value="" disabled selected>Select Gender</option>
-          <option value="homme">Homme</option>
-          <option value="femme">Femme</option>
-          <option value="autre">Autre</option>
-        </select>
-        <input type="text" name="firstName" placeholder="First Name" required>
-        <input type="text" name="lastName" placeholder="Last Name" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">REGISTER</button>
-        <p class="subtxt">Already have an account? <a href="/login">Sign in</a></p>
-      </form>
-    </div>
-
-    <!-- Login form -->
-    <div id="login">
-      <h2>Login</h2>
-      <form id="loginForm">
-        <input type="text" name="identifier" placeholder="Nickname or Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button type="submit">Login</button>
-        <p class="subtxt">Don't have an account? <a href="/register">Sign up</a></p>
-      </form>
-    </div>
+    <!-- Auth forms will be dynamically generated here -->
   </div>
 
   <!-- Main application container (hidden by default) -->
   <div id="main-container" class="hidden">
-    <nav>
-      <span id="welcome-message">Welcome!</span>
-      <button id="logout-button">Logout</button>
-  </nav>
-
-  <!-- This div will contain the main feed (post creation and list) -->
-  <div id="main-feed-view">
-    <main class="main-content">
-      <!-- Section for creating a new post -->
-      <section id="create-post-section" class="card">
-        <h3>Create a New Post</h3>
-        <form id="create-post-form">
-          <div class="form-group">
-            <input type="text" id="post-title" name="title" placeholder="Post Title" required>
-          </div>
-          <div class="form-group">
-            <textarea id="post-content" name="content" placeholder="What's on your mind?" rows="4" required></textarea>
-          </div>
-          <div class="form-group">
-            <label>Categories:</label>
-            <div id="categories-container" class="categories-checkboxes">
-              <!-- Categories will be loaded here by JS -->
-            </div>
-          </div>
-          <button type="submit">Create Post</button>
-        </form>
-      </section>
-
-      <!-- Section for displaying the post feed -->
-      <section id="post-feed-section">
-        <h2>Feed</h2>
-        <div id="post-feed">
-          <!-- Posts will be dynamically rendered here by JS -->
-        </div>
-      </section>
-    </main>
+    <!-- Main feed content will be dynamically generated here -->
   </div>
 
   <!-- This div will be used to show a single post's details -->
   <div id="single-post-view" class="hidden">
     <!-- Single post content will be injected here by postDetail.js -->
+  </div>
+
+  <!-- 404 Not Found page -->
+  <div id="not-found-view" class="hidden">
+    <div class="card">
+      <h1>404 - Page Not Found</h1>
+      <p>The page you're looking for doesn't exist.</p>
+      <p><a href="/">Go back to the main page</a></p>
+    </div>
   </div>
 </div>
 

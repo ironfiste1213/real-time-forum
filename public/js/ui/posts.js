@@ -1,8 +1,5 @@
- import { showSinglePostView } from './postDetail.js';
- 
- const postFeed = document.getElementById('post-feed');
- const createPostForm = document.getElementById('create-post-form');
- const categoriesContainer = document.getElementById('categories-container');
+import { showSinglePostView } from './postDetail.js';
+import { handleLogout } from './auth.js';
  
  function createPostElement(post) {
     const postElement = document.createElement('div');
@@ -46,14 +43,17 @@
     return postElement;
 }
 
- export async function loadPosts() { 
+ export async function loadPosts() {
+    const postFeed = document.getElementById('post-feed');
+    if (!postFeed) return; // Element might not exist yet if view not loaded
+
     try {
         const response = await fetch('/api/posts/');
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
         const posts = await response.json();
-        
+
         postFeed.innerHTML = ''; // Clear previous content
         if (posts && posts.length > 0) {
             posts.forEach(post => {
@@ -70,6 +70,9 @@
  }
 
  export async function loadCategories() {
+    const categoriesContainer = document.getElementById('categories-container');
+    if (!categoriesContainer) return; // Element might not exist yet if view not loaded
+
     try {
         const response = await fetch('/api/categories');
         if (!response.ok) {
@@ -106,6 +109,9 @@
 
 export async function handleCreatePost(e) {
     e.preventDefault();
+    const createPostForm = document.getElementById('create-post-form');
+    if (!createPostForm) return;
+
     const formData = new FormData(createPostForm);
     const selectedCategories = Array.from(formData.getAll('categories')).map(id => parseInt(id, 10));
 
@@ -127,7 +133,7 @@ export async function handleCreatePost(e) {
 
         const result = await response.json();
 
-        // --- DEBUG: Log the response from the server ---
+        // --- DEBUG: Log the response from server ---
         console.log('Received response from server:', {
             status: response.status,
             ok: response.ok,

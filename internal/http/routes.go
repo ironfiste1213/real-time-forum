@@ -78,5 +78,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 
 	mux.HandleFunc("/api/categories", handler.GetAllCategoriesHandler)
 
+	// Catch-all handler for unmatched routes (must be last)
+	// This will handle any route not matched above, including invalid API endpoints
 	mux.HandleFunc("/", handler.IndexHandler)
 }

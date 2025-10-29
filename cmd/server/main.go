@@ -39,8 +39,8 @@ func main() {
 	router.RegisterRoutes(mux)
 
 	// TODO: Add WebSocket endpoint /ws
-	log.Println("Starting server on http://localhost:8080")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	log.Println("Starting server on http://localhost:8081")
+	if err := http.ListenAndServe(":8081", mux); err != nil {
 		log.Fatalf("Could not start server: %s\n", err)
 	}
 }
