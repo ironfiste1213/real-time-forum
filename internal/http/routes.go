@@ -9,6 +9,11 @@ import (
 	"strings"
 )
 
+// InitWebSocket initializes the WebSocket hub
+func InitWebSocket() {
+	handler.InitWebSocket()
+}
+
 // RegisterRoutes sets up all the application's routes.
 // It uses a ServeMux for better modularity and to avoid using the default global multiplexer.
 func RegisterRoutes(mux *http.ServeMux) {
@@ -77,6 +82,26 @@ func RegisterRoutes(mux *http.ServeMux) {
 	})
 
 	mux.HandleFunc("/api/categories", handler.GetAllCategoriesHandler)
+
+	// Users API route - temporarily no auth for testing
+	mux.HandleFunc("/api/users", handler.GetAllUsersHandler)
+
+	// Private messaging routes
+	mux.HandleFunc("/api/messages/send", func(w http.ResponseWriter, r *http.Request) {
+		AuthMiddleware(http.HandlerFunc(handler.SendPrivateMessageHandler)).ServeHTTP(w, r)
+	})
+	mux.HandleFunc("/api/messages", func(w http.ResponseWriter, r *http.Request) {
+		AuthMiddleware(http.HandlerFunc(handler.GetPrivateMessagesHandler)).ServeHTTP(w, r)
+	})
+	mux.HandleFunc("/api/conversations", func(w http.ResponseWriter, r *http.Request) {
+		AuthMiddleware(http.HandlerFunc(handler.GetConversationsHandler)).ServeHTTP(w, r)
+	})
+	mux.HandleFunc("/api/messages/unread", func(w http.ResponseWriter, r *http.Request) {
+		AuthMiddleware(http.HandlerFunc(handler.GetUnreadCountHandler)).ServeHTTP(w, r)
+	})
+
+	// WebSocket route
+	mux.HandleFunc("/ws", handler.WebSocketHandler)
 
 	// Catch-all handler for unmatched routes (must be last)
 	// This will handle any route not matched above, including invalid API endpoints

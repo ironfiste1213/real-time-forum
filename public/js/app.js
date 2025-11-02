@@ -3,6 +3,8 @@ import { handleCreatePost } from './ui/posts.js';
 import { initializeRouter } from './router.js';
 
 function initializeApp() {
+    console.log("initializeApp after domcontentloaded");
+    
     // Initialize the client-side router
     initializeRouter();
 

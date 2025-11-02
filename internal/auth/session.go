@@ -100,3 +100,27 @@ func GetSessionByToken(token string) (*models.Session, error) {
 
 	return session, nil
 }
+
+// GetUserBySessionToken retrieves a user by their session token
+func GetUserBySessionToken(token string) (*models.User, error) {
+	session, err := GetSessionByToken(token)
+	if err != nil {
+		return nil, err
+	}
+	if session == nil {
+		return nil, nil // Session not found
+	}
+
+	// Check if session is expired
+	if time.Now().After(session.Expiry) {
+		return nil, nil // Session expired
+	}
+
+	// Get user details
+	user, err := repo.GetUserByID(session.UserID)
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}

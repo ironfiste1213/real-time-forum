@@ -13,6 +13,12 @@ import (
 
 // RegisterHandler handles user registration.
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	// Handle GET request - serve the SPA page
+	if r.Method == http.MethodGet {
+		http.ServeFile(w, r, "./public/index.html")
+		return
+	}
+
 	// check if the request method is POST
 	if r.Method != http.MethodPost {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
@@ -90,6 +96,12 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 
 // LoginHandler handles user login.
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	// Handle GET request - serve the SPA page
+	if r.Method == http.MethodGet {
+		http.ServeFile(w, r, "./public/index.html")
+		return
+	}
+
 	if r.Method != http.MethodPost {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return

@@ -1,6 +1,7 @@
 import { showLoginForm, showRegisterForm} from './ui/auth.js';
 import { showMainFeedView, show404View } from './ui/views.js';
 import { checkSession, getCurrentUser } from './session.js';
+import { initializeChatConnection }   from './ui/chat.js'
 
 // 1. Define Routes: Map paths to view-rendering functions.
 const routes = {
@@ -18,6 +19,7 @@ const handleLocation = async () => {
 
     // Check if user is authenticated before routing
     const user = getCurrentUser();
+console.log("------------------CHECK CURENT USER", user);
 
     // --- Route Guarding Logic ---
     // If trying to access a protected route without being logged in
@@ -71,8 +73,13 @@ export function initializeRouter() {
 
     // On initial load, check the session first, then handle the location.
     window.addEventListener('DOMContentLoaded', async () => {
-        await checkSession(); // Check if user is already logged in
-        handleLocation();     // Then, route to the correct page
+        console.log('DOMContentLoaded and we will check for session ');
+        
+      const user = await checkSession(); // Check if user is already logged in
+      console.log('Router: Session check result:', user);
+
+        handleLocation();
+        // Chat connection will be initialized in showMainFeedView if user is logged in
     });
 
     // Handle browser back/forward button clicks.

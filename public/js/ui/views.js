@@ -3,6 +3,7 @@ import { getCurrentUser } from "../session.js";
 import { handleCreatePost } from "./posts.js";
 import { handleLogout } from "./auth.js";
 import chatWS from "../ws.js";
+import { createChatPanel, setupChatEventListeners, initializeChatConnection } from "./chat.js";
 // --- DOM Elements ---
 const DOMElements = {
     authContainer: document.getElementById('auth-container'),
@@ -138,7 +139,9 @@ export function showMainFeedView(user) {
     const currentUser = user || getCurrentUser();
 
     // Clear existing content
-    DOMElements.mainContainer.innerHTML = '';
+    while (DOMElements.mainContainer.firstChild) {
+        DOMElements.mainContainer.removeChild(DOMElements.mainContainer.firstChild);
+    }
 
     // Create and append main feed content
     const mainFeedContent = createMainFeedContent(currentUser);
@@ -191,11 +194,28 @@ export function showMainFeedView(user) {
     // Load dynamic content
     loadPosts(); // Load posts when showing the main view
     loadCategories(); // Load categories for the create post form
+
+    // Ensure chat panel exists and is properly set up
+    let chatPanel = document.getElementById('chat-panel');
+    if (!chatPanel) {
+        createChatPanel();
+    }
+    setupChatEventListeners();
+
+    // Initialize chat connection if user is logged in
+    if (currentUser) {
+        initializeChatConnection(currentUser);
+    }
 }
 
 export function showAuthView() {
     DOMElements.authContainer.classList.remove('hidden');
     DOMElements.mainContainer.classList.add('hidden');
+    // Hide chat panel when showing auth view
+    const chatPanel = document.getElementById('chat-panel');
+    if (chatPanel) {
+        chatPanel.classList.remove('open');
+    }
     // The router will handle showing login or register specifically.
 }
 

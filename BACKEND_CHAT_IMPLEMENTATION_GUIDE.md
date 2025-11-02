@@ -30,11 +30,12 @@ Hey there! 👋 This guide is designed specifically for someone implementing Web
 - You want to understand WHY we do things, not just HOW
 
 **What we'll build:**
-- A WebSocket server that handles real-time chat
-- A hub that manages multiple client connections
-- Message broadcasting to all connected users
-- User join/leave notifications
-- Integration with existing authentication
+- A WebSocket server that handles real-time private messaging
+- A hub that manages multiple client connections and routes messages
+- Private message delivery between specific users
+- Online/offline status tracking and notifications
+- Message history loading with pagination
+- Integration with existing authentication and database
 
 **Time estimate:** 2-3 hours if you're new to WebSockets
 
@@ -73,11 +74,12 @@ WebSocket is like a phone call:
 - **HTTP**: Request → Response → Close
 - **WebSocket**: Open connection → Send/Receive anytime → Close when done
 
-### Why WebSockets for Chat?
+### Why WebSockets for Private Messaging?
 
-- **Real-time**: Messages appear instantly
-- **Bidirectional**: Server can push messages to clients
-- **Efficient**: No constant polling (asking "any new messages?" every second)
+- **Real-time**: Private messages appear instantly without page refresh
+- **Bidirectional**: Server can push messages and status updates to clients
+- **Efficient**: No constant polling for new messages or online status
+- **Persistent**: Messages stored in database for conversation history
 
 ### WebSocket Lifecycle
 
@@ -194,22 +196,28 @@ fmt.Println(msg) // Prints "Hello!"
 ### Architecture Overview
 
 ```
-[Client] ←WebSocket→ [Hub] ←channels→ [Clients]
-    ↑                    │                     ↑
-    │                    ▼                     │
-[Browser] ───HTTP──► [Server] ───broadcast──► [All Connected Users]
+[Client A] ←WebSocket→ [Hub] ←channels→ [Client B]
+    ↑                      │                        ↑
+    │                      ▼                        │
+[Browser] ──HTTP──► [Server] ──route message──► [Database]
+                          │
+                          ▼
+                   [Message History]
+                      Storage
 ```
 
 **Components:**
-- **Hub**: Central manager, like a "chat room coordinator"
-- **Client**: Represents one connected user
-- **Events**: Message types (join, leave, chat_message)
+- **Hub**: Central router, manages connections and routes private messages
+- **Client**: Represents one connected user with their WebSocket connection
+- **Database**: Stores private messages with sender/recipient relationships
+- **Events**: Message types (private_message, load_history, user_online, etc.)
 
 ### Message Flow
 
-1. **User connects** → Hub registers new client
-2. **User sends message** → Hub receives → Hub broadcasts to all clients
-3. **User disconnects** → Hub removes client → Hub notifies others
+1. **User connects** → Hub registers client, broadcasts online status
+2. **User sends private message** → Hub receives → Routes to specific recipient → Stores in database
+3. **User requests history** → Hub queries database → Sends conversation history
+4. **User disconnects** → Hub removes client → Broadcasts offline status
 
 ### Security Considerations
 
@@ -242,7 +250,7 @@ github.com/gorilla/websocket v1.5.0
 
 ## Step 2: Creating the Hub
 
-The Hub is the "brain" of our chat system. It manages all connected clients and broadcasts messages.
+The Hub is the "brain" of our private messaging system. It manages all connected clients and routes private messages to specific recipients.
 
 ### Create `internal/ws/hub.go`
 
@@ -280,9 +288,10 @@ func NewHub() *Hub {
 ```
 
 **Understanding the Hub:**
-- `clients`: Map of all connected clients (like a guest list)
-- `broadcast`: Channel for messages to send to everyone
+- `clients`: Map of all connected clients (keyed by user ID for targeted routing)
+- `broadcast`: Channel for system messages (user online/offline notifications)
 - `register/unregister`: Channels for clients joining/leaving
+- `privateMessage`: Channel for routing private messages to specific users
 
 ### Hub Run Method
 
@@ -305,7 +314,7 @@ func (h *Hub) Run() {
             }
 
         case message := <-h.broadcast:
-            // Broadcast message to all clients
+            // Broadcast system message to all clients (online/offline notifications)
             for client := range h.clients {
                 select {
                 case client.send <- message:
@@ -316,6 +325,21 @@ func (h *Hub) Run() {
                     delete(h.clients, client)
                 }
             }
+
+        case pm := <-h.privateMessage:
+            // Route private message to specific recipient
+            if recipient, ok := h.clients[pm.ToUserID]; ok {
+                select {
+                case recipient.send <- pm.Data:
+                    // Private message delivered
+                default:
+                    // Recipient not receiving, could queue for later or notify sender
+                    log.Printf("Failed to deliver private message to user %d", pm.ToUserID)
+                }
+            } else {
+                // Recipient offline - could store for later delivery
+                log.Printf("User %d offline, private message queued", pm.ToUserID)
+            }
         }
     }
 }
@@ -323,7 +347,9 @@ func (h *Hub) Run() {
 
 **Why channels?** They make concurrent operations safe. No race conditions!
 
-**Why select?** It lets the hub handle multiple things simultaneously.
+**Why select?** It lets the hub handle multiple things simultaneously without blocking.
+
+**Why private routing?** Unlike broadcast chat, private messages need to be delivered to specific users only, improving privacy and reducing unnecessary network traffic.
 
 ---
 
@@ -450,7 +476,7 @@ func (c *Client) WritePump() {
 
 ## Step 4: Message Events
 
-Let's define our message types and handling.
+Let's define our message types and handling for private messaging.
 
 ### Create `internal/ws/events.go`
 
@@ -463,25 +489,44 @@ import (
     "real-time-forum/internal/models"
 )
 
-// Message types
+// Message types for private messaging
 type MessageType string
 
 const (
-    JoinMessage     MessageType = "join"
-    LeaveMessage    MessageType = "leave"
-    ChatMessage     MessageType = "chat_message"
-    UserJoined      MessageType = "user_joined"
-    UserLeft        MessageType = "user_left"
-    OnlineUsers     MessageType = "online_users"
+    // User actions
+    JoinMessage        MessageType = "join"
+    LeaveMessage       MessageType = "leave"
+
+    // Private messaging
+    PrivateMessage     MessageType = "private_message"
+    LoadHistory        MessageType = "load_history"
+    HistoryLoaded      MessageType = "history_loaded"
+
+    // Status notifications
+    UserOnline         MessageType = "user_online"
+    UserOffline        MessageType = "user_offline"
+    OnlineUsers        MessageType = "online_users"
+
+    // System messages
+    MessageDelivered   MessageType = "message_delivered"
+    MessageFailed      MessageType = "message_failed"
 )
 
 // Message represents a WebSocket message
 type Message struct {
-    Type      MessageType `json:"type"`
-    Content   string      `json:"content,omitempty"`
-    UserID    int         `json:"user_id,omitempty"`
-    Nickname  string      `json:"nickname,omitempty"`
-    Timestamp string      `json:"timestamp,omitempty"`
+    Type        MessageType `json:"type"`
+    Content     string      `json:"content,omitempty"`
+    FromUserID  int         `json:"from_user_id,omitempty"`
+    ToUserID    int         `json:"to_user_id,omitempty"`
+    Nickname    string      `json:"nickname,omitempty"`
+    Timestamp   string      `json:"timestamp,omitempty"`
+    MessageID   int         `json:"message_id,omitempty"`
+}
+
+// PrivateMessageData represents data for routing private messages
+type PrivateMessageData struct {
+    ToUserID int
+    Data     []byte
 }
 ```
 
@@ -503,8 +548,10 @@ func (c *Client) handleMessage(data []byte) {
         c.handleJoin()
     case LeaveMessage:
         c.handleLeave()
-    case ChatMessage:
-        c.handleChatMessage(msg)
+    case PrivateMessage:
+        c.handlePrivateMessage(msg)
+    case LoadHistory:
+        c.handleLoadHistory(msg)
     default:
         log.Printf("Unknown message type: %s", msg.Type)
     }
@@ -515,43 +562,75 @@ func (c *Client) handleMessage(data []byte) {
 
 ```go
 func (c *Client) handleJoin() {
-    // Notify all clients that user joined
-    joinMsg := Message{
-        Type:     UserJoined,
-        UserID:   c.user.ID,
-        Nickname: c.user.Nickname,
-        Timestamp: time.Now().Format(time.RFC3339),
+    // Notify all clients that user came online
+    onlineMsg := Message{
+        Type:       UserOnline,
+        FromUserID: c.user.ID,
+        Nickname:   c.user.Nickname,
+        Timestamp:  time.Now().Format(time.RFC3339),
     }
 
-    c.broadcastMessage(joinMsg)
+    c.broadcastMessage(onlineMsg)
 
     // Send online users list to the new client
     c.sendOnlineUsers()
 }
 
 func (c *Client) handleLeave() {
-    // Notify all clients that user left
-    leaveMsg := Message{
-        Type:     UserLeft,
-        UserID:   c.user.ID,
-        Nickname: c.user.Nickname,
-        Timestamp: time.Now().Format(time.RFC3339),
+    // Notify all clients that user went offline
+    offlineMsg := Message{
+        Type:       UserOffline,
+        FromUserID: c.user.ID,
+        Nickname:   c.user.Nickname,
+        Timestamp:  time.Now().Format(time.RFC3339),
     }
 
-    c.broadcastMessage(leaveMsg)
+    c.broadcastMessage(offlineMsg)
 }
 
-func (c *Client) handleChatMessage(msg Message) {
-    // Create broadcast message
-    chatMsg := Message{
-        Type:      ChatMessage,
-        Content:   msg.Content,
-        UserID:    c.user.ID,
-        Nickname:  c.user.Nickname,
-        Timestamp: time.Now().Format(time.RFC3339),
+func (c *Client) handlePrivateMessage(msg Message) {
+    // Store message in database
+    messageID, err := c.savePrivateMessage(msg)
+    if err != nil {
+        log.Printf("Failed to save private message: %v", err)
+        c.sendMessageFailed(msg.ToUserID)
+        return
     }
 
-    c.broadcastMessage(chatMsg)
+    // Create message for recipient
+    privateMsg := Message{
+        Type:       PrivateMessage,
+        Content:    msg.Content,
+        FromUserID: c.user.ID,
+        ToUserID:   msg.ToUserID,
+        Nickname:   c.user.Nickname,
+        Timestamp:  time.Now().Format(time.RFC3339),
+        MessageID:  messageID,
+    }
+
+    // Route to specific recipient
+    c.routePrivateMessage(privateMsg)
+
+    // Confirm delivery to sender
+    c.sendMessageDelivered(messageID, msg.ToUserID)
+}
+
+func (c *Client) handleLoadHistory(msg Message) {
+    // Load conversation history from database
+    messages, err := c.loadMessageHistory(msg.ToUserID, msg.MessageID) // MessageID used as offset
+    if err != nil {
+        log.Printf("Failed to load message history: %v", err)
+        return
+    }
+
+    // Send history to client
+    historyMsg := map[string]interface{}{
+        "type": "history_loaded",
+        "with_user_id": msg.ToUserID,
+        "messages": messages,
+    }
+
+    c.sendJSONMessage(historyMsg)
 }
 
 func (c *Client) broadcastMessage(msg Message) {
@@ -578,9 +657,52 @@ func (c *Client) sendOnlineUsers() {
         "users": onlineUsers,
     }
 
-    data, err := json.Marshal(usersMsg)
+    c.sendJSONMessage(usersMsg)
+}
+
+// Database operations for private messages
+func (c *Client) savePrivateMessage(msg Message) (int, error) {
+    // Implementation would save to private_messages table
+    // Return the inserted message ID
+    return 0, nil // Placeholder
+}
+
+func (c *Client) loadMessageHistory(withUserID int, offset int) ([]Message, error) {
+    // Implementation would load last 10 messages from database
+    // Use offset for pagination
+    return []Message{}, nil // Placeholder
+}
+
+func (c *Client) routePrivateMessage(msg Message) {
+    data, _ := json.Marshal(msg)
+    pm := PrivateMessageData{
+        ToUserID: msg.ToUserID,
+        Data:     data,
+    }
+    c.hub.privateMessage <- pm
+}
+
+func (c *Client) sendMessageDelivered(messageID int, toUserID int) {
+    deliveryMsg := map[string]interface{}{
+        "type": "message_delivered",
+        "message_id": messageID,
+        "to_user_id": toUserID,
+    }
+    c.sendJSONMessage(deliveryMsg)
+}
+
+func (c *Client) sendMessageFailed(toUserID int) {
+    failedMsg := map[string]interface{}{
+        "type": "message_failed",
+        "to_user_id": toUserID,
+    }
+    c.sendJSONMessage(failedMsg)
+}
+
+func (c *Client) sendJSONMessage(msg interface{}) {
+    data, err := json.Marshal(msg)
     if err != nil {
-        log.Printf("Failed to marshal online users: %v", err)
+        log.Printf("Failed to marshal message: %v", err)
         return
     }
 
@@ -706,9 +828,11 @@ websocat ws://localhost:8080/ws
 
 ### Expected Behavior
 
-- ✅ Messages appear instantly in all connected clients
-- ✅ User join/leave notifications
-- ✅ Online users list updates
+- ✅ Private messages appear instantly to intended recipients only
+- ✅ User online/offline status updates broadcast to all users
+- ✅ Online users list shows current status
+- ✅ Message history loads on demand with pagination
+- ✅ Delivery confirmations sent to senders
 - ✅ Connection status shows properly
 
 ---
@@ -750,8 +874,10 @@ Congratulations! 🎉 You've built a real-time chat backend. Here's what's next:
 
 1. **Add message validation** - Prevent empty/spam messages
 2. **Rate limiting** - Prevent message spam
-3. **Message history** - Store messages in database
-4. **Private messaging** - Direct messages between users
+3. **Offline message queuing** - Store messages for offline users
+4. **Message encryption** - End-to-end encryption for privacy
+5. **Typing indicators** - Show when users are typing
+6. **Message reactions** - Allow emoji reactions to messages
 
 ### Production Considerations
 

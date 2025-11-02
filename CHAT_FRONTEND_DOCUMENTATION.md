@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the complete frontend implementation of the real-time chat feature for the Real-Time Forum application. The chat system allows authenticated users to send and receive messages in real-time using WebSocket connections. The implementation focuses on frontend-only functionality (no backend yet), with a comprehensive WebSocket client, UI components, and integration with the existing SPA architecture.
+This document describes the complete frontend implementation of the real-time private messaging feature for the Real-Time Forum application. The messaging system allows authenticated users to send and receive private messages in real-time using WebSocket connections. The implementation includes a comprehensive WebSocket client, UI components for private conversations, online user tracking, and integration with the existing SPA architecture.
 
 ## Architecture Overview
 
@@ -15,39 +15,50 @@ The chat system consists of three main components:
 ### Key Features Implemented
 
 - Real-time WebSocket connection with authentication
-- Message sending and receiving
-- Online user list display
+- Private message sending and receiving between users
+- Online/offline user status tracking
+- User list organized by last message (Discord-style)
+- Private conversation history with pagination
 - Connection status indicators
-- Chat panel toggle (open/close)
-- Message history (limited to 100 messages)
+- Message panel toggle (open/close)
 - Automatic reconnection with exponential backoff
 - Integration with existing auth system
+- Throttled scroll loading for message history
 
 ## File Descriptions
 
 ### 1. `public/js/ws.js` - WebSocket Client Class
 
-This file contains the `ChatWebSocket` class, a comprehensive WebSocket client for real-time chat functionality.
+This file contains the `ChatWebSocket` class, a comprehensive WebSocket client for real-time private messaging functionality.
 
 #### Class Structure
 
 ```javascript
 class ChatWebSocket {
     constructor() {
-        // State management
+        // Connection management
         this.ws = null;
         this.isConnected = false;
         this.connectionStatus = 'disconnected';
-        this.messages = [];
+
+        // User and conversation state
+        this.currentUser = null;
         this.onlineUsers = [];
-        this.messageIdCounter = 0;
+        this.conversations = new Map(); // userId -> {messages: [], lastMessage: null}
+        this.activeConversation = null; // currently viewed conversation
+
+        // UI state
         this.isChatOpen = false;
 
         // Reconnection logic
         this.reconnectAttempts = 0;
         this.maxReconnectAttempts = 5;
-        this.reconnectDelay = 1000; // Start with 1 second
-        this.maxReconnectDelay = 30000; // Max 30 seconds
+        this.reconnectDelay = 1000;
+        this.maxReconnectDelay = 30000;
+
+        // Pagination
+        this.loadingHistory = false;
+        this.throttleTimer = null;
     }
 }
 ```
@@ -60,16 +71,17 @@ class ChatWebSocket {
 - `attemptReconnection()`: Handles reconnection with exponential backoff (1s, 2s, 4s, 8s, 16s, max 30s)
 
 **Message Handling:**
-- `send(message)`: Generic method to send JSON messages to server
-- `sendJoinMessage()`, `sendLeaveMessage()`, `sendChatMessage(content)`: Specific message types
-- `handleMessage(event)`: Routes incoming messages by type (message, user_joined, user_left, online_users)
-- `handleChatMessage(data)`, `handleUserJoined(data)`, etc.: Process specific message types
+- `sendPrivateMessage(toUserId, content)`: Send private message to specific user
+- `loadMessageHistory(withUserId, offset)`: Request conversation history
+- `handleMessage(event)`: Routes incoming messages by type (private_message, user_online, user_offline, history_loaded, etc.)
+- `handlePrivateMessage(data)`, `handleUserOnline(data)`, etc.: Process specific message types
 
 **State Management:**
-- `messages`: Array of chat messages (limited to 100)
-- `onlineUsers`: Current online users list
-- `addSystemMessage(content)`: For join/leave notifications
-- `limitMessages()`: Keeps only last 100 messages
+- `conversations`: Map storing messages per conversation (userId -> messages array)
+- `onlineUsers`: Current online users list with last message info
+- `activeConversation`: Currently viewed conversation
+- `addMessageToConversation(userId, message)`: Add message to specific conversation
+- `sortOnlineUsers()`: Sort users by last message timestamp
 
 **UI Integration:**
 - `renderMessages()`: Updates chat messages display with timestamps and user info
@@ -182,15 +194,19 @@ if (chatToggleBtn) {
 The system supports these WebSocket message types:
 
 **Outgoing Messages:**
-- `join`: User joining chat
-- `leave`: User leaving chat
-- `chat_message`: Regular chat message
+- `join`: User joining messaging system
+- `leave`: User leaving messaging system
+- `private_message`: Private message to specific user
+- `load_history`: Request conversation history
 
 **Incoming Messages:**
-- `message`: New chat message from another user
-- `user_joined`: Notification when user joins
-- `user_left`: Notification when user leaves
+- `private_message`: New private message from another user
+- `user_online`: Notification when user comes online
+- `user_offline`: Notification when user goes offline
 - `online_users`: List of currently online users
+- `history_loaded`: Conversation history response
+- `message_delivered`: Confirmation message was delivered
+- `message_failed`: Notification message delivery failed
 
 ## Usage
 
@@ -204,20 +220,23 @@ The system supports these WebSocket message types:
 
 ## Current Limitations
 
-- Backend not implemented yet (messages won't be received/sent to other users)
-- No message persistence (messages lost on page refresh)
-- No private messaging
-- No message history beyond current session
+- Backend not fully implemented yet (database operations are placeholders)
+- No offline message queuing (messages to offline users are lost)
 - No typing indicators
 - No file/image sharing
+- No message reactions or read receipts
+- No end-to-end encryption
+- No message search functionality
 
 ## Next Steps
 
-The backend implementation would include:
+The backend implementation includes:
 - WebSocket server in Go (`internal/ws/`)
-- Message broadcasting hub
-- User session management
-- Message validation and storage
+- Private message routing hub (not broadcasting)
+- User session management and online status
+- Message validation and database storage
+- Conversation history with pagination
 - `/ws` route in `internal/http/routes.go`
+- Private messages table in database
 
 This frontend implementation provides a solid foundation for real-time chat functionality once the backend is connected.

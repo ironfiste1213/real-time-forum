@@ -1,5 +1,7 @@
 import { showMainFeedView, showAuthView } from "./views.js";
-import { checkSession, getCurrentUser } from "../session.js";
+import { checkSession, getCurrentUser, clearCurrentUser } from "../session.js";
+import { initializeChatConnection } from "./chat.js";
+import chatWS from "../ws.js";
 
 // --- DOM Elements ---
 const DOMElements = {
@@ -145,7 +147,9 @@ function createLoginForm() {
 export function showLoginForm() {
     showAuthView();
     // Clear existing auth forms
-    DOMElements.authContainer.innerHTML = '';
+    while (DOMElements.authContainer.firstChild) {
+        DOMElements.authContainer.removeChild(DOMElements.authContainer.firstChild);
+    }
     // Create and append login form
     const loginForm = createLoginForm();
     DOMElements.authContainer.appendChild(loginForm);
@@ -160,7 +164,9 @@ export function showLoginForm() {
 export function showRegisterForm() {
     showAuthView();
     // Clear existing auth forms
-    DOMElements.authContainer.innerHTML = '';
+    while (DOMElements.authContainer.firstChild) {
+        DOMElements.authContainer.removeChild(DOMElements.authContainer.firstChild);
+    }
     // Create and append register form
     const registerForm = createRegisterForm();
     DOMElements.authContainer.appendChild(registerForm);
@@ -171,8 +177,6 @@ export function showRegisterForm() {
         regForm.addEventListener('submit', handleRegister);
     }
 }
-
-// --- Event Handlers ---
 
 // Handle registration form submission
 export async function handleRegister(e) {
@@ -191,17 +195,13 @@ export async function handleRegister(e) {
 
         const result = await response.json();
         if (response.ok) {
-            alert('Registration successful!');
             form.reset();
             // Use router to navigate to login page
             window.history.pushState({}, "", "/login");
-            showLoginForm();
-        } else {
-            alert('Registration failed: ' + (result.message || 'Unknown error'));
+            // Assuming showLoginForm is imported or handled elsewhere
         }
     } catch (error) {
         console.error('Registration error:', error);
-        alert('Network error. Please try again.');
     }
 }
 
@@ -225,22 +225,18 @@ export async function handleLogin(e) {
 
         const result = await response.json();
         if (response.ok) {
-            await checkSession(); // Update the session state with the new user
-            alert('Login successful!');
+           e =  await checkSession(); // Update the session state with the new user
             form.reset();
+            // Initialize chat connection after successful login
+            initializeChatConnection(e);
             // Use router to navigate to the main feed
             window.history.pushState({}, "", "/");
             showMainFeedView(getCurrentUser());
-        } else {
-            alert('Login failed: ' + (result.message || 'Unknown error'));
         }
     } catch (error) {
         console.error('Login error:', error);
-        alert('Network error during login. Please try again.');
     }
 }
-
-
 
 export async function handleLogout() {
     try {
@@ -256,10 +252,45 @@ export async function handleLogout() {
         console.error('Network error during logout:', error);
     } finally {
         // Always switch the view, even if the server call fails, to ensure the user is logged out on the frontend.
-        alert('You have been logged out.');
-        await checkSession(); // This will clear the currentUser
+        // Manually clear the session state without making another API call
+        clearCurrentUser();
+        // Clear all UI elements except auth
+        clearAllUIElements();
+        // Disconnect WebSocket before clearing
+        chatWS.disconnect();
         // Use router to navigate to the login page
         window.history.pushState({}, "", "/login");
         showLoginForm();
     }
+}
+
+// Clear all UI elements except auth container
+function clearAllUIElements() {
+    // Clear main container
+    const mainContainer = document.getElementById('main-container');
+    if (mainContainer) {
+        while (mainContainer.firstChild) {
+            mainContainer.removeChild(mainContainer.firstChild);
+        }
+        mainContainer.classList.add('hidden');
+    }
+
+    // Clear single post view
+    const singlePostView = document.getElementById('single-post-view');
+    if (singlePostView) {
+        while (singlePostView.firstChild) {
+            singlePostView.removeChild(singlePostView.firstChild);
+        }
+        singlePostView.classList.add('hidden');
+    }
+
+    // Clear chat panel
+    const chatPanel = document.getElementById('chat-panel');
+    if (chatPanel) {
+        chatPanel.remove();
+    }
+
+    // Close chat panel and clear messages
+    chatWS.clearMessages();
+    chatWS.closeChat();
 }

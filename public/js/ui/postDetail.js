@@ -6,7 +6,10 @@ function showMainFeedView() {
     const mainFeedView = document.getElementById('main-feed-view');
     singlePostView.classList.add('hidden');
     mainFeedView.classList.remove('hidden');
-    singlePostView.innerHTML = ''; // Clear the single post view content
+    // Clear the single post view content
+    while (singlePostView.firstChild) {
+        singlePostView.removeChild(singlePostView.firstChild);
+    }
 }
 
 /**
@@ -30,27 +33,60 @@ async function loadAndRenderComments(postId) {
         const commentsList = document.createElement('div');
         commentsList.id = 'comments-list';
 
-            comments.forEach(comment => {
-                const commentDate = new Date(comment.createdAt).toLocaleString();
-                const commentEl = document.createElement('div');
-                commentEl.className = 'comment';
-                commentEl.innerHTML = `
-                    <p class="comment-meta"><strong>${comment.author.nickname}</strong> on ${commentDate}</p>
-                    <p class="comment-content">${comment.content.replace(/\n/g, '<br>')}</p>
-                `;
-                commentsList.appendChild(commentEl);
-            });
+           
 
        if (comments && comments.length > 0) {
-            commentsSection.innerHTML = '';
+        comments.forEach(comment => {
+            const commentDate = new Date(comment.createdAt).toLocaleString();
+            const commentEl = document.createElement('div');
+            commentEl.className = 'comment';
+
+            const metaP = document.createElement('p');
+            metaP.className = 'comment-meta';
+            const strong = document.createElement('strong');
+            strong.textContent = comment.author.nickname;
+            metaP.appendChild(strong);
+            metaP.appendChild(document.createTextNode(` on ${commentDate}`));
+            commentEl.appendChild(metaP);
+
+            const contentP = document.createElement('p');
+            contentP.className = 'comment-content';
+            // Handle line breaks by splitting content and creating separate elements
+            const contentLines = comment.content.split('\n');
+            contentLines.forEach((line, index) => {
+                if (index > 0) {
+                    contentP.appendChild(document.createElement('br'));
+                }
+                contentP.appendChild(document.createTextNode(line));
+            });
+            commentEl.appendChild(contentP);
+
+            commentsList.appendChild(commentEl);
+        });
+            // Clear existing content
+            while (commentsSection.firstChild) {
+                commentsSection.removeChild(commentsSection.firstChild);
+            }
             commentsSection.appendChild(commentsList);
         } else {
-            commentsSection.innerHTML = '<p>No comments yet. Be the first to comment!</p>';  
+            // Clear existing content
+            while (commentsSection.firstChild) {
+                commentsSection.removeChild(commentsSection.firstChild);
+            }
+            const noCommentsP = document.createElement('p');
+            noCommentsP.textContent = 'No comments yet. Be the first to comment!';
+            commentsSection.appendChild(noCommentsP);
         }
     } catch (error) {
-        commentsSection.innerHTML = '';
+        // Clear existing content
+        while (commentsSection.firstChild) {
+            commentsSection.removeChild(commentsSection.firstChild);
+        }
         console.error('Error loading comments:', error);
-        commentsSection.innerHTML += '<p class="error-message">Could not load comments.</p>';
+        const errorP = document.createElement('p');
+        errorP.className = 'error-message';
+        errorP.textContent = 'Could not load comments.';
+        commentsSection.appendChild(errorP);
     }
 }
 
@@ -66,7 +102,7 @@ async function handleCreateComment(event, postId) {
     const content = formData.get('content');
 
     if (!content || !content.trim()) {
-        alert('Comment cannot be empty.');
+        console.error('Comment cannot be empty.');
         return;
     }
 
@@ -89,12 +125,12 @@ async function handleCreateComment(event, postId) {
         } else {
             // The backend sends 401 if not authenticated
             const errorMessage = result.message || 'An unknown error occurred.';
-            alert(`Failed to post comment: ${errorMessage}`);
+            console.error(`Failed to post comment: ${errorMessage}`);
             console.error('Server error on comment creation:', errorMessage);
         }
     } catch (error) {
         console.error('Network or parsing error during comment creation:', error);
-        alert('An error occurred while submitting your comment. Please try again.');
+        console.error('An error occurred while submitting your comment. Please try again.');
     }
 }
 
@@ -123,34 +159,103 @@ export async function showSinglePostView(postId) {
         // The date from Go is in a detailed format; new Date() handles it directly.
         const postDate = new Date(post.created_at).toLocaleString();
 
-        singlePostView.innerHTML = `
-            <div class="post-detail-container card">
-                <button id="back-to-feed" class="back-button">← Back to Feed</button>
-                <h2 class="post-detail-title">${post.title}</h2>
-                <p class="post-meta">Posted by <strong>${post.author.nickname}</strong> on ${postDate}</p>
-                
-                <div class="post-detail-content">
-                    <p>${post.content.replace(/\n/g, '<br>')}</p>
-                </div>
+        // Create post detail container
+        const postDetailContainer = document.createElement('div');
+        postDetailContainer.className = 'post-detail-container card';
 
-                <div class="categories post-detail-categories">
-                    ${post.categories && post.categories.length > 0 ? post.categories.map(cat => `<span class="category">${cat}</span>`).join('') : ''}
-                </div>
+        // Back button
+        const backButton = document.createElement('button');
+        backButton.id = 'back-to-feed';
+        backButton.className = 'back-button';
+        backButton.textContent = '← Back to Feed';
+        postDetailContainer.appendChild(backButton);
 
-                <div id="comments-section" class="comments-section">
-                    <h3>Comments</h3>
-                    <p>Loading comments...</p>
-                </div>
+        // Post title
+        const postTitle = document.createElement('h2');
+        postTitle.className = 'post-detail-title';
+        postTitle.textContent = post.title;
+        postDetailContainer.appendChild(postTitle);
 
-                <div class="add-comment-section">
-                    <h4>Add a Comment</h4>
-                    <form id="create-comment-form">
-                        <textarea name="content" placeholder="Write your comment here..." rows="3" required></textarea>
-                        <button type="submit">Submit Comment</button>
-                    </form>
-                </div>
-            </div>
-        `;
+        // Post meta
+        const postMeta = document.createElement('p');
+        postMeta.className = 'post-meta';
+        postMeta.appendChild(document.createTextNode('Posted by '));
+        const strong = document.createElement('strong');
+        strong.textContent = post.author.nickname;
+        postMeta.appendChild(strong);
+        postMeta.appendChild(document.createTextNode(` on ${postDate}`));
+        postDetailContainer.appendChild(postMeta);
+
+        // Post content
+        const postContentDiv = document.createElement('div');
+        postContentDiv.className = 'post-detail-content';
+        const contentP = document.createElement('p');
+        // Handle line breaks by splitting content and creating separate elements
+        const contentLines = post.content.split('\n');
+        contentLines.forEach((line, index) => {
+            if (index > 0) {
+                contentP.appendChild(document.createElement('br'));
+            }
+            contentP.appendChild(document.createTextNode(line));
+        });
+        postContentDiv.appendChild(contentP);
+        postDetailContainer.appendChild(postContentDiv);
+
+        // Categories
+        const categoriesDiv = document.createElement('div');
+        categoriesDiv.className = 'categories post-detail-categories';
+        if (post.categories && post.categories.length > 0) {
+            post.categories.forEach(cat => {
+                const categorySpan = document.createElement('span');
+                categorySpan.className = 'category';
+                categorySpan.textContent = cat;
+                categoriesDiv.appendChild(categorySpan);
+            });
+        }
+        postDetailContainer.appendChild(categoriesDiv);
+
+        // Comments section
+        const commentsSection = document.createElement('div');
+        commentsSection.id = 'comments-section';
+        commentsSection.className = 'comments-section';
+
+        const commentsHeading = document.createElement('h3');
+        commentsHeading.textContent = 'Comments';
+        commentsSection.appendChild(commentsHeading);
+
+        const loadingP = document.createElement('p');
+        loadingP.textContent = 'Loading comments...';
+        commentsSection.appendChild(loadingP);
+
+        postDetailContainer.appendChild(commentsSection);
+
+        // Add comment section
+        const addCommentSection = document.createElement('div');
+        addCommentSection.className = 'add-comment-section';
+
+        const addCommentHeading = document.createElement('h4');
+        addCommentHeading.textContent = 'Add a Comment';
+        addCommentSection.appendChild(addCommentHeading);
+
+        const commentForm = document.createElement('form');
+        commentForm.id = 'create-comment-form';
+
+        const commentTextarea = document.createElement('textarea');
+        commentTextarea.name = 'content';
+        commentTextarea.placeholder = 'Write your comment here...';
+        commentTextarea.rows = 3;
+        commentTextarea.required = true;
+        commentForm.appendChild(commentTextarea);
+
+        const submitButton = document.createElement('button');
+        submitButton.type = 'submit';
+        submitButton.textContent = 'Submit Comment';
+        commentForm.appendChild(submitButton);
+
+        addCommentSection.appendChild(commentForm);
+        postDetailContainer.appendChild(addCommentSection);
+
+        singlePostView.appendChild(postDetailContainer);
 
         document.getElementById('back-to-feed').addEventListener('click', showMainFeedView);
 
@@ -160,6 +265,6 @@ export async function showSinglePostView(postId) {
         loadAndRenderComments(postId);
     } catch (error) {
         console.error('Error showing single post:', error);
-        alert('Could not load the post. Please try again.');
+        console.error('Could not load the post. Please try again.');
     }
 }

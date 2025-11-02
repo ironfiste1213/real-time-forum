@@ -35,12 +35,15 @@ func main() {
 	// Create a new ServeMux to handle routes.
 	mux := http.NewServeMux()
 
+	// Initialize WebSocket hub
+	router.InitWebSocket()
+
 	// Register all our routes using the function from routes.go.
 	router.RegisterRoutes(mux)
 
 	// TODO: Add WebSocket endpoint /ws
-	log.Println("Starting server on http://localhost:8082")
-	if err := http.ListenAndServe(":8082", mux); err != nil {
+	log.Println("Starting server on http://localhost:8083")
+	if err := http.ListenAndServe(":8083", mux); err != nil {
 		log.Fatalf("Could not start server: %s\n", err)
 	}
 }

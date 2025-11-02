@@ -1,5 +1,5 @@
 import { showSinglePostView } from './postDetail.js';
-import { handleLogout } from './auth.js';
+import { handleLogout } from '../ui/auth.js';
  
  function createPostElement(post) {
     const postElement = document.createElement('div');
@@ -162,11 +162,11 @@ export async function handleCreatePost(e) {
             loadPosts(); // Refresh the post feed
         } else {
             console.error('Server returned an error:', result.message);
-            alert('Failed to create post: ' + (result.message || 'Unknown error'));
+            console.error('Failed to create post: ' + (result.message || 'Unknown error'));
         }
     } catch (error) {
         // --- DEBUG: Log any network or parsing errors ---
         console.error('A network or parsing error occurred during post creation:', error);
-        alert('An error occurred. Please check the console for details.');
+        console.error('An error occurred. Please check the console for details.');
     }
 }

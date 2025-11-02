@@ -12,10 +12,12 @@ export async function checkSession() {
             const data = await response.json();
             if (data.isAuthenticated) {
                 currentUser = data.user;
+                console.log('DEBUG: Session check successful, currentUser set:', currentUser);
                 return currentUser;
             }
         }
         // If response is not ok (e.g., 401) or not authenticated, clear user.
+        console.log('DEBUG: Session check failed or not authenticated');
         currentUser = null;
         return null;
     } catch (error) {
@@ -26,3 +28,7 @@ export async function checkSession() {
 }
 
 export const getCurrentUser = () => currentUser;
+
+export const clearCurrentUser = () => {
+    currentUser = null;
+};
