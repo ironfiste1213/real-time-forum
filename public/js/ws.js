@@ -7,7 +7,6 @@
         this.ws = null;
         this.isConnected = false;
         this.connectionStatus = 'disconnected';
-        this.messages = [];
         this.onlineUsers = [];
         this.allUsers = []; // All registered users
         this.conversations = []; // Recent conversations
@@ -19,6 +18,7 @@
         this.reconnectDelay = 1000; // Start with 1 second
         this.isChatOpen = false;
         this.messageIdCounter = 0;
+        this.conversationBars = {}; // userId -> conversation bar element
     }
 
     // Initialize WebSocket connection
@@ -34,7 +34,7 @@
 
         // Get current user from parameter (already checked in session)
         this.currentUser = e;
-        console.log('[DEBUG] Current user set to:', this.currentUser);
+        console.log('---------------------------------[DEBUG] Current user set to:', this.currentUser);
 
         if (!this.currentUser) {
             console.error('[DEBUG] No user session found, aborting connection');
@@ -131,33 +131,12 @@
         this.send('leave');
     }
 
-    // Send chat message
-    sendChatMessage(message) {
-        if (message.trim()) {
-            this.send('chat', { message: message.trim() });
-        }
-    }
+
 
     // Handle incoming messages
     handleMessage(data) {
         console.log('[DEBUG] Handling message:', data);
         switch (data.type) {
-            case 'message':
-                console.log('[DEBUG] Message type: message');
-                this.handleChatMessage(data);
-                break;
-            case 'user_joined':
-                console.log('[DEBUG] Message type: user_joined');
-                this.handleUserJoined(data.username);
-                break;
-            case 'user_left':
-                console.log('[DEBUG] Message type: user_left');
-                this.handleUserLeft(data.username);
-                break;
-            case 'online_users':
-                console.log('[DEBUG] Message type: online_users');
-                this.handleOnlineUsers(data.users);
-                break;
             case 'user_online':
                 console.log('[DEBUG] Message type: user_online');
                 this.handleUserOnline(data.nickname);
@@ -178,53 +157,16 @@
                 console.log('[DEBUG] Message type: message_failed');
                 this.handleMessageFailed(data.to_user_id);
                 break;
+            case 'online_users':
+                console.log('[DEBUG] Message type: online_users');
+                this.handleOnlineUsers(data);
+                break;
             default:
                 console.log('[DEBUG] Unknown message type:', data.type);
         }
     }
 
-    // Handle chat message
-    handleChatMessage(data) {
-        const message = {
-            id: this.generateMessageId(),
-            username: data.username,
-            message: data.message,
-            timestamp: data.timestamp || new Date().toLocaleTimeString(),
-            type: 'message'
-        };
-        this.messages.push(message);
-        this.limitMessages();
-        this.renderMessages();
-        this.scrollToBottom();
-    }
 
-    // Handle user joined
-    handleUserJoined(username) {
-        if (!this.onlineUsers.includes(username)) {
-            this.onlineUsers.push(username);
-            this.renderOnlineUsers();
-        }
-
-        // Add system message
-        this.addSystemMessage(`${username} joined the chat`);
-    }
-
-    // Handle user left
-    handleUserLeft(username) {
-        this.onlineUsers = this.onlineUsers.filter(user => user !== username);
-        this.renderOnlineUsers();
-
-        // Add system message
-        this.addSystemMessage(`${username} left the chat`);
-    }
-
-    // Handle online users list
-    handleOnlineUsers(users) {
-        console.log('[DEBUG] handleOnlineUsers called with users:', users);
-        this.onlineUsers = users || [];
-        console.log('[DEBUG] Set onlineUsers to:', this.onlineUsers);
-        this.renderOnlineUsers();
-    }
 
     // Handle user online
     handleUserOnline(nickname) {
@@ -274,7 +216,8 @@
             receiver_id: this.currentUser.id,
             content: data.content,
             created_at: data.timestamp || new Date().toISOString(),
-            is_read: false
+            is_read: false,
+            id: data.id // Include database ID if available
         };
 
         // Store the message
@@ -307,32 +250,33 @@
         // Could show error notification to user
     }
 
-    // Add system message
-    addSystemMessage(message) {
-        const systemMessage = {
-            id: this.generateMessageId(),
-            username: 'System',
-            message: message,
-            timestamp: new Date().toLocaleTimeString(),
-            type: 'system'
-        };
-        this.messages.push(systemMessage);
-        this.limitMessages();
-        this.renderMessages();
-        this.scrollToBottom();
+    // Handle online users list
+    handleOnlineUsers(data) {
+        console.log('[DEBUG] handleOnlineUsers called with data:', data);
+        try {
+            // Parse the content as JSON array
+            const onlineUsersList = JSON.parse(data.content || '[]');
+            console.log('[DEBUG] Parsed online users:', onlineUsersList);
+
+            // Update the online users array
+            this.onlineUsers = onlineUsersList;
+            console.log('[DEBUG] Updated onlineUsers to:', this.onlineUsers);
+
+            // Update the UI to reflect the new online users
+            this.updateUsersList();
+        } catch (error) {
+            console.error('[DEBUG] Error parsing online users data:', error);
+        }
     }
+
+
 
     // Generate unique message ID
     generateMessageId() {
         return `msg_${Date.now()}_${this.messageIdCounter++}`;
     }
 
-    // Limit messages to last 100
-    limitMessages() {
-        if (this.messages.length > 100) {
-            this.messages = this.messages.slice(-100);
-        }
-    }
+
 
     // Attempt reconnection with exponential backoff
     attemptReconnection() {
@@ -452,8 +396,14 @@
 
         console.log('[DEBUG] Processing', this.allUsers.length, 'users');
 
+        // Update online status based on real-time onlineUsers array
+        const usersWithOnlineStatus = this.allUsers.map(user => ({
+            ...user,
+            is_online: this.onlineUsers.includes(user.nickname)
+        }));
+
         // Sort users: online first, then alphabetically
-        const sortedUsers = this.allUsers.sort((a, b) => {
+        const sortedUsers = usersWithOnlineStatus.sort((a, b) => {
             console.log('[DEBUG] Sorting user:', a.nickname, 'online:', a.is_online);
             if (a.is_online && !b.is_online) return -1;
             if (!a.is_online && b.is_online) return 1;
@@ -463,9 +413,22 @@
         sortedUsers.forEach(user => {
             console.log('[DEBUG] Creating element for user:', user.nickname, 'online:', user.is_online);
 
+            // Skip current user - don't show themselves in the list
+            if (user.id === this.currentUser.id) {
+                console.log('[DEBUG] Skipping current user:', user.nickname);
+                return;
+            }
+
             const userElement = document.createElement('div');
             userElement.className = `chat-user ${user.is_online ? 'online' : 'offline'}`;
             userElement.setAttribute('data-user-id', user.id);
+
+            // Disable interaction for offline users
+            if (!user.is_online) {
+                userElement.classList.add('disabled');
+                userElement.style.cursor = 'not-allowed';
+                userElement.style.opacity = '0.6';
+            }
 
             const statusIndicator = document.createElement('span');
             statusIndicator.className = 'user-status';
@@ -477,11 +440,21 @@
             nicknameSpan.textContent = user.nickname;
             userElement.appendChild(nicknameSpan);
 
-            // Add click handler to start conversation
-            userElement.addEventListener('click', () => {
-                console.log('[DEBUG] User clicked:', user.nickname);
-                this.startConversation(user.id, user.nickname);
-            });
+            // Add click handler only for online users
+            if (user.is_online) {
+                userElement.addEventListener('click', () => {
+                    console.log('[DEBUG] User clicked:', user.nickname);
+                    this.startConversation(user.id, user.nickname);
+                });
+            } else {
+                // Add tooltip or visual indication for offline users
+                const offlineText = document.createElement('span');
+                offlineText.className = 'offline-text';
+                offlineText.textContent = ' (Offline)';
+                offlineText.style.fontSize = '0.8em';
+                offlineText.style.color = '#747f8d';
+                nicknameSpan.appendChild(offlineText);
+            }
 
             usersListElement.appendChild(userElement);
             console.log('[DEBUG] Added user element to list');
@@ -493,6 +466,14 @@
     // Start conversation with a user
     startConversation(userId, nickname) {
         console.log(`Starting conversation with ${nickname} (ID: ${userId})`);
+
+        // Check if user is online before starting conversation
+        const user = this.allUsers.find(u => u.id === parseInt(userId));
+        if (!user || !user.is_online) {
+            console.warn('Cannot start conversation: User is offline');
+            this.showErrorMessage('Cannot start conversation: User is offline');
+            return;
+        }
 
         // Set active conversation
         this.activeConversation = { userId: parseInt(userId), nickname };
@@ -508,9 +489,12 @@
         // Update UI to show private chat mode
         this.updateChatMode('private');
 
+        // Create or show conversation bar for this user
+        this.createConversationBar(userId, nickname);
+
         // Show the chat panel if it's not already open
         if (!this.isChatOpen) {
-            this.toggleChat();
+            this.showChat();
         }
     }
 
@@ -530,20 +514,42 @@
             if (response.ok) {
                 const data = await response.json();
                 console.log('[DEBUG] Conversation history data:', data);
-                this.privateMessages[userId] = data.messages || [];
-                console.log('[DEBUG] Set privateMessages for user', userId, 'to:', this.privateMessages[userId]);
+                const loadedMessages = data.messages || [];
+
+                // Initialize if not exists
+                if (!this.privateMessages[userId]) {
+                    this.privateMessages[userId] = [];
+                }
+
+                // Merge loaded messages with existing local messages, avoiding duplicates
+                const existingMessageIds = new Set(this.privateMessages[userId].map(msg => msg.id).filter(id => id != null));
+
+                for (const loadedMsg of loadedMessages) {
+                    if (loadedMsg.id && !existingMessageIds.has(loadedMsg.id)) {
+                        this.privateMessages[userId].push(loadedMsg);
+                    }
+                }
+
+                // Sort messages chronologically (oldest first)
+                this.privateMessages[userId].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+
+                console.log('[DEBUG] Merged privateMessages for user', userId, 'total messages:', this.privateMessages[userId].length);
                 this.displayPrivateMessages(userId);
             } else {
                 const errorText = await response.text();
                 console.error('[DEBUG] Failed to load conversation history:', response.status, errorText);
-                // Still display empty conversation if API fails
-                this.privateMessages[userId] = [];
+                // Still display existing conversation if API fails
+                if (!this.privateMessages[userId]) {
+                    this.privateMessages[userId] = [];
+                }
                 this.displayPrivateMessages(userId);
             }
         } catch (error) {
             console.error('[DEBUG] Error loading conversation history:', error);
-            // Still display empty conversation if API fails
-            this.privateMessages[userId] = [];
+            // Still display existing conversation if API fails
+            if (!this.privateMessages[userId]) {
+                this.privateMessages[userId] = [];
+            }
             this.displayPrivateMessages(userId);
         }
     }
@@ -611,6 +617,15 @@
 
         const { userId } = this.activeConversation;
 
+        // Check if the user is online before sending
+        const user = this.allUsers.find(u => u.id === userId);
+        if (!user || !user.is_online) {
+            console.warn('Cannot send message: User is offline');
+            // Show error message to user
+            this.showErrorMessage('Cannot send message: User is offline');
+            return;
+        }
+
         try {
             const response = await fetch('/api/messages/send', {
                 method: 'POST',
@@ -631,7 +646,9 @@
                     receiver_id: userId,
                     content: message.trim(),
                     created_at: new Date().toISOString(),
-                    is_read: false
+                    is_read: false,
+                    // Generate a temporary ID for local tracking
+                    temp_id: `temp_${Date.now()}_${Math.random()}`
                 };
 
                 if (!this.privateMessages[userId]) {
@@ -643,13 +660,16 @@
                 // Also send via WebSocket for real-time delivery
                 this.send('private_message', {
                     to_user_id: userId,
-                    content: message.trim()
+                    content: message.trim(),
+                    temp_id: newMessage.temp_id
                 });
             } else {
                 console.error('Failed to send private message:', response.status);
+                this.showErrorMessage('Failed to send message. Please try again.');
             }
         } catch (error) {
             console.error('Error sending private message:', error);
+            this.showErrorMessage('Network error. Please check your connection.');
         }
     }
 
@@ -673,6 +693,13 @@
             backBtn.style.display = mode === 'private' ? 'inline-block' : 'none';
         }
 
+        // Show/hide chat form based on mode
+        const chatForm = document.getElementById('chat-form');
+        if (chatForm) {
+            chatForm.style.display = mode === 'private' ? 'flex' : 'none';
+            console.log('[DEBUG] Set chat form display to:', mode === 'private' ? 'flex' : 'none');
+        }
+
         // Show/hide conversations and users lists based on mode
         const conversationsDiv = document.getElementById('chat-conversations');
         const usersListDiv = document.getElementById('chat-users-list');
@@ -683,8 +710,8 @@
             console.log('[DEBUG] Set conversations display to:', mode === 'public' ? 'block' : 'none');
         }
         if (usersListDiv) {
-            usersListDiv.style.display = mode === 'public' ? 'block' : 'none';
-            console.log('[DEBUG] Set users list display to:', mode === 'public' ? 'block' : 'none');
+            usersListDiv.style.display = 'block'; // Always show users list
+            console.log('[DEBUG] Users list display set to: block');
         }
         if (messagesDiv) {
             messagesDiv.style.display = 'block'; // Always show messages
@@ -774,41 +801,7 @@
         }
     }
 
-    // Render messages in UI
-    renderMessages() {
-        const messagesContainer = document.getElementById('chat-messages');
-        if (!messagesContainer) return;
 
-        // Clear existing messages
-        while (messagesContainer.firstChild) {
-            messagesContainer.removeChild(messagesContainer.firstChild);
-        }
-
-        this.messages.forEach(msg => {
-            const messageElement = document.createElement('div');
-            messageElement.className = `chat-message ${msg.type}`;
-            if (msg.username === this.currentUser?.nickname) {
-                messageElement.classList.add('own-message');
-            }
-
-            const usernameSpan = document.createElement('span');
-            usernameSpan.className = 'message-username';
-            usernameSpan.textContent = `${msg.username}:`;
-            messageElement.appendChild(usernameSpan);
-
-            const messageSpan = document.createElement('span');
-            messageSpan.className = 'message-text';
-            messageSpan.textContent = msg.message;
-            messageElement.appendChild(messageSpan);
-
-            const timeSpan = document.createElement('span');
-            timeSpan.className = 'message-time';
-            timeSpan.textContent = msg.timestamp;
-            messageElement.appendChild(timeSpan);
-
-            messagesContainer.appendChild(messageElement);
-        });
-    }
 
     // Render online users
     renderOnlineUsers() {
@@ -818,11 +811,37 @@
         }
     }
 
+    // Render messages (for public chat mode - currently empty since we only have private messaging)
+    renderMessages() {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return;
+
+        // Clear existing messages
+        while (messagesContainer.firstChild) {
+            messagesContainer.removeChild(messagesContainer.firstChild);
+        }
+
+        // For now, just show a placeholder or welcome message in public mode
+        const welcomeElement = document.createElement('div');
+        welcomeElement.className = 'chat-message system';
+        welcomeElement.textContent = 'Welcome to the chat! Select a user to start a private conversation.';
+        messagesContainer.appendChild(welcomeElement);
+    }
+
     // Scroll to bottom of messages
     scrollToBottom() {
         const messagesContainer = document.getElementById('chat-messages');
         if (messagesContainer) {
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+    }
+
+    // Show chat panel (force open, not toggle)
+    showChat() {
+        this.isChatOpen = true;
+        const chatPanel = document.getElementById('chat-panel');
+        if (chatPanel) {
+            chatPanel.classList.add('open');
         }
     }
 
@@ -835,14 +854,102 @@
         }
     }
 
+    // Create conversation bar for a user
+    createConversationBar(userId, nickname) {
+        const barId = `conversation-bar-${userId}`;
+
+        // Remove existing bar if it exists
+        const existingBar = document.getElementById(barId);
+        if (existingBar) {
+            existingBar.remove();
+        }
+
+        // Create new conversation bar
+        const bar = document.createElement('div');
+        bar.id = barId;
+        bar.className = 'conversation-bar';
+        bar.setAttribute('data-user-id', userId);
+
+        // Create bar content
+        const content = document.createElement('div');
+        content.className = 'conversation-bar-content';
+
+        const avatar = document.createElement('div');
+        avatar.className = 'conversation-bar-avatar';
+        avatar.textContent = nickname.charAt(0).toUpperCase();
+
+        const info = document.createElement('div');
+        info.className = 'conversation-bar-info';
+
+        const name = document.createElement('div');
+        name.className = 'conversation-bar-name';
+        name.textContent = nickname;
+
+        const preview = document.createElement('div');
+        preview.className = 'conversation-bar-preview';
+        preview.textContent = 'Click to chat';
+
+        info.appendChild(name);
+        info.appendChild(preview);
+
+        const closeBtn = document.createElement('button');
+        closeBtn.className = 'conversation-bar-close';
+        closeBtn.textContent = '×';
+        closeBtn.onclick = (e) => {
+            e.stopPropagation();
+            this.closeConversationBar(userId);
+        };
+
+        content.appendChild(avatar);
+        content.appendChild(info);
+        content.appendChild(closeBtn);
+
+        bar.appendChild(content);
+
+        // Add click handler to open conversation
+        bar.onclick = () => {
+            this.activeConversation = { userId: parseInt(userId), nickname };
+            this.displayPrivateMessages(userId);
+            this.updateChatMode('private');
+            this.showChat();
+        };
+
+        // Add to page
+        document.body.appendChild(bar);
+
+        // Store reference
+        this.conversationBars[userId] = bar;
+
+        // Auto-hide after 5 seconds if not clicked
+        setTimeout(() => {
+            if (this.conversationBars[userId]) {
+                bar.classList.add('fading');
+                setTimeout(() => {
+                    this.closeConversationBar(userId);
+                }, 1000);
+            }
+        }, 5000);
+    }
+
+    // Close conversation bar
+    closeConversationBar(userId) {
+        const bar = this.conversationBars[userId];
+        if (bar) {
+            bar.remove();
+            delete this.conversationBars[userId];
+        }
+    }
+
     // Clear messages (on logout)
     clearMessages() {
-        this.messages = [];
         this.onlineUsers = [];
         this.conversations = [];
         this.activeConversation = null;
         this.privateMessages = {};
-        this.renderMessages();
+        // Close all conversation bars
+        Object.keys(this.conversationBars).forEach(userId => {
+            this.closeConversationBar(userId);
+        });
         this.renderOnlineUsers();
         this.renderConversations();
         this.updateChatMode('public'); // Reset to public mode
@@ -854,6 +961,30 @@
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel) {
             chatPanel.classList.remove('open');
+        }
+    }
+
+    // Show error message to user
+    showErrorMessage(message) {
+        // Create error message element
+        const errorElement = document.createElement('div');
+        errorElement.className = 'chat-message system error-message';
+        errorElement.textContent = message;
+        errorElement.style.color = '#f04747';
+        errorElement.style.fontWeight = 'bold';
+
+        // Add to messages container
+        const messagesContainer = document.getElementById('chat-messages');
+        if (messagesContainer) {
+            messagesContainer.appendChild(errorElement);
+            this.scrollToBottom();
+
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (errorElement.parentNode) {
+                    errorElement.remove();
+                }
+            }, 5000);
         }
     }
 }

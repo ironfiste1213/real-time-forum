@@ -4,6 +4,8 @@ import (
 	"log"
 	"net/http"
 	"real-time-forum/internal/auth"
+	"real-time-forum/internal/models"
+	"real-time-forum/internal/repo"
 	"real-time-forum/internal/ws"
 
 	"github.com/gorilla/websocket"
@@ -23,6 +25,12 @@ var hub *ws.Hub
 // InitWebSocket initializes the WebSocket hub
 func InitWebSocket() {
 	hub = ws.NewHub()
+
+	// Inject the message repository function to avoid circular imports
+	ws.SetMessageRepo(func(userID1, userID2, limit, offset int) ([]models.PrivateMessage, error) {
+		return repo.GetPrivateMessagesBetweenUsers(userID1, userID2, limit, offset)
+	})
+
 	go hub.Run()
 	log.Println("WebSocket hub initialized")
 }

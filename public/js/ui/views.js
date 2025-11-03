@@ -14,6 +14,8 @@ const DOMElements = {
 // --- Dynamic Content Creation ---
 function createMainFeedContent(user) {
     const container = document.createElement('div');
+    container.style.width = '100%';
+    container.style.maxWidth = '1200px';
 
     // Navigation
     const nav = document.createElement('nav');
@@ -22,12 +24,12 @@ function createMainFeedContent(user) {
     welcomeMessage.textContent = user && user.nickname ? `Welcome, ${user.nickname}!` : 'Welcome!';
     nav.appendChild(welcomeMessage);
 
-    // Chat toggle button
-    const chatToggleButton = document.createElement('button');
-    chatToggleButton.id = 'chat-toggle-btn';
-    chatToggleButton.textContent = 'Chat';
-    chatToggleButton.className = 'chat-toggle-btn';
-    nav.appendChild(chatToggleButton);
+    // Floating chat button (moved outside nav, will be positioned fixed)
+    // const chatToggleButton = document.createElement('button');
+    // chatToggleButton.id = 'chat-toggle-btn';
+    // chatToggleButton.textContent = 'Chat';
+    // chatToggleButton.className = 'chat-toggle-btn';
+    // nav.appendChild(chatToggleButton);
 
     const logoutButton = document.createElement('button');
     logoutButton.id = 'logout-button';
@@ -38,9 +40,12 @@ function createMainFeedContent(user) {
     // Main feed view
     const mainFeedView = document.createElement('div');
     mainFeedView.id = 'main-feed-view';
+    mainFeedView.style.width = '100%';
+    mainFeedView.style.maxWidth = '1200px';
 
     const mainContent = document.createElement('main');
     mainContent.className = 'main-content';
+    mainContent.style.width = '100%';
 
     // Create post toggle button
     const createPostToggle = document.createElement('button');
@@ -131,6 +136,14 @@ function createMainFeedContent(user) {
     mainFeedView.appendChild(mainContent);
     container.appendChild(mainFeedView);
 
+    // Add floating chat button
+    const floatingChatButton = document.createElement('button');
+    floatingChatButton.id = 'floating-chat-btn';
+    floatingChatButton.className = 'floating-chat-btn';
+    floatingChatButton.innerHTML = '💬'; // Chat icon
+    floatingChatButton.title = 'Open Chat';
+    container.appendChild(floatingChatButton);
+
     return container;
 }
 
@@ -154,7 +167,7 @@ export function showMainFeedView(user) {
     // Attach event handlers for dynamically created elements
     const logoutButton = document.getElementById('logout-button');
     const createPostForm = document.getElementById('create-post-form');
-    const chatToggleBtn = document.getElementById('chat-toggle-btn');
+    const floatingChatBtn = document.getElementById('floating-chat-btn');
     const createPostToggle = document.getElementById('create-post-toggle');
 
     if (logoutButton) {
@@ -168,9 +181,9 @@ export function showMainFeedView(user) {
         createPostForm.addEventListener('submit', handleCreatePost);
     }
 
-    if (chatToggleBtn) {
-        chatToggleBtn.addEventListener('click', () => {
-            chatWS.toggleChat();
+    if (floatingChatBtn) {
+        floatingChatBtn.addEventListener('click', () => {
+            toggleChatView();
         });
     }
 
@@ -225,4 +238,23 @@ export function show404View() {
     DOMElements.mainContainer.classList.add('hidden');
     // Show the 404 view
     DOMElements.notFoundView.classList.remove('hidden');
+}
+
+// Toggle between main view and chat view
+function toggleChatView() {
+    const mainContainer = DOMElements.mainContainer;
+    const chatPanel = document.getElementById('chat-panel');
+    const floatingChatBtn = document.getElementById('floating-chat-btn');
+
+    if (mainContainer.classList.contains('hidden')) {
+        // Currently in chat view, switch back to main
+        mainContainer.classList.remove('hidden');
+        if (chatPanel) chatPanel.classList.remove('open');
+        if (floatingChatBtn) floatingChatBtn.style.display = 'block';
+    } else {
+        // Currently in main view, switch to chat
+        mainContainer.classList.add('hidden');
+        if (chatPanel) chatPanel.classList.add('open');
+        if (floatingChatBtn) floatingChatBtn.style.display = 'none';
+    }
 }

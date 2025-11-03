@@ -234,6 +234,7 @@ export async function handleLogin(e) {
             showMainFeedView(getCurrentUser());
         }
     } catch (error) {
+        
         console.error('Login error:', error);
     }
 }

@@ -7,7 +7,7 @@ import chatWS from '../ws.js';
 export function createChatPanel() {
     const chatPanel = document.createElement('div');
     chatPanel.id = 'chat-panel';
-    chatPanel.className = 'chat-panel';
+    chatPanel.className = 'chat-panel discord-style';
 
     // Create chat header
     const chatHeader = document.createElement('div');
@@ -45,30 +45,41 @@ export function createChatPanel() {
 
     chatPanel.appendChild(connectionStatus);
 
-    // Create messages container
-    const messagesDiv = document.createElement('div');
-    messagesDiv.id = 'chat-messages';
-    messagesDiv.className = 'chat-messages';
-    chatPanel.appendChild(messagesDiv);
+    // Create main chat container with two panels
+    const chatContainer = document.createElement('div');
+    chatContainer.className = 'chat-container';
 
-    // Create conversations list container
-    const conversationsDiv = document.createElement('div');
-    conversationsDiv.id = 'chat-conversations';
-    conversationsDiv.className = 'chat-conversations';
-    conversationsDiv.style.display = 'none'; // Hidden by default, shown in public mode
-    chatPanel.appendChild(conversationsDiv);
+    // Left panel - Users list (20%)
+    const leftPanel = document.createElement('div');
+    leftPanel.className = 'chat-left-panel';
 
-    // Create users list container
+    const usersHeader = document.createElement('div');
+    usersHeader.className = 'users-header';
+    usersHeader.textContent = 'Online Users';
+    leftPanel.appendChild(usersHeader);
+
     const usersListDiv = document.createElement('div');
     usersListDiv.id = 'chat-users-list';
     usersListDiv.className = 'chat-users-list';
-    usersListDiv.style.display = 'block'; // Show by default in public mode
-    chatPanel.appendChild(usersListDiv);
+    leftPanel.appendChild(usersListDiv);
 
-    // Create chat form
+    chatContainer.appendChild(leftPanel);
+
+    // Right panel - Conversation area (80%)
+    const rightPanel = document.createElement('div');
+    rightPanel.className = 'chat-right-panel';
+
+    // Messages container
+    const messagesDiv = document.createElement('div');
+    messagesDiv.id = 'chat-messages';
+    messagesDiv.className = 'chat-messages';
+    rightPanel.appendChild(messagesDiv);
+
+    // Chat form (initially hidden, shown only when in conversation)
     const chatForm = document.createElement('form');
     chatForm.id = 'chat-form';
     chatForm.className = 'chat-form';
+    chatForm.style.display = 'none'; // Hidden by default
 
     const chatInput = document.createElement('input');
     chatInput.type = 'text';
@@ -83,7 +94,11 @@ export function createChatPanel() {
     sendBtn.textContent = 'Send';
     chatForm.appendChild(sendBtn);
 
-    chatPanel.appendChild(chatForm);
+    rightPanel.appendChild(chatForm);
+
+    chatContainer.appendChild(rightPanel);
+
+    chatPanel.appendChild(chatContainer);
 
     document.body.appendChild(chatPanel);
 }
@@ -114,6 +129,8 @@ export function setupChatEventListeners() {
         });
     }
 
+    // No minimize button needed for separate conversation bars
+
     // Chat close button
     const chatCloseBtn = document.getElementById('chat-close-btn');
     if (chatCloseBtn) {
@@ -121,9 +138,18 @@ export function setupChatEventListeners() {
         const newChatCloseBtn = chatCloseBtn.cloneNode(true);
         chatCloseBtn.parentNode.replaceChild(newChatCloseBtn, chatCloseBtn);
         newChatCloseBtn.addEventListener('click', () => {
-            chatWS.toggleChat();
+            // Instead of just closing chat, restore main view
+            const mainContainer = document.getElementById('main-container');
+            const chatPanel = document.getElementById('chat-panel');
+            const floatingChatBtn = document.getElementById('floating-chat-btn');
+
+            if (mainContainer) mainContainer.classList.remove('hidden');
+            if (chatPanel) chatPanel.classList.remove('open');
+            if (floatingChatBtn) floatingChatBtn.style.display = 'block';
         });
     }
+
+    // No minimized chat bar handling needed for separate conversation bars
 
     // Chat form submission
     const chatForm = document.getElementById('chat-form');

@@ -102,8 +102,9 @@ func (c *Client) readPump() {
 				Message:  *message,
 			}
 		case LoadHistory:
-			// Handle history loading (will be implemented)
-			log.Printf("[DEBUG] History loading requested by user %d", c.userID)
+			// Send history loading request to hub
+			log.Printf("[DEBUG] Routing history loading request from %d for conversation with %d", message.FromUserID, message.ToUserID)
+			c.hub.LoadHistory <- message
 		default:
 			log.Printf("[DEBUG] Unknown message type from user %d: %s", c.userID, message.Type)
 		}

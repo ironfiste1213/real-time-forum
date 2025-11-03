@@ -1,8 +1,11 @@
 package ws
 
 import (
+	"encoding/json"
 	"log"
+	"real-time-forum/internal/models"
 	"sync"
+	"time"
 )
 
 // Hub manages WebSocket connections and routes messages between clients
@@ -18,6 +21,7 @@ type Hub struct {
 	Unregister     chan *Client            // Unregister requests from clients
 	Broadcast      chan []byte             // Broadcast messages to all clients
 	PrivateMessage chan PrivateMessageData // Private messages between specific users
+	LoadHistory    chan *Message           // History loading requests
 
 	// User tracking
 	Users map[int]*Client // userID -> client mapping
@@ -31,6 +35,7 @@ func NewHub() *Hub {
 		Unregister:     make(chan *Client),
 		Broadcast:      make(chan []byte),
 		PrivateMessage: make(chan PrivateMessageData),
+		LoadHistory:    make(chan *Message),
 		Users:          make(map[int]*Client),
 	}
 }
@@ -50,6 +55,9 @@ func (h *Hub) Run() {
 
 		case privateMsg := <-h.PrivateMessage:
 			h.handlePrivateMessage(privateMsg)
+
+		case historyReq := <-h.LoadHistory:
+			h.handleLoadHistory(historyReq)
 		}
 	}
 }
@@ -149,23 +157,22 @@ func (h *Hub) broadcastUserOffline(userID int, nickname string) {
 // sendOnlineUsersList sends the current list of online users to a specific client
 func (h *Hub) sendOnlineUsersList(client *Client) {
 	h.Mu.RLock()
-	onlineUsers := make([]map[string]interface{}, 0, len(h.Users))
-	for client := range h.clients {
-		onlineUsers = append(onlineUsers, map[string]interface{}{
-			"id":       client.userID,
-			"nickname": client.nickname,
-		})
+	onlineUsers := make([]string, 0, len(h.clients))
+	for c := range h.clients {
+		onlineUsers = append(onlineUsers, c.nickname)
 	}
 	h.Mu.RUnlock()
 
+	// Create message with online users list
+	onlineUsersJSON, _ := json.Marshal(onlineUsers)
 	message := Message{
-		Type: OnlineUsers,
+		Type:    OnlineUsers,
+		Content: string(onlineUsersJSON),
 	}
-	// Note: In a real implementation, you'd want to marshal this properly
-	// For now, we'll send a simple online users notification
-	message.Type = OnlineUsers
+
 	select {
 	case client.send <- message.ToJSON():
+		log.Printf("[DEBUG] Sent online users list to user %d: %v", client.userID, onlineUsers)
 	default:
 		log.Printf("Could not send online users list to user %d", client.userID)
 	}
@@ -207,4 +214,85 @@ func (h *Hub) sendMessageFailed(senderID int, receiverID int) {
 	default:
 		log.Printf("Could not send failure notification to user %d", senderID)
 	}
+}
+
+// handleLoadHistory loads message history for a conversation and sends it back to the requesting client
+func (h *Hub) handleLoadHistory(req *Message) {
+	log.Printf("[DEBUG] Handling load history request from %d for conversation with %d", req.FromUserID, req.ToUserID)
+
+	// Get the requesting client
+	requestingClient, exists := h.Users[req.FromUserID]
+	if !exists {
+		log.Printf("[DEBUG] Requesting client %d not found", req.FromUserID)
+		return
+	}
+
+	// Import the repo package for database access
+	// Note: This creates a circular import issue, so we'll need to pass the repo functions
+	// For now, we'll create a placeholder that will be implemented with proper dependency injection
+
+	// Load messages from database
+	var messages []models.PrivateMessage
+	var err error
+
+	if messageRepoFunc != nil {
+		// Use injected repository function
+		messages, err = messageRepoFunc(req.FromUserID, req.ToUserID, 50, req.Offset)
+		if err != nil {
+			log.Printf("[DEBUG] Failed to load message history via injected repo: %v", err)
+			return
+		}
+	} else {
+		// Fallback to placeholder (empty messages)
+		log.Printf("[DEBUG] No message repo injected, returning empty history")
+		messages = []models.PrivateMessage{}
+	}
+
+	// Convert messages to JSON format for the response
+	messageList := make([]map[string]interface{}, len(messages))
+	for i, msg := range messages {
+		messageList[i] = map[string]interface{}{
+			"id":         msg.ID,
+			"sender_id":  msg.SenderID,
+			"content":    msg.Content,
+			"created_at": msg.CreatedAt.Format(time.RFC3339),
+			"is_read":    msg.IsRead,
+		}
+	}
+
+	// Create the full response message
+	responseData := map[string]interface{}{
+		"type":         "history_loaded",
+		"with_user_id": req.ToUserID,
+		"messages":     messageList,
+	}
+
+	// Marshal to JSON
+	responseJSON, err := json.Marshal(responseData)
+	if err != nil {
+		log.Printf("[DEBUG] Failed to marshal history response: %v", err)
+		return
+	}
+
+	// Send to requesting client
+	select {
+	case requestingClient.send <- responseJSON:
+		log.Printf("[DEBUG] Sent message history to user %d (%d messages)", req.FromUserID, len(messages))
+	default:
+		log.Printf("[DEBUG] Could not send history to user %d", req.FromUserID)
+	}
+}
+
+// messageRepoFunc stores the injected repository function
+var messageRepoFunc func(int, int, int, int) ([]models.PrivateMessage, error)
+
+// SetMessageRepo sets the message repository for database operations
+// This allows dependency injection to avoid circular imports
+func SetMessageRepo(repoFunc func(int, int, int, int) ([]models.PrivateMessage, error)) {
+	messageRepoFunc = repoFunc
+}
+
+// GetMessageRepoFunc returns the injected repository function
+func GetMessageRepoFunc() func(int, int, int, int) ([]models.PrivateMessage, error) {
+	return messageRepoFunc
 }
