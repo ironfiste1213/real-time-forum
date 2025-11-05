@@ -163,6 +163,11 @@ export function showLoginForm() {
     if (form) {
         form.addEventListener('submit', handleLogin);
     }
+
+    // Trigger fade-in animation
+    setTimeout(() => {
+        loginForm.classList.add('fade-in');
+    }, 10);
 }
 
 export function showRegisterForm() {
@@ -184,6 +189,11 @@ export function showRegisterForm() {
     if (regForm) {
         regForm.addEventListener('submit', handleRegister);
     }
+
+    // Trigger fade-in animation
+    setTimeout(() => {
+        registerForm.classList.add('fade-in');
+    }, 10);
 }
 
 // Handle registration form submission

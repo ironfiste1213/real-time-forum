@@ -18,13 +18,14 @@ h1 {
     font-size: 82px;
     padding: 20px;
     color: var(--accent);
+    font-family: "Momo Trust Display", serif;
 }
 /* Basic reset */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
-    font-family: "Roboto", sans-serif;
+    font-family: "Momo Trust Display", serif;
 }
 
 body {
@@ -65,6 +66,18 @@ h2 {
     margin-top: 20px;
 }
 
+/* Fade-in animation for auth container */
+#auth-container {
+    opacity: 0;
+    animation: fadeIn 0.5s ease-in-out forwards;
+}
+
+@keyframes fadeIn {
+    to {
+        opacity: 1;
+    }
+}
+
 .card {
     background: var(--card);
     border: 1px solid var(--border);
@@ -92,6 +105,12 @@ h2 {
     margin-bottom: 20px;
     width: 100%;
     max-width: 480px;
+    opacity: 0;
+    transition: opacity 0.5s ease-in-out;
+}
+
+#register.fade-in, #login.fade-in {
+    opacity: 1;
 }
 
 /* Auth form headings */
@@ -141,12 +160,15 @@ h2 {
     box-shadow: none;
     text-transform: none;
     letter-spacing: normal;
+    transition: background-color 0.3s ease, transform 0.3s ease, color 0.3s ease;
 }
 
-/* Hover — subtle color change only (no motion, no transitions) */
+/* Hover — raise up and change colors */
 #register button:hover, #login button:hover,
 #register form button:hover, #login form button:hover {
-    background: #375fe0; /* slightly darker accent */
+    background: var(--text);
+    color: var(--bg);
+    transform: translateY(-2px);
 }
 
 /* Remove decorative pseudo-elements for auth buttons/forms */
