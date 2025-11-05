@@ -1,11 +1,11 @@
 /* Flat theme — no gradients, no animations */
 :root {
-    --bg: #424242;
+    --bg: #313131;
     --panel: #2f3136;
     --card: #2b2b2b;
     --text: #e6e7e8;
     --muted: #bdbdbd;
-    --accent: #466ef2;
+    --accent: #4e51f0;
     --border: #3a3a3a;
 }
 
@@ -14,6 +14,11 @@
     display: none !important;
 }
 
+h1 {
+    font-size: 82px;
+    padding: 20px;
+    color: var(--accent);
+}
 /* Basic reset */
 * {
     margin: 0;
@@ -83,18 +88,18 @@ h2 {
     border-radius: 8px;
     box-shadow: none;
     border: 1px solid var(--border);
-    padding: 24px;
+    padding: 28.8px;
     margin-bottom: 20px;
     width: 100%;
-    max-width: 400px;
+    max-width: 480px;
 }
 
 /* Auth form headings */
 #register h2, #login h2 {
     color: var(--text);
     text-align: center;
-    font-size: 2em;
-    margin-bottom: 20px;
+    font-size: 2.4em;
+    margin-bottom: 24px;
 }
 
 /* Inputs inside auth forms — flat, no animations */
@@ -102,13 +107,13 @@ h2 {
 #login input, #login select, #login textarea {
     display: block;
     width: 100%;
-    padding: 12px 14px;
-    margin-bottom: 12px;
+    padding: 14.4px 16.8px;
+    margin-bottom: 14.4px;
     border-radius: 6px;
     border: 1px solid var(--border);
     background: #232323;
     color: var(--text);
-    font-size: 1em;
+    font-size: 1.2em;
     box-shadow: none;
     transition: none;
 }
@@ -125,13 +130,13 @@ h2 {
 #register button, #login button,
 #register form button, #login form button {
     width: 100%;
-    padding: 12px 16px;
+    padding: 14.4px 19.2px;
     background: var(--accent);
     color: #ffffff;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 1em;
+    font-size: 1.2em;
     font-weight: 600;
     box-shadow: none;
     text-transform: none;
@@ -446,6 +451,12 @@ nav {
 
 #logfromreg:hover, #regfromlog:hover {
     text-decoration: underline;
+}
+
+/* Center subtxt paragraphs */
+.subtxt {
+    text-align: center;
+    padding-top: 24px;
 }
 
 /* Post Detail Container */

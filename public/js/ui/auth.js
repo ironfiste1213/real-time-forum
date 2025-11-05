@@ -16,7 +16,7 @@ function createRegisterForm() {
     registerDiv.className = 'card';
 
     const heading = document.createElement('h2');
-    heading.textContent = 'Create your account.';
+    heading.textContent = 'REGISTER.';
     registerDiv.appendChild(heading);
 
     const form = document.createElement('form');
@@ -105,7 +105,7 @@ function createLoginForm() {
     loginDiv.className = 'card';
 
     const heading = document.createElement('h2');
-    heading.textContent = 'Login';
+    heading.textContent = 'LOGIN.';
     loginDiv.appendChild(heading);
 
     const form = document.createElement('form');
@@ -150,6 +150,10 @@ export function showLoginForm() {
     while (DOMElements.authContainer.firstChild) {
         DOMElements.authContainer.removeChild(DOMElements.authContainer.firstChild);
     }
+    // Add title
+    const title = document.createElement('h1');
+    title.textContent = 'REAL TIME FORUM';
+    DOMElements.authContainer.appendChild(title);
     // Create and append login form
     const loginForm = createLoginForm();
     DOMElements.authContainer.appendChild(loginForm);
@@ -167,6 +171,10 @@ export function showRegisterForm() {
     while (DOMElements.authContainer.firstChild) {
         DOMElements.authContainer.removeChild(DOMElements.authContainer.firstChild);
     }
+    // Add title
+    const title = document.createElement('h1');
+    title.textContent = 'REAL TIME FORUM';
+    DOMElements.authContainer.appendChild(title);
     // Create and append register form
     const registerForm = createRegisterForm();
     DOMElements.authContainer.appendChild(registerForm);
