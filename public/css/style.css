@@ -80,7 +80,7 @@ h2 {
 
 .card {
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 12px;
     padding: 24px;
     margin-bottom: 20px;
@@ -100,7 +100,7 @@ h2 {
     color: var(--text);
     border-radius: 8px;
     box-shadow: none;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     padding: 28.8px;
     margin-bottom: 20px;
     width: 100%;
@@ -129,7 +129,7 @@ h2 {
     padding: 14.4px 16.8px;
     margin-bottom: 14.4px;
     border-radius: 6px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     background: #232323;
     color: var(--text);
     font-size: 1.2em;
@@ -193,7 +193,7 @@ nav {
     width: 100%;
     max-width: 1200px;
     background: var(--panel);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     color: var(--text);
     padding: 12px 18px;
     display: flex;
@@ -252,7 +252,7 @@ nav {
     padding: 20px;
     margin-bottom: 20px;
     width: 100%;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
 }
 
 #create-post-section::before { display: none; content: none; }
@@ -283,7 +283,7 @@ nav {
 #create-post-form textarea {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 8px;
     background-color: #232323;
     color: var(--text);
@@ -301,7 +301,7 @@ nav {
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
     gap: 10px;
     padding: 12px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 8px;
     background: var(--panel);
 }
@@ -315,7 +315,7 @@ nav {
     padding: 8px 10px;
     border-radius: 6px;
     background-color: transparent;
-    border: 1px solid transparent;
+    border: 2px solid transparent;
     cursor: pointer;
     font-size: 0.9em;
 }
@@ -367,7 +367,7 @@ nav {
 /* Individual post */
 .post {
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 12px;
     padding: 20px;
     cursor: pointer;
@@ -423,7 +423,7 @@ nav {
     gap: 8px;
     margin-top: 12px;
     padding-top: 12px;
-    border-top: 1px solid var(--border);
+    border-top: 2px solid var(--border);
 }
 
 .category {
@@ -449,7 +449,7 @@ nav {
     padding: 24px 16px;
     background: #2b2b2b;
     border-radius: 8px;
-    border: 1px dashed var(--border);
+    border: 2px dashed var(--border);
     margin: 12px 0;
 }
 
@@ -457,7 +457,7 @@ nav {
 #post-feed p:only-child:not([data-empty-state]) {
     background: #3a2a2a;
     color: #ffb3b3;
-    border: 1px solid #5a2a2a;
+    border: 2px solid #5a2a2a;
     border-radius: 8px;
     padding: 16px;
     margin: 12px 0;
@@ -488,7 +488,7 @@ nav {
     margin: 0 auto;
     padding: 32px;
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 12px;
     position: relative;
 }
@@ -523,7 +523,7 @@ nav {
 .comments-section {
     margin-top: 20px;
     padding-top: 16px;
-    border-top: 1px solid var(--border);
+    border-top: 2px solid var(--border);
 }
 
 .comments-section h3 {
@@ -535,7 +535,7 @@ nav {
 
 .comment {
     background: var(--panel);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 10px;
     padding: 12px;
     margin-bottom: 12px;
@@ -558,13 +558,13 @@ nav {
 .add-comment-section {
     margin-top: 20px;
     padding-top: 16px;
-    border-top: 1px solid var(--border);
+    border-top: 2px solid var(--border);
 }
 
 #create-comment-form textarea {
     width: 100%;
     padding: 10px 12px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 8px;
     background: #232323;
     color: var(--text);
@@ -595,7 +595,7 @@ nav {
     text-align: center;
     max-width: 500px;
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
 }
 
 #not-found-view h1 {
@@ -658,7 +658,7 @@ nav {
     flex-direction: column;
     overflow: hidden;
     border-radius: 12px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
 }
 
 .chat-panel.open {
@@ -687,7 +687,7 @@ nav {
 
 .chat-left-panel {
     background: #272728;
-    border-right: 1px solid var(--border);
+    border-right: 2px solid var(--border);
     display: flex;
     flex-direction: column;
 }
@@ -701,7 +701,7 @@ nav {
 .users-header {
     padding: 12px 16px;
     background: #272728;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
     font-weight: 600;
     font-size: 13px;
     color: var(--text);
@@ -715,7 +715,7 @@ nav {
     right: 20px;
     width: 300px;
     background: var(--card);
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 8px;
     z-index: 999;
     cursor: pointer;
@@ -739,7 +739,7 @@ nav {
     padding: 12px 16px;
     background: #1f1f1f;
     color: var(--text);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
 }
 
 .chat-header h3 {
@@ -763,7 +763,7 @@ nav {
     text-align: center;
     font-size: 0.85em;
     background: #272728;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
 }
 
 .connection-status {
@@ -785,7 +785,7 @@ nav {
     padding: 12px;
     overflow-y: auto;
     background: var(--panel);
-    border-bottom: 1px solid var(--border);
+    border-bottom: 2px solid var(--border);
 }
 
 .chat-message {
@@ -866,13 +866,13 @@ nav {
 .chat-form {
     padding: 12px;
     background: var(--panel);
-    border-top: 1px solid var(--border);
+    border-top: 2px solid var(--border);
 }
 
 .chat-form input[type="text"] {
     width: 100%;
     padding: 8px 10px;
-    border: 1px solid var(--border);
+    border: 2px solid var(--border);
     border-radius: 8px;
     font-size: 0.9em;
     background: #232323;
@@ -906,7 +906,7 @@ nav {
     .chat-left-panel {
         order: 2;
         border-right: none;
-        border-top: 1px solid var(--border);
+        border-top: 2px solid var(--border);
     }
 
     .chat-right-panel {

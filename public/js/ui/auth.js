@@ -127,7 +127,7 @@ function createLoginForm() {
 
     const button = document.createElement('button');
     button.type = 'submit';
-    button.textContent = 'Login';
+    button.textContent = 'LOGIN';
     form.appendChild(button);
 
     const paragraph = document.createElement('p');
