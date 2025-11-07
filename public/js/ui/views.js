@@ -123,6 +123,7 @@ function createMainFeedContent(user) {
     const submitButton = document.createElement('button');
     submitButton.type = 'submit';
     submitButton.textContent = 'Create Post';
+    submitButton.id = 'create-post-submit-btn';
     createPostForm.appendChild(submitButton);
 
     createPostSection.appendChild(createPostForm);

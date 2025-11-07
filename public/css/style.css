@@ -325,6 +325,31 @@ nav > div:last-child {
     min-height: 100px;
 }
 
+/* Create Post Submit Button */
+#create-post-submit-btn {
+    width: 100%;
+    padding: 14.4px 19.2px;
+    background: var(--accent);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 1.2em;
+    font-weight: 600;
+    box-shadow: none;
+    text-transform: none;
+    letter-spacing: normal;
+    transition: background-color 0.3s ease, transform 0.3s ease, color 0.3s ease;
+    margin: 0 auto;
+    display: block;
+}
+
+#create-post-submit-btn:hover {
+    background: var(--text);
+    color: var(--bg);
+    transform: translateY(-2px);
+}
+
 /* categories */
 .categories-checkboxes {
     display: grid;
@@ -344,16 +369,14 @@ nav > div:last-child {
     gap: 8px;
     padding: 8px 10px;
     border-radius: 6px;
-    background-color: transparent;
-    border: 2px solid transparent;
+    background-color: var(--panel);
+    border: 2px solid var(--border);
     cursor: pointer;
     font-size: 0.9em;
 }
 
 .categories-checkboxes input[type="checkbox"] {
-    width: auto;
-    margin-bottom: 0;
-    accent-color: var(--accent);
+    display: none;
 }
 
 .categories-checkboxes input[type="checkbox"]:checked + label {
