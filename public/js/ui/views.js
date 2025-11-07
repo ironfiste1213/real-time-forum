@@ -12,29 +12,44 @@ const DOMElements = {
 };
 
 // --- Dynamic Content Creation ---
-function createMainFeedContent(user) {
-    const container = document.createElement('div');
-    container.style.width = '100%';
-    container.style.maxWidth = '1200px';
-
-    // Navigation
+function createNav(user) {
     const nav = document.createElement('nav');
+
+    // Left section: Welcome message
+    const leftSection = document.createElement('div');
     const welcomeMessage = document.createElement('span');
     welcomeMessage.id = 'welcome-message';
     welcomeMessage.textContent = user && user.nickname ? `Welcome, ${user.nickname}!` : 'Welcome!';
-    nav.appendChild(welcomeMessage);
+    leftSection.appendChild(welcomeMessage);
+    nav.appendChild(leftSection);
 
-    // Floating chat button (moved outside nav, will be positioned fixed)
-    // const chatToggleButton = document.createElement('button');
-    // chatToggleButton.id = 'chat-toggle-btn';
-    // chatToggleButton.textContent = 'Chat';
-    // chatToggleButton.className = 'chat-toggle-btn';
-    // nav.appendChild(chatToggleButton);
+    // Center section: Create Post button
+    const centerSection = document.createElement('div');
+    const createPostToggle = document.createElement('button');
+    createPostToggle.id = 'create-post-toggle';
+    createPostToggle.textContent = '+ Create Post';
+    createPostToggle.className = 'create-post-toggle-btn';
+    centerSection.appendChild(createPostToggle);
+    nav.appendChild(centerSection);
 
+    // Right section: Logout button
+    const rightSection = document.createElement('div');
     const logoutButton = document.createElement('button');
     logoutButton.id = 'logout-button';
     logoutButton.textContent = 'Logout';
-    nav.appendChild(logoutButton);
+    rightSection.appendChild(logoutButton);
+    nav.appendChild(rightSection);
+
+    return nav;
+}
+
+function createMainFeedContent(user) {
+    // Navigation
+    const nav = createNav(user);
+
+    const container = document.createElement('div');
+    container.style.width = '100%';
+    container.style.maxWidth = '1200px';
     container.appendChild(nav);
 
     // Main feed view
@@ -46,13 +61,6 @@ function createMainFeedContent(user) {
     const mainContent = document.createElement('main');
     mainContent.className = 'main-content';
     mainContent.style.width = '100%';
-
-    // Create post toggle button
-    const createPostToggle = document.createElement('button');
-    createPostToggle.id = 'create-post-toggle';
-    createPostToggle.textContent = '+ Create Post';
-    createPostToggle.className = 'create-post-toggle-btn';
-    mainContent.appendChild(createPostToggle);
 
     // Create post section (initially hidden)
     const createPostSection = document.createElement('section');
