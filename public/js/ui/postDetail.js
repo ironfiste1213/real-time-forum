@@ -10,6 +10,12 @@ function showMainFeedView() {
     while (singlePostView.firstChild) {
         singlePostView.removeChild(singlePostView.firstChild);
     }
+
+    // Show the create post button
+    const createPostToggle = document.getElementById('create-post-toggle');
+    if (createPostToggle) {
+        createPostToggle.style.display = 'block';
+    }
 }
 
 /**
@@ -154,6 +160,12 @@ export async function showSinglePostView(postId) {
         // Hide main feed and show single post view
         mainFeedView.classList.add('hidden');
         singlePostView.classList.remove('hidden');
+
+        // Hide the create post button
+        const createPostToggle = document.getElementById('create-post-toggle');
+        if (createPostToggle) {
+            createPostToggle.style.display = 'none';
+        }
 
         // Render the single post
         // The date from Go is in a detailed format; new Date() handles it directly.

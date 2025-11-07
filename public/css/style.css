@@ -406,6 +406,7 @@ nav > div:last-child {
     border: 2px solid var(--border);
     cursor: pointer;
     font-size: 0.9em;
+    margin-bottom: 0px;
 }
 
 .categories-checkboxes input[type="checkbox"] {
