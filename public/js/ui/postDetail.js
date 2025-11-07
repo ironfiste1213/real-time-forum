@@ -6,15 +6,24 @@ function showMainFeedView() {
     const mainFeedView = document.getElementById('main-feed-view');
     singlePostView.classList.add('hidden');
     mainFeedView.classList.remove('hidden');
+    // Fade in the main feed view
+    mainFeedView.style.opacity = '0';
+    setTimeout(() => {
+        mainFeedView.style.opacity = '1';
+    }, 10);
     // Clear the single post view content
     while (singlePostView.firstChild) {
         singlePostView.removeChild(singlePostView.firstChild);
     }
 
-    // Show the create post button
+    // Show the create post button with fade in
     const createPostToggle = document.getElementById('create-post-toggle');
     if (createPostToggle) {
         createPostToggle.style.display = 'block';
+        createPostToggle.style.opacity = '0';
+        setTimeout(() => {
+            createPostToggle.style.opacity = '1';
+        }, 10);
     }
 }
 

@@ -276,7 +276,7 @@ nav > div:last-child {
     cursor: pointer;
     /* margin-bottom: 20px; */
     align-self: flex-start;
-    transition: transform 0.2s ease;
+    transition: transform 0.2s ease, opacity 0.5s ease-in-out;
     will-change: transform;
     transform-origin: center;
 }
@@ -560,6 +560,11 @@ nav > div:last-child {
     padding-top: 24px;
 }
 
+/* Main Feed View */
+#main-feed-view {
+    transition: opacity 0.5s ease-in-out;
+}
+
 /* Post Detail Container */
 .post-detail-container {
     max-width: 1200px;
@@ -570,6 +575,8 @@ nav > div:last-child {
     border: 2px solid var(--border);
     border-radius: 12px;
     position: relative;
+    opacity: 0;
+    animation: fadeIn 0.5s ease-in-out forwards;
 }
 
 .post-detail-title {

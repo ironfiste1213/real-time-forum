@@ -197,6 +197,8 @@ export function showMainFeedView(user) {
     }
 
     if (createPostToggle) {
+        // Ensure button is visible on initial load
+        createPostToggle.style.opacity = '1';
         createPostToggle.addEventListener('click', () => {
             const createPostSection = document.getElementById('create-post-section');
             const isOpen = createPostSection.classList.contains('open');
