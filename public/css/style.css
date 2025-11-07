@@ -160,15 +160,17 @@ h2 {
     box-shadow: none;
     text-transform: none;
     letter-spacing: normal;
-    transition: background-color 0.3s ease, transform 0.3s ease, color 0.3s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    will-change: transform;
+    transform-origin: center;
 }
 
 /* Hover — raise up and change colors */
 #register button:hover, #login button:hover,
 #register form button:hover, #login form button:hover {
-    background: var(--text);
-    color: var(--bg);
-    transform: translateY(-2px);
+    background: white;
+    color: var(--accent);
+    transform: translateY(-1px);
 }
 
 /* Remove decorative pseudo-elements for auth buttons/forms */
@@ -240,6 +242,15 @@ nav > div:last-child {
     font-size: 0.9em;
     font-weight: 500;
     cursor: pointer;
+    transition: transform 0.2s ease;
+    will-change: transform;
+    transform-origin: center;
+}
+
+#logout-button:hover {
+    background: white;
+    color: #ff2b67;
+    transform: translateY(-1px);
 }
 
 #chat-toggle-btn {
@@ -265,6 +276,15 @@ nav > div:last-child {
     cursor: pointer;
     /* margin-bottom: 20px; */
     align-self: flex-start;
+    transition: transform 0.2s ease;
+    will-change: transform;
+    transform-origin: center;
+}
+
+.create-post-toggle-btn:hover {
+    background: white;
+    color: var(--accent);
+    transform: translateY(-1px);
 }
 
 /* Main content layout */
@@ -272,7 +292,6 @@ nav > div:last-child {
     width: 100%;
     display: flex;
     flex-direction: column;
-    gap: 20px;
 }
 
 /* Create post section */
@@ -280,16 +299,28 @@ nav > div:last-child {
     background: var(--panel);
     border-radius: 12px;
     padding: 20px;
-    margin: 0 auto 20px auto;
+    margin: 0 auto 0 auto;
     max-width: 1200px;
     border: 2px solid var(--border);
+    transform: translateY(100%);
+    opacity: 0;
+    max-height: 0;
+    overflow: hidden;
+    transition: transform 0.5s ease, opacity 0.5s ease, max-height 0.5s ease, margin-bottom 0.5s ease;
+}
+
+#create-post-section.open {
+    transform: translateY(0);
+    opacity: 1;
+    max-height: 1000px;
+    margin-bottom: 20px;
 }
 
 #create-post-section::before { display: none; content: none; }
 
 #create-post-section h3 {
     color: var(--text);
-    margin-bottom: 16px;
+    margin: 0;
     font-size: 1.4em;
     font-weight: 600;
     text-align: center;
@@ -339,15 +370,17 @@ nav > div:last-child {
     box-shadow: none;
     text-transform: none;
     letter-spacing: normal;
-    transition: background-color 0.3s ease, transform 0.3s ease, color 0.3s ease;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
     margin: 0 auto;
     display: block;
+    will-change: transform;
+    transform-origin: center;
 }
 
 #create-post-submit-btn:hover {
-    background: var(--text);
-    color: var(--bg);
-    transform: translateY(-2px);
+    background: white;
+    color: var(--accent);
+    transform: translateY(-1px);
 }
 
 /* categories */

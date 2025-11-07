@@ -65,7 +65,7 @@ function createMainFeedContent(user) {
     // Create post section (initially hidden)
     const createPostSection = document.createElement('section');
     createPostSection.id = 'create-post-section';
-    createPostSection.className = 'card hidden';
+    createPostSection.className = 'card';
 
     const createPostHeading = document.createElement('h3');
     createPostHeading.textContent = 'Create a New Post';
@@ -199,16 +199,16 @@ export function showMainFeedView(user) {
     if (createPostToggle) {
         createPostToggle.addEventListener('click', () => {
             const createPostSection = document.getElementById('create-post-section');
-            const isHidden = createPostSection.classList.contains('hidden');
+            const isOpen = createPostSection.classList.contains('open');
 
-            if (isHidden) {
-                createPostSection.classList.remove('hidden');
-                createPostToggle.textContent = '- Hide Create Post';
-                createPostToggle.classList.add('active');
-            } else {
-                createPostSection.classList.add('hidden');
+            if (isOpen) {
+                createPostSection.classList.remove('open');
                 createPostToggle.textContent = '+ Create Post';
                 createPostToggle.classList.remove('active');
+            } else {
+                createPostSection.classList.add('open');
+                createPostToggle.textContent = '- Hide Create Post';
+                createPostToggle.classList.add('active');
             }
         });
     }
