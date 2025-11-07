@@ -517,6 +517,11 @@ nav > div:last-child {
     border: none;
 }
 
+.no-category {
+    background: white;
+    color: var(--accent);
+}
+
 /* Empty state styling */
 #post-feed:empty::after,
 #post-feed p:only-child {
@@ -567,9 +572,9 @@ nav > div:last-child {
 
 /* Post Detail Container */
 .post-detail-container {
-    max-width: 1200px;
-    width: 100%;
-    margin: 0 auto;
+    max-width: none;
+    width: calc(100vw - 64px);
+    margin-left: calc(-50vw + 50% + 32px);
     padding: 32px;
     background: var(--card);
     border: 2px solid var(--border);
@@ -582,7 +587,7 @@ nav > div:last-child {
 .post-detail-title {
     color: var(--text);
     font-size: 2em;
-    margin-bottom: 12px;
+    margin: 0;
     font-weight: 700;
 }
 
@@ -593,16 +598,42 @@ nav > div:last-child {
     margin-bottom: 16px;
 }
 
+/* Post Detail Header */
+.post-detail-header {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    height: 48px;
+    margin-bottom: 12px;
+}
+
 /* Back button */
 .back-button {
     background: var(--accent);
     color: white;
     border: none;
-    padding: 8px 14px;
-    border-radius: 20px;
-    font-size: 0.95em;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    font-size: 1.2em;
     font-weight: 600;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    position: absolute;
+    left: 0;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    will-change: transform;
+    transform-origin: center;
+}
+
+.back-button:hover {
+    background: white;
+    color: var(--accent);
+    transform: translateY(-1px);
 }
 
 /* Comments */
@@ -643,7 +674,7 @@ nav > div:last-child {
 /* Add comment */
 .add-comment-section {
     margin-top: 20px;
-    padding-top: 16px;
+    padding-top: 20px;
     border-top: 2px solid var(--border);
 }
 
@@ -655,6 +686,7 @@ nav > div:last-child {
     background: #232323;
     color: var(--text);
     min-height: 80px;
+    resize: vertical;
 }
 
 #create-comment-form button {
@@ -665,6 +697,16 @@ nav > div:last-child {
     border: none;
     border-radius: 8px;
     font-weight: 600;
+    margin-top: 10px;
+    transition: background-color 0.2s ease, transform 0.2s ease, color 0.2s ease;
+    will-change: transform;
+    transform-origin: center;
+}
+
+#create-comment-form button:hover {
+    background: white;
+    color: var(--accent);
+    transform: translateY(-1px);
 }
 
 /* 404 Page */

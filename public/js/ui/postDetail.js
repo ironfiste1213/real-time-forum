@@ -184,18 +184,24 @@ export async function showSinglePostView(postId) {
         const postDetailContainer = document.createElement('div');
         postDetailContainer.className = 'post-detail-container card';
 
+        // Header with back button and title
+        const header = document.createElement('div');
+        header.className = 'post-detail-header';
+
         // Back button
         const backButton = document.createElement('button');
         backButton.id = 'back-to-feed';
         backButton.className = 'back-button';
-        backButton.textContent = '← Back to Feed';
-        postDetailContainer.appendChild(backButton);
+        backButton.textContent = '←';
+        header.appendChild(backButton);
 
         // Post title
         const postTitle = document.createElement('h2');
         postTitle.className = 'post-detail-title';
         postTitle.textContent = post.title;
-        postDetailContainer.appendChild(postTitle);
+        header.appendChild(postTitle);
+
+        postDetailContainer.appendChild(header);
 
         // Post meta
         const postMeta = document.createElement('p');
@@ -232,6 +238,11 @@ export async function showSinglePostView(postId) {
                 categorySpan.textContent = cat;
                 categoriesDiv.appendChild(categorySpan);
             });
+        } else {
+            const noCategorySpan = document.createElement('span');
+            noCategorySpan.className = 'category no-category';
+            noCategorySpan.textContent = 'no category';
+            categoriesDiv.appendChild(noCategorySpan);
         }
         postDetailContainer.appendChild(categoriesDiv);
 
@@ -253,10 +264,6 @@ export async function showSinglePostView(postId) {
         // Add comment section
         const addCommentSection = document.createElement('div');
         addCommentSection.className = 'add-comment-section';
-
-        const addCommentHeading = document.createElement('h4');
-        addCommentHeading.textContent = 'Add a Comment';
-        addCommentSection.appendChild(addCommentHeading);
 
         const commentForm = document.createElement('form');
         commentForm.id = 'create-comment-form';

@@ -33,6 +33,11 @@ import { handleLogout } from '../ui/auth.js';
             categorySpan.textContent = cat;
             categories.appendChild(categorySpan);
         });
+    } else {
+        const noCategorySpan = document.createElement('span');
+        noCategorySpan.classList.add('category', 'no-category');
+        noCategorySpan.textContent = 'no category';
+        categories.appendChild(noCategorySpan);
     }
 
     postElement.appendChild(title);
