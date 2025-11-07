@@ -3,6 +3,36 @@ import { checkSession, getCurrentUser, clearCurrentUser } from "../session.js";
 import { initializeChatConnection } from "./chat.js";
 import chatWS from "../ws.js";
 
+// --- Notification System ---
+function showNotification(message, type = 'error') {
+    // Remove any existing notifications
+    const existingNotifications = document.querySelectorAll('.notification');
+    existingNotifications.forEach(notification => notification.remove());
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+
+    // Append to body
+    document.body.appendChild(notification);
+
+    // Trigger fade-in
+    setTimeout(() => {
+        notification.classList.add('show');
+    }, 10);
+
+    // Auto-dismiss after 5 seconds
+    setTimeout(() => {
+        notification.classList.remove('show');
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 300);
+    }, 5000);
+}
+
 // --- DOM Elements ---
 const DOMElements = {
     authContainer: document.getElementById('auth-container'),
@@ -214,12 +244,17 @@ export async function handleRegister(e) {
         const result = await response.json();
         if (response.ok) {
             form.reset();
+            showNotification('Registration successful! Please log in.', 'success');
             // Use router to navigate to login page
             window.history.pushState({}, "", "/login");
             // Assuming showLoginForm is imported or handled elsewhere
+        } else {
+            // Show error notification with backend message
+            showNotification(result.message || 'Registration failed. Please try again.');
         }
     } catch (error) {
         console.error('Registration error:', error);
+        showNotification('Network error. Please check your connection and try again.');
     }
 }
 
@@ -245,15 +280,19 @@ export async function handleLogin(e) {
         if (response.ok) {
            e =  await checkSession(); // Update the session state with the new user
             form.reset();
+            showNotification('Login successful! Welcome back.', 'success');
             // Initialize chat connection after successful login
             initializeChatConnection(e);
             // Use router to navigate to the main feed
             window.history.pushState({}, "", "/");
             showMainFeedView(getCurrentUser());
+        } else {
+            // Show error notification with backend message
+            showNotification(result.message || 'Login failed. Please check your credentials.');
         }
     } catch (error) {
-        
         console.error('Login error:', error);
+        showNotification('Network error. Please check your connection and try again.');
     }
 }
 
