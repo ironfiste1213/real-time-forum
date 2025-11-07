@@ -429,21 +429,13 @@ nav > div:last-child {
     min-height: 200px;
     display: flex;
     flex-direction: column;
+    transition: transform 0.3s ease;
 }
 
-.post::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 4px;
-    background: var(--accent);
-}
-
-/* Keep hover border color change only (no motion) */
+/* Keep hover border color change and add slight scale up */
 .post:hover {
     border-color: var(--accent);
+    transform: scale(1.02);
 }
 
 .post h3 {
