@@ -356,8 +356,10 @@
                 const users = await response.json();
                 console.log('[DEBUG] Loaded users:', users);
                 this.allUsers = users; // Store all users
-                console.log('[DEBUG] Calling updateUsersList');
+                console.log('[DEBUG] allUsers now contains', this.allUsers.length, 'users');
+                console.log('[DEBUG] Calling updateUsersList to render users');
                 this.updateUsersList(); // Update the UI with online/offline status
+                console.log('[DEBUG] updateUsersList completed, users should be clickable now');
             } else {
                 const errorText = await response.text();
                 console.error('[DEBUG] Failed to load users:', response.status, errorText);
@@ -423,13 +425,6 @@
             userElement.className = `chat-user ${user.is_online ? 'online' : 'offline'}`;
             userElement.setAttribute('data-user-id', user.id);
 
-            // Disable interaction for offline users
-            if (!user.is_online) {
-                userElement.classList.add('disabled');
-                userElement.style.cursor = 'not-allowed';
-                userElement.style.opacity = '0.6';
-            }
-
             const statusIndicator = document.createElement('span');
             statusIndicator.className = 'user-status';
             statusIndicator.textContent = user.is_online ? '●' : '○';
@@ -438,16 +433,9 @@
             const nicknameSpan = document.createElement('span');
             nicknameSpan.className = 'user-nickname';
             nicknameSpan.textContent = user.nickname;
-            userElement.appendChild(nicknameSpan);
-
-            // Add click handler only for online users
-            if (user.is_online) {
-                userElement.addEventListener('click', () => {
-                    console.log('[DEBUG] User clicked:', user.nickname);
-                    this.startConversation(user.id, user.nickname);
-                });
-            } else {
-                // Add tooltip or visual indication for offline users
+            
+            // Add visual indication for offline users
+            if (!user.is_online) {
                 const offlineText = document.createElement('span');
                 offlineText.className = 'offline-text';
                 offlineText.textContent = ' (Offline)';
@@ -455,6 +443,13 @@
                 offlineText.style.color = '#747f8d';
                 nicknameSpan.appendChild(offlineText);
             }
+            userElement.appendChild(nicknameSpan);
+
+            // Add click handler for all users (can view message history even if offline)
+            userElement.addEventListener('click', () => {
+                console.log('[DEBUG] User clicked:', user.nickname);
+                this.startConversation(user.id, user.nickname);
+            });
 
             usersListElement.appendChild(userElement);
             console.log('[DEBUG] Added user element to list');
@@ -467,13 +462,8 @@
     startConversation(userId, nickname) {
         console.log(`Starting conversation with ${nickname} (ID: ${userId})`);
 
-        // Check if user is online before starting conversation
-        const user = this.allUsers.find(u => u.id === parseInt(userId));
-        if (!user || !user.is_online) {
-            console.warn('Cannot start conversation: User is offline');
-            this.showErrorMessage('Cannot start conversation: User is offline');
-            return;
-        }
+        // Allow starting conversations - online status will be updated in real-time
+        // Don't block based on initial online status as it may not be synced yet
 
         // Set active conversation
         this.activeConversation = { userId: parseInt(userId), nickname };
@@ -531,7 +521,11 @@
                 }
 
                 // Sort messages chronologically (oldest first)
-                this.privateMessages[userId].sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+                this.privateMessages[userId].sort((a, b) => {
+                    const aTime = a.createdAt || a.created_at;
+                    const bTime = b.createdAt || b.created_at;
+                    return new Date(aTime) - new Date(bTime);
+                });
 
                 console.log('[DEBUG] Merged privateMessages for user', userId, 'total messages:', this.privateMessages[userId].length);
                 this.displayPrivateMessages(userId);
@@ -585,12 +579,20 @@
         // Display messages
         messages.forEach((msg, index) => {
             console.log('[DEBUG] Displaying message', index, ':', msg);
+            console.log('[DEBUG] currentUser:', this.currentUser);
+            // Handle both camelCase (API) and snake_case (WebSocket) property names
+            const senderId = msg.senderId || msg.sender_id;
+            console.log('[DEBUG] senderId:', senderId, 'type:', typeof senderId);
+            console.log('[DEBUG] currentUser.id:', this.currentUser?.id, 'type:', typeof this.currentUser?.id);
             const messageElement = document.createElement('div');
-            messageElement.className = `chat-message private-message ${msg.sender_id === this.currentUser.id ? 'own-message' : 'other-message'}`;
+            // Safe comparison - ensure both IDs are compared as integers
+            const isOwnMessage = this.currentUser && (parseInt(senderId) === parseInt(this.currentUser.id));
+            console.log('[DEBUG] isOwnMessage:', isOwnMessage, 'comparison:', parseInt(senderId), '===', parseInt(this.currentUser?.id));
+            messageElement.className = `chat-message private-message ${isOwnMessage ? 'own-message' : 'other-message'}`;
 
             const usernameSpan = document.createElement('span');
             usernameSpan.className = 'message-username';
-            usernameSpan.textContent = msg.sender_id === this.currentUser.id ? 'You:' : `${conversation.nickname}:`;
+            usernameSpan.textContent = isOwnMessage ? 'You:' : `${conversation.nickname}:`;
             messageElement.appendChild(usernameSpan);
 
             const messageSpan = document.createElement('span');
@@ -600,7 +602,9 @@
 
             const timeSpan = document.createElement('span');
             timeSpan.className = 'message-time';
-            timeSpan.textContent = new Date(msg.created_at).toLocaleTimeString();
+            // Handle both camelCase (API) and snake_case (WebSocket) property names
+            const timestamp = msg.createdAt || msg.created_at;
+            timeSpan.textContent = new Date(timestamp).toLocaleTimeString();
             messageElement.appendChild(timeSpan);
 
             messagesContainer.appendChild(messageElement);
@@ -617,14 +621,7 @@
 
         const { userId } = this.activeConversation;
 
-        // Check if the user is online before sending
-        const user = this.allUsers.find(u => u.id === userId);
-        if (!user || !user.is_online) {
-            console.warn('Cannot send message: User is offline');
-            // Show error message to user
-            this.showErrorMessage('Cannot send message: User is offline');
-            return;
-        }
+        // Allow sending messages - the backend will handle delivery when user comes online
 
         try {
             const response = await fetch('/api/messages/send', {
@@ -678,7 +675,7 @@
         console.log('[DEBUG] updateChatMode called with mode:', mode);
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel) {
-            chatPanel.className = `chat-panel ${mode}-mode`;
+            chatPanel.className = `chat-panel fullscreen discord-style open ${mode}-mode`;
         }
 
         // Update input placeholder
@@ -687,11 +684,6 @@
             chatInput.placeholder = mode === 'private' ? 'Type a private message...' : 'Type a message...';
         }
 
-        // Show/hide back button
-        const backBtn = document.getElementById('chat-back-btn');
-        if (backBtn) {
-            backBtn.style.display = mode === 'private' ? 'inline-block' : 'none';
-        }
 
         // Show/hide chat form based on mode
         const chatForm = document.getElementById('chat-form');
@@ -841,7 +833,7 @@
         this.isChatOpen = true;
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel) {
-            chatPanel.classList.add('open');
+            chatPanel.classList.add('open', 'fullscreen');
         }
     }
 
@@ -851,6 +843,7 @@
         const chatPanel = document.getElementById('chat-panel');
         if (chatPanel) {
             chatPanel.classList.toggle('open', this.isChatOpen);
+            chatPanel.classList.add('fullscreen'); // Always keep fullscreen
         }
     }
 

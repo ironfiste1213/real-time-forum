@@ -7,7 +7,7 @@ import chatWS from '../ws.js';
 export function createChatPanel() {
     const chatPanel = document.createElement('div');
     chatPanel.id = 'chat-panel';
-    chatPanel.className = 'chat-panel discord-style';
+    chatPanel.className = 'chat-panel discord-style fullscreen';
 
     // Create chat header
     const chatHeader = document.createElement('div');
@@ -16,14 +16,6 @@ export function createChatPanel() {
     const headerTitle = document.createElement('h3');
     headerTitle.textContent = 'Chat';
     chatHeader.appendChild(headerTitle);
-
-    // Add back to public chat button (only show in private mode)
-    const backBtn = document.createElement('button');
-    backBtn.id = 'chat-back-btn';
-    backBtn.className = 'chat-back-btn';
-    backBtn.textContent = '← Back';
-    backBtn.style.display = 'none'; // Hidden by default
-    chatHeader.appendChild(backBtn);
 
     const closeBtn = document.createElement('button');
     closeBtn.id = 'chat-close-btn';
@@ -113,19 +105,6 @@ export function setupChatEventListeners() {
         chatToggleBtn.parentNode.replaceChild(newChatToggleBtn, chatToggleBtn);
         newChatToggleBtn.addEventListener('click', () => {
             chatWS.toggleChat();
-        });
-    }
-
-    // Chat back button (to return to public chat)
-    const chatBackBtn = document.getElementById('chat-back-btn');
-    if (chatBackBtn) {
-        // Clone and replace to remove existing listeners
-        const newChatBackBtn = chatBackBtn.cloneNode(true);
-        chatBackBtn.parentNode.replaceChild(newChatBackBtn, chatBackBtn);
-        newChatBackBtn.addEventListener('click', () => {
-            chatWS.activeConversation = null;
-            chatWS.updateChatMode('public');
-            chatWS.renderMessages(); // Show public messages again
         });
     }
 

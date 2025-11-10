@@ -810,7 +810,8 @@ nav > div:last-child {
 .chat-container {
     display: grid;
     grid-template-columns: 20% 80%;
-    height: calc(100vh - 80px);
+    flex: 1;
+    overflow: hidden;
 }
 
 .chat-left-panel {
@@ -818,12 +819,16 @@ nav > div:last-child {
     border-right: 2px solid var(--border);
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow: hidden;
 }
 
 .chat-right-panel {
     background: var(--panel);
     display: flex;
     flex-direction: column;
+    height: 100%;
+    overflow: hidden;
 }
 
 .users-header {
@@ -877,12 +882,20 @@ nav > div:last-child {
     color: var(--text);
 }
 
+.chat-fullscreen-btn,
 .chat-close-btn {
     background: none;
     border: none;
     color: var(--muted);
     font-size: 1.2em;
     cursor: pointer;
+    margin-left: 8px;
+    transition: color 0.2s ease;
+}
+
+.chat-fullscreen-btn:hover,
+.chat-close-btn:hover {
+    color: var(--text);
 }
 
 /* Connection status */
@@ -912,8 +925,10 @@ nav > div:last-child {
     flex: 1;
     padding: 12px;
     overflow-y: auto;
+    overflow-x: hidden;
     background: var(--panel);
     border-bottom: 2px solid var(--border);
+    min-height: 0;
 }
 
 .chat-message {
