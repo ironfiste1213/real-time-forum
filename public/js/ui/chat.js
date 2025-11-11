@@ -13,29 +13,32 @@ export function createChatPanel() {
     const chatHeader = document.createElement('div');
     chatHeader.className = 'chat-header';
 
-    const headerTitle = document.createElement('h3');
-    headerTitle.textContent = 'Chat';
-    chatHeader.appendChild(headerTitle);
+    // Left placeholder
+    const headerLeft = document.createElement('div');
+    headerLeft.className = 'chat-header-left';
 
+    // Center: title only (we'll center via CSS)
+    const headerCenter = document.createElement('div');
+    headerCenter.className = 'chat-header-center';
+    const headerTitle = document.createElement('h3');
+    headerTitle.id = 'chat-title';
+    headerTitle.textContent = 'Chat';
+    headerCenter.appendChild(headerTitle);
+
+    // Right: close button
+    const headerRight = document.createElement('div');
+    headerRight.className = 'chat-header-right';
     const closeBtn = document.createElement('button');
     closeBtn.id = 'chat-close-btn';
     closeBtn.className = 'chat-close-btn';
     closeBtn.textContent = '×';
-    chatHeader.appendChild(closeBtn);
+    headerRight.appendChild(closeBtn);
+
+    chatHeader.appendChild(headerLeft);
+    chatHeader.appendChild(headerCenter);
+    chatHeader.appendChild(headerRight);
 
     chatPanel.appendChild(chatHeader);
-
-    // Create connection status
-    const connectionStatus = document.createElement('div');
-    connectionStatus.className = 'chat-connection-status';
-
-    const statusSpan = document.createElement('span');
-    statusSpan.id = 'chat-connection-status';
-    statusSpan.className = 'connection-status disconnected';
-    statusSpan.textContent = 'Disconnected';
-    connectionStatus.appendChild(statusSpan);
-
-    chatPanel.appendChild(connectionStatus);
 
     // Create main chat container with two panels
     const chatContainer = document.createElement('div');
@@ -44,11 +47,6 @@ export function createChatPanel() {
     // Left panel - Users list (20%)
     const leftPanel = document.createElement('div');
     leftPanel.className = 'chat-left-panel';
-
-    const usersHeader = document.createElement('div');
-    usersHeader.className = 'users-header';
-    usersHeader.textContent = 'Online Users';
-    leftPanel.appendChild(usersHeader);
 
     const usersListDiv = document.createElement('div');
     usersListDiv.id = 'chat-users-list';

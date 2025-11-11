@@ -468,6 +468,9 @@
         // Set active conversation
         this.activeConversation = { userId: parseInt(userId), nickname };
 
+        // Reflect name at the top header
+        this.updateChatHeaderTitle(nickname);
+
         // Load conversation history if not already loaded
         if (!this.privateMessages[userId]) {
             this.loadConversationHistory(userId);
@@ -566,14 +569,12 @@
         }
         console.log('[DEBUG] Cleared existing messages');
 
-        // Add conversation header
+        // Update chat header title to other user's nickname if available
         const conversation = this.activeConversation;
         if (conversation) {
-            const headerElement = document.createElement('div');
-            headerElement.className = 'conversation-header';
-            headerElement.textContent = `Private chat with ${conversation.nickname}`;
-            messagesContainer.appendChild(headerElement);
-            console.log('[DEBUG] Added conversation header:', headerElement.textContent);
+            this.updateChatHeaderTitle(conversation.nickname);
+        } else {
+            this.updateChatHeaderTitle('Chat');
         }
 
         // Display messages
@@ -589,11 +590,6 @@
             const isOwnMessage = this.currentUser && (parseInt(senderId) === parseInt(this.currentUser.id));
             console.log('[DEBUG] isOwnMessage:', isOwnMessage, 'comparison:', parseInt(senderId), '===', parseInt(this.currentUser?.id));
             messageElement.className = `chat-message private-message ${isOwnMessage ? 'own-message' : 'other-message'}`;
-
-            const usernameSpan = document.createElement('span');
-            usernameSpan.className = 'message-username';
-            usernameSpan.textContent = isOwnMessage ? 'You:' : `${conversation.nickname}:`;
-            messageElement.appendChild(usernameSpan);
 
             const messageSpan = document.createElement('span');
             messageSpan.className = 'message-text';
@@ -678,12 +674,15 @@
             chatPanel.className = `chat-panel fullscreen discord-style open ${mode}-mode`;
         }
 
+        // Update chat header title
+        const title = mode === 'private' && this.activeConversation ? this.activeConversation.nickname : 'Chat';
+        this.updateChatHeaderTitle(title);
+
         // Update input placeholder
         const chatInput = document.getElementById('chat-input');
         if (chatInput) {
             chatInput.placeholder = mode === 'private' ? 'Type a private message...' : 'Type a message...';
         }
-
 
         // Show/hide chat form based on mode
         const chatForm = document.getElementById('chat-form');
@@ -789,7 +788,17 @@
         const statusElement = document.getElementById('chat-connection-status');
         if (statusElement) {
             statusElement.className = `connection-status ${this.connectionStatus}`;
-            statusElement.textContent = this.connectionStatus.charAt(0).toUpperCase() + this.connectionStatus.slice(1);
+            statusElement.textContent = this.connectionStatus === 'connected'
+                ? 'Online'
+                : this.connectionStatus.charAt(0).toUpperCase() + this.connectionStatus.slice(1);
+        }
+    }
+
+    // Update chat header title text
+    updateChatHeaderTitle(title) {
+        const titleEl = document.getElementById('chat-title');
+        if (titleEl) {
+            titleEl.textContent = title || 'Chat';
         }
     }
 
