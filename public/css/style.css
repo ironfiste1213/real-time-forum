@@ -757,16 +757,56 @@ nav > div:last-child {
     right: 20px;
     width: 56px;
     height: 56px;
-    border-radius: 50%;
+    border-radius: 28px;
     background: var(--accent);
     border: none;
     color: #fff;
     font-size: 20px;
     cursor: pointer;
     z-index: 999;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
+    padding: 0;
+    overflow: hidden;
+    transition: width 0.25s ease, padding 0.25s ease, background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+    will-change: width, padding, transform;
+}
+
+.floating-chat-btn:hover {
+    width: 140px;
+    padding: 0 16px;
+    transform: translateY(-1px);
+}
+
+.floating-chat-btn .label-short {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+.floating-chat-btn .label-full {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    opacity: 0;
+    white-space: nowrap;
+    margin-left: 0;
+    transition: opacity 0.2s ease 0.05s;
+}
+
+/* Switch to 'Chat' on hover */
+.floating-chat-btn:hover .label-short {
+    opacity: 0;
+}
+
+.floating-chat-btn:hover .label-full {
+    opacity: 1;
 }
 
 /* Chat Panel - flat colors only (compact, hidden by default) */

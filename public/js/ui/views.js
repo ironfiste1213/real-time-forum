@@ -149,7 +149,7 @@ function createMainFeedContent(user) {
     const floatingChatButton = document.createElement('button');
     floatingChatButton.id = 'floating-chat-btn';
     floatingChatButton.className = 'floating-chat-btn';
-    floatingChatButton.innerHTML = '💬'; // Chat icon
+    floatingChatButton.innerHTML = '<span class="label-short">C</span><span class="label-full">Chat 💬</span>';
     floatingChatButton.title = 'Open Chat';
     container.appendChild(floatingChatButton);
 
