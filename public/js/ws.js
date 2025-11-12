@@ -369,6 +369,19 @@
         }
     }
 
+    // Build a map of unread counts per user from conversations
+    getUnreadMap() {
+        const map = {};
+        if (Array.isArray(this.conversations)) {
+            this.conversations.forEach(c => {
+                if (c && typeof c.user_id !== 'undefined') {
+                    map[parseInt(c.user_id)] = c.unread_count || 0;
+                }
+            });
+        }
+        return map;
+    }
+
     // Update users list in UI
     updateUsersList() {
         console.log('[DEBUG] updateUsersList called');
@@ -396,6 +409,7 @@
             return;
         }
 
+        const unreadMap = this.getUnreadMap();
         console.log('[DEBUG] Processing', this.allUsers.length, 'users');
 
         // Update online status based on real-time onlineUsers array
@@ -433,6 +447,15 @@
             const nicknameSpan = document.createElement('span');
             nicknameSpan.className = 'user-nickname';
             nicknameSpan.textContent = user.nickname;
+
+            // Per-user unread badge
+            const unreadCount = unreadMap[parseInt(user.id)] || 0;
+            if (unreadCount > 0) {
+                const userUnread = document.createElement('span');
+                userUnread.className = 'user-unread-badge';
+                userUnread.textContent = unreadCount;
+                nicknameSpan.appendChild(userUnread);
+            }
             
             // Add visual indication for offline users
             if (!user.is_online) {
@@ -471,13 +494,8 @@
         // Reflect name at the top header
         this.updateChatHeaderTitle(nickname);
 
-        // Load conversation history if not already loaded
-        if (!this.privateMessages[userId]) {
-            this.loadConversationHistory(userId);
-        } else {
-            // Display existing messages
-            this.displayPrivateMessages(userId);
-        }
+        // Always load conversation history so server can mark messages as read
+        this.loadConversationHistory(userId);
 
         // Update UI to show private chat mode
         this.updateChatMode('private');
@@ -509,19 +527,8 @@
                 console.log('[DEBUG] Conversation history data:', data);
                 const loadedMessages = data.messages || [];
 
-                // Initialize if not exists
-                if (!this.privateMessages[userId]) {
-                    this.privateMessages[userId] = [];
-                }
-
-                // Merge loaded messages with existing local messages, avoiding duplicates
-                const existingMessageIds = new Set(this.privateMessages[userId].map(msg => msg.id).filter(id => id != null));
-
-                for (const loadedMsg of loadedMessages) {
-                    if (loadedMsg.id && !existingMessageIds.has(loadedMsg.id)) {
-                        this.privateMessages[userId].push(loadedMsg);
-                    }
-                }
+                // Replace local cache with authoritative server history to avoid duplicates
+                this.privateMessages[userId] = Array.isArray(loadedMessages) ? loadedMessages.slice() : [];
 
                 // Sort messages chronologically (oldest first)
                 this.privateMessages[userId].sort((a, b) => {
@@ -530,8 +537,10 @@
                     return new Date(aTime) - new Date(bTime);
                 });
 
-                console.log('[DEBUG] Merged privateMessages for user', userId, 'total messages:', this.privateMessages[userId].length);
+                console.log('[DEBUG] Set privateMessages for user', userId, 'total messages:', this.privateMessages[userId].length);
                 this.displayPrivateMessages(userId);
+                // Refresh conversations to update unread counts (since server marked messages as read)
+                this.loadConversations();
             } else {
                 const errorText = await response.text();
                 console.error('[DEBUG] Failed to load conversation history:', response.status, errorText);
@@ -724,8 +733,25 @@
 
             if (response.ok) {
                 const data = await response.json();
-                this.conversations = data.conversations || [];
+                const list = data.conversations || [];
+                // Deduplicate by user_id (backend may return multiple rows per partner)
+                const byUser = {};
+                for (const conv of list) {
+                    const uid = parseInt(conv.user_id);
+                    if (!byUser[uid]) {
+                        byUser[uid] = conv;
+                    } else {
+                        // Keep the one with latest last_message_time if available
+                        const a = new Date(byUser[uid].last_message_time || 0).getTime();
+                        const b = new Date(conv.last_message_time || 0).getTime();
+                        if (b > a) byUser[uid] = conv;
+                    }
+                }
+                this.conversations = Object.values(byUser);
                 this.renderConversations();
+                // Update unread badges in users list and chat button
+                this.updateUsersList();
+                this.updateChatUnreadUI();
             } else {
                 console.error('Failed to load conversations:', response.status);
             }
@@ -799,6 +825,39 @@
         const titleEl = document.getElementById('chat-title');
         if (titleEl) {
             titleEl.textContent = title || 'Chat';
+        }
+    }
+
+    // Update the floating chat button unread badge and title
+    updateChatUnreadUI() {
+        try {
+            const totalUnread = Array.isArray(this.conversations)
+                ? this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)
+                : 0;
+
+            const btn = document.getElementById('floating-chat-btn');
+            if (!btn) return;
+
+            // Ensure badge element exists
+            let badge = btn.querySelector('#chat-unread-badge');
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.id = 'chat-unread-badge';
+                badge.className = 'chat-unread-badge';
+                btn.appendChild(badge);
+            }
+
+            if (totalUnread > 0) {
+                badge.textContent = totalUnread > 99 ? '99+' : String(totalUnread);
+                badge.style.display = 'inline-flex';
+                btn.title = `Open Chat (${totalUnread} unread)`;
+            } else {
+                badge.textContent = '';
+                badge.style.display = 'none';
+                btn.title = 'Open Chat';
+            }
+        } catch (e) {
+            console.error('[DEBUG] updateChatUnreadUI error:', e);
         }
     }
 

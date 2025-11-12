@@ -768,9 +768,29 @@ nav > div:last-child {
     align-items: center;
     justify-content: center;
     padding: 0;
-    overflow: hidden;
+    overflow: visible; /* allow unread badge to protrude */
     transition: width 0.25s ease, padding 0.25s ease, background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     will-change: width, padding, transform;
+}
+
+/* Unread badge on floating chat button */
+.chat-unread-badge {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 12px;
+    background: #ff3b30;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 700;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--panel);
+    pointer-events: none; /* don't block clicks on the button */
 }
 
 .floating-chat-btn:hover {
@@ -1071,6 +1091,22 @@ nav > div:last-child {
     overflow-y: auto;
 }
 
+/* Unread badge next to user nickname */
+.user-unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 6px;
+    padding: 0 6px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #ff3b30;
+    border-radius: 10px;
+}
+
 .chat-user {
     display: flex;
     align-items: center;
@@ -1129,6 +1165,22 @@ nav > div:last-child {
     flex-shrink: 0;
     white-space: nowrap;
     transition: none;
+}
+
+/* Unread badge used in conversations list */
+.unread-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    padding: 0 6px;
+    min-width: 18px;
+    height: 18px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #fff;
+    background: #ff3b30;
+    border-radius: 10px;
 }
 
 /* Notification Styles */
