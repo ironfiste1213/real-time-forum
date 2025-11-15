@@ -13,10 +13,38 @@ import { handleLogout } from '../ui/auth.js';
 
     const meta = document.createElement('p');
     meta.classList.add('post-meta');
-    // The backend query joins the user table, so we can access the author's nickname
-    const authorNickname = post.author ? post.author.nickname : 'Unknown';
-    const postDate = new Date(post.created_at).toLocaleString();
-    meta.textContent = `by ${authorNickname} on ${postDate}`;
+
+    // Create a container for the meta info with rounded style
+    const metaContainer = document.createElement('span');
+    metaContainer.classList.add('meta-container');
+
+    // Icon
+    const icon = document.createElement('span');
+    icon.classList.add('user-icon');
+    icon.textContent = '👤'; // Human icon
+
+    // Username
+    const username = document.createElement('span');
+    username.classList.add('username');
+    username.textContent = post.author ? post.author.nickname : 'Unknown';
+
+    // Date
+    const postDate = new Date(post.createdAt).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+    const dateSpan = document.createElement('span');
+    dateSpan.classList.add('post-date');
+    dateSpan.textContent = ` on ${postDate}`;
+
+    metaContainer.appendChild(icon);
+    metaContainer.appendChild(username);
+    metaContainer.appendChild(dateSpan);
+    meta.appendChild(metaContainer);
 
     const contentSnippet = document.createElement('p');
     contentSnippet.classList.add('post-content-snippet');

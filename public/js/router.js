@@ -13,7 +13,7 @@ const routes = {
 const protectedRoutes = ['/'];
 
 // 2. Core Router Logic: Handle location changes.
-const handleLocation = async () => {
+function handleLocation()  {
     const path = window.location.pathname;
     console.log(`Router: Handling path ${path}`);
 
@@ -24,7 +24,7 @@ console.log("------------------CHECK CURENT USER", user);
     // --- Route Guarding Logic ---
     // If trying to access a protected route without being logged in
     if (protectedRoutes.includes(path) && !user) {
-        console.log("Router: Access to protected route denied. Redirecting to /login.");
+        console.log("Router: Access to protected route denied. Redirecting to /login.", user);
         // Manually navigate to the login page
         window.history.pushState({}, "", "/login");
         showLoginForm();
@@ -46,7 +46,7 @@ console.log("------------------CHECK CURENT USER", user);
 };
 
 // 3. Handle Navigation: Intercept link clicks.
-export const navigate = (e) => {
+export function navigate(e) {
     // Check if the click was on an anchor tag.
     const link = e.target.closest('a');
     if (!link) {

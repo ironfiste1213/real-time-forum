@@ -28,7 +28,7 @@ function showMainFeedView() {
 }
 
 /**
- * Fetches and renders comments for a given post.
+ * Fetchfes and renders comments for a given post.
  * @param {number} postId The ID of the post.
  */
 async function loadAndRenderComments(postId) {
@@ -52,7 +52,14 @@ async function loadAndRenderComments(postId) {
 
        if (comments && comments.length > 0) {
         comments.forEach(comment => {
-            const commentDate = new Date(comment.createdAt).toLocaleString();
+            const commentDate = new Date(comment.createdAt).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+                hour12: true
+            });
             const commentEl = document.createElement('div');
             commentEl.className = 'comment';
 
@@ -178,7 +185,14 @@ export async function showSinglePostView(postId) {
 
         // Render the single post
         // The date from Go is in a detailed format; new Date() handles it directly.
-        const postDate = new Date(post.created_at).toLocaleString();
+        const postDate = new Date(post.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: 'numeric',
+            minute: '2-digit',
+            hour12: true
+        });
 
         // Create post detail container
         const postDetailContainer = document.createElement('div');

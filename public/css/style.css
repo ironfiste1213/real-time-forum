@@ -486,6 +486,31 @@ nav > div:last-child {
     font-style: italic;
 }
 
+.meta-container {
+    display: inline-flex;
+    align-items: center;
+    background: var(--panel);
+    border: 2px solid var(--border);
+    border-radius: 20px;
+    padding: 6px 12px;
+    gap: 8px;
+}
+
+.user-icon {
+    font-size: 1.1em;
+    color: var(--accent);
+}
+
+.username {
+    font-weight: 600;
+    color: var(--text);
+}
+
+.post-date {
+    color: var(--muted);
+    font-size: 0.9em;
+}
+
 .post-content-snippet {
     color: var(--text);
     font-size: 1em;
