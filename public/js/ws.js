@@ -175,6 +175,9 @@
             console.log('[DEBUG] Adding user to online list:', nickname);
             this.onlineUsers.push(nickname);
             this.updateUsersList(); // Update the users list to reflect online status
+            if (nickname !==this.currentUser?.nickname && !this.isChatOpen) {
+                this.showOnlineNotification(nickname);
+            }
         } else {
             console.log('[DEBUG] User already online or invalid nickname:', nickname);
         }
@@ -1024,6 +1027,43 @@
             chatPanel.classList.remove('open');
         }
     }
+    // Show online notification
+    showOnlineNotification(nickname) {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = 'online-notification';
+        notification.textContent = `${nickname} is now online`;
+
+        // Style the notification
+        notification.style.position = 'fixed';
+        notification.style.top = '20px';
+        notification.style.right = '20px';
+        notification.style.backgroundColor = '#4CAF50';
+        notification.style.color = 'white';
+        notification.style.padding = '12px 16px';
+        notification.style.borderRadius = '4px';
+        notification.style.boxShadow = '0 2px 8px rgba(0,0,0,0.15)';
+        notification.style.zIndex = '10000';
+        notification.style.fontSize = '14px';
+        notification.style.fontWeight = '500';
+        notification.style.maxWidth = '300px';
+        notification.style.wordWrap = 'break-word';
+
+        // Add to page
+        document.body.appendChild(notification);
+
+        // Auto-remove after 4 seconds with fade out
+        setTimeout(() => {
+            notification.style.transition = 'opacity 0.5s ease-out';
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 500);
+        }, 4000);
+    }
+
 
     // Show error message to user
     showErrorMessage(message) {
