@@ -3,7 +3,8 @@ import { getCurrentUser } from "../session.js";
 import { handleCreatePost } from "./posts.js";
 import { handleLogout } from "./auth.js";
 import chatWS from "../ws.js";
-import { createChatPanel, setupChatEventListeners, initializeChatConnection } from "./chat.js";
+import { createChatPanel, setupChatEventListeners, initializeChatConnection, createFloatingChatButton } from "./chat.js";
+import { createCreatePostSection } from "./creatpost.js";
 // --- DOM Elements ---
 const DOMElements = {
     authContainer: document.getElementById('auth-container'),
@@ -36,7 +37,7 @@ function createNav(user) {
     const rightSection = document.createElement('div');
     const logoutButton = document.createElement('button');
     logoutButton.id = 'logout-button';
-    logoutButton.textContent = 'Logout';
+    logoutButton.textContent = '➜]';
     rightSection.appendChild(logoutButton);
     nav.appendChild(rightSection);
 
@@ -62,71 +63,8 @@ function createMainFeedContent(user) {
     mainContent.className = 'main-content';
     mainContent.style.width = '100%';
 
-    // Create post section (initially hidden)
-    const createPostSection = document.createElement('section');
-    createPostSection.id = 'create-post-section';
-    createPostSection.className = 'card';
-
-    const createPostHeading = document.createElement('h3');
-    createPostHeading.textContent = 'Create a New Post';
-    createPostSection.appendChild(createPostHeading);
-
-    const createPostForm = document.createElement('form');
-    createPostForm.id = 'create-post-form';
-
-    // Title input
-    const titleGroup = document.createElement('div');
-    titleGroup.className = 'form-group';
-    const titleLabel = document.createElement('label');
-    titleLabel.setAttribute('for', 'post-title');
-    titleLabel.textContent = 'Title';
-    const titleInput = document.createElement('input');
-    titleInput.type = 'text';
-    titleInput.id = 'post-title';
-    titleInput.name = 'title';
-    titleInput.placeholder = 'Post Title';
-    titleInput.required = true;
-    titleGroup.appendChild(titleLabel);
-    titleGroup.appendChild(titleInput);
-    createPostForm.appendChild(titleGroup);
-
-    // Content textarea
-    const contentGroup = document.createElement('div');
-    contentGroup.className = 'form-group';
-    const contentLabel = document.createElement('label');
-    contentLabel.setAttribute('for', 'post-content');
-    contentLabel.textContent = 'Content';
-    const contentTextarea = document.createElement('textarea');
-    contentTextarea.id = 'post-content';
-    contentTextarea.name = 'content';
-    contentTextarea.placeholder = 'What\'s on your mind?';
-    contentTextarea.rows = 4;
-    contentTextarea.required = true;
-    contentGroup.appendChild(contentLabel);
-    contentGroup.appendChild(contentTextarea);
-    createPostForm.appendChild(contentGroup);
-
-    // Categories
-    const categoriesGroup = document.createElement('div');
-    categoriesGroup.className = 'form-group';
-    const categoriesLabel = document.createElement('label');
-    categoriesLabel.textContent = 'Categories:';
-    categoriesGroup.appendChild(categoriesLabel);
-
-    const categoriesContainer = document.createElement('div');
-    categoriesContainer.id = 'categories-container';
-    categoriesContainer.className = 'categories-checkboxes';
-    categoriesGroup.appendChild(categoriesContainer);
-    createPostForm.appendChild(categoriesGroup);
-
-    // Submit button
-    const submitButton = document.createElement('button');
-    submitButton.type = 'submit';
-    submitButton.textContent = 'Create Post';
-    submitButton.id = 'create-post-submit-btn';
-    createPostForm.appendChild(submitButton);
-
-    createPostSection.appendChild(createPostForm);
+    // Create post section using the imported function
+    const createPostSection = createCreatePostSection();
     mainContent.appendChild(createPostSection);
 
     // Post feed section
@@ -145,12 +83,8 @@ function createMainFeedContent(user) {
     mainFeedView.appendChild(mainContent);
     container.appendChild(mainFeedView);
 
-    // Add floating chat button
-    const floatingChatButton = document.createElement('button');
-    floatingChatButton.id = 'floating-chat-btn';
-    floatingChatButton.className = 'floating-chat-btn';
-    floatingChatButton.innerHTML = '<span class="label-short">C</span><span class="label-full">Chat 💬</span>';
-    floatingChatButton.title = 'Open Chat';
+    // Add floating chat button using the imported function
+    const floatingChatButton = createFloatingChatButton();
     container.appendChild(floatingChatButton);
 
     return container;

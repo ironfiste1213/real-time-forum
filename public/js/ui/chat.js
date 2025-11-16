@@ -226,3 +226,23 @@ export function getChatStatus() {
         messages: chatWS.messages.length
     };
 }
+
+// Create floating chat button (exported for use in views.js)
+export function createFloatingChatButton() {
+    const floatingChatButton = document.createElement('button');
+    floatingChatButton.id = 'floating-chat-btn';
+    floatingChatButton.className = 'floating-chat-btn';
+    floatingChatButton.title = 'Open Chat';
+
+    const labelShort = document.createElement('span');
+    labelShort.className = 'label-short';
+    labelShort.textContent = '💬';
+    floatingChatButton.appendChild(labelShort);
+
+    const labelFull = document.createElement('span');
+    labelFull.className = 'label-full';
+    labelFull.textContent = ' chat ! 💬';
+    floatingChatButton.appendChild(labelFull);
+
+    return floatingChatButton;
+}
