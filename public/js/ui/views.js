@@ -1,7 +1,7 @@
 import { loadPosts, loadCategories } from "./posts.js";
 import { getCurrentUser } from "../session.js";
 import { handleCreatePost } from "./posts.js";
-import { handleLogout } from "./auth.js";
+import { handleLogout } from "../api/logout.js";
 import chatWS from "../ws.js";
 import { createChatPanel, setupChatEventListeners, initializeChatConnection, createFloatingChatButton } from "./chat.js";
 import { createCreatePostSection } from "./creatpost.js";

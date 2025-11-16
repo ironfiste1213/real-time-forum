@@ -1,5 +1,4 @@
 import { showSinglePostView } from './postDetail.js';
-import { handleLogout } from '../ui/auth.js';
  
  function createPostElement(post) {
     const postElement = document.createElement('div');
