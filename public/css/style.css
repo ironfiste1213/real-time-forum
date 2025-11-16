@@ -1212,7 +1212,7 @@ nav > div:last-child {
 .notification {
     position: fixed;
     top: 20px;
-    right: 20px;
+    left: 55%;
     padding: 16px 20px;
     border-radius: 8px;
     font-size: 1em;
@@ -1220,7 +1220,7 @@ nav > div:last-child {
     z-index: 10000;
     max-width: 400px;
     opacity: 0;
-    transform: translateY(-10px);
+    transform: translateX(-50%) translateY(-10px);
     transition: opacity 0.3s ease, transform 0.3s ease;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }

@@ -1,7 +1,6 @@
 import { showLoginForm, showRegisterForm} from './ui/auth.js';
 import { showMainFeedView, show404View } from './ui/views.js';
 import { checkSession, getCurrentUser } from './session.js';
-import { initializeChatConnection }   from './ui/chat.js'
 
 // 1. Define Routes: Map paths to view-rendering functions.
 const routes = {
@@ -41,7 +40,7 @@ console.log("------------------CHECK CURENT USER", user);
 
     // Find the handler for the current path.
     const handler = routes[path] || show404View; // Default to 404 view if route not found
-
+// calls the function retrieved from the routes object 
     handler();
 };
 
