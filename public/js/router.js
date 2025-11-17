@@ -12,18 +12,18 @@ const routes = {
 const protectedRoutes = ['/'];
 
 // 2. Core Router Logic: Handle location changes.
-function handleLocation()  {
+export function handleLocation()  {
     const path = window.location.pathname;
-    console.log(`Router: Handling path ${path}`);
+    console.log(`[router.js:handleLocation] Router: Handling path ${path}`);
 
     // Check if user is authenticated before routing
     const user = getCurrentUser();
-console.log("------------------CHECK CURENT USER", user);
+console.log("[router.js:handleLocation] ------------------CHECK CURENT USER", user);
 
     // --- Route Guarding Logic ---
     // If trying to access a protected route without being logged in
     if (protectedRoutes.includes(path) && !user) {
-        console.log("Router: Access to protected route denied. Redirecting to /login.", user);
+        console.log("[router.js:handleLocation] Router: Access to protected route denied. Redirecting to /login.", user);
         // Manually navigate to the login page
         window.history.pushState({}, "", "/login");
         showLoginForm();
@@ -32,7 +32,7 @@ console.log("------------------CHECK CURENT USER", user);
 
     // If trying to access login/register while already logged in
     if ((path === '/login' || path === '/register') && user) {
-        console.log("Router: Already logged in. Redirecting to /.");
+        console.log("[router.js:handleLocation] Router: Already logged in. Redirecting to /.");
         window.history.pushState({}, "", "/");
         showMainFeedView(user);
         return; // Stop further execution
@@ -66,23 +66,22 @@ export function navigate(e) {
 };
 
 // 4. Listen for Browser Events.
-export function initializeRouter() {
+export async function initializeRouter() {
     // Listen for clicks on the whole document to handle navigation.
     document.addEventListener("click", navigate);
 
     // On initial load, check the session first, then handle the location.
-    window.addEventListener('DOMContentLoaded', async () => {
-        console.log('DOMContentLoaded and we will check for session ');
-        
+  
+        console.log('[router.js:initializeRouter] DOMContentLoaded and we will check for session ');
+
       const user = await checkSession(); // Check if user is already logged in
-      console.log('Router: Session check result:', user);
+      console.log('[router.js:initializeRouter] Router: Session check result:', user);
 
         handleLocation();
         // Chat connection will be initialized in showMainFeedView if user is logged in
-    });
 
     // Handle browser back/forward button clicks.
     window.addEventListener("popstate", handleLocation);
 
-    console.log("Router initialized.");
+    console.log("[router.js:initializeRouter] Router initialized.");
 }

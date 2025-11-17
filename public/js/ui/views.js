@@ -1,10 +1,12 @@
-import { loadPosts, loadCategories } from "./posts.js";
+import { loadPosts } from "./posts.js";
+import { loadCategories } from "../api/categories.js";
 import { getCurrentUser } from "../session.js";
-import { handleCreatePost } from "./posts.js";
+import { handleCreatePost } from "../api/createpost.js";
 import { handleLogout } from "../api/logout.js";
 import chatWS from "../ws.js";
 import { createChatPanel, setupChatEventListeners, initializeChatConnection, createFloatingChatButton } from "./chat.js";
-import { createCreatePostSection } from "./creatpost.js";
+import { createCreatePostComponent } from "./creatpost.js";
+import { create404View } from "./notfound.js";
 // --- DOM Elements ---
 const DOMElements = {
     authContainer: document.getElementById('auth-container'),
@@ -64,7 +66,7 @@ function createMainFeedContent(user) {
     mainContent.style.width = '100%';
 
     // Create post section using the imported function
-    const createPostSection = createCreatePostSection();
+    const createPostSection = createCreatePostComponent();
     mainContent.appendChild(createPostSection);
 
     // Post feed section
@@ -181,6 +183,16 @@ export function show404View() {
     // Hide all other views
     DOMElements.authContainer.classList.add('hidden');
     DOMElements.mainContainer.classList.add('hidden');
+
+    // Clear existing content in notFoundView
+    while (DOMElements.notFoundView.firstChild) {
+        DOMElements.notFoundView.removeChild(DOMElements.notFoundView.firstChild);
+    }
+
+    // Create and append the 404 view content
+    const notFoundContent = create404View();
+    DOMElements.notFoundView.appendChild(notFoundContent);
+
     // Show the 404 view
     DOMElements.notFoundView.classList.remove('hidden');
 }

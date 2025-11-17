@@ -1,5 +1,5 @@
 // Create post section component
-export function createCreatePostSection() {
+export function createCreatePostComponent() {
     // Create post section (initially hidden)
     const createPostSection = document.createElement('section');
     createPostSection.id = 'create-post-section';
@@ -43,6 +43,12 @@ export function createCreatePostSection() {
     contentGroup.appendChild(contentLabel);
     contentGroup.appendChild(contentTextarea);
     createPostForm.appendChild(contentGroup);
+                                                                                  123
+                                                                                  132
+                                                                                  213
+                                                                                  231
+                                                                                  312
+                                                                                  321
 
     // Categories
     const categoriesGroup = document.createElement('div');

@@ -5,6 +5,7 @@ import chatWS from '../ws.js';
 
 // Create the chat panel HTML structure (exported for use in views.js)
 export function createChatPanel() {
+    console.log('[ui/chat.js:createChatPanel] Creating chat panel');
     const chatPanel = document.createElement('div');
     chatPanel.id = 'chat-panel';
     chatPanel.className = 'chat-panel discord-style fullscreen';
@@ -184,9 +185,9 @@ function handleChatSubmit() {
 
 // Initialize chat connection (called from auth.js on login success)
 export function initializeChatConnection(e) {
-    console.log('DEBUG: initializeChatConnection called - initializing chat connection');
+    console.log('[ui/chat.js:initializeChatConnection] DEBUG: initializeChatConnection called - initializing chat connection');
     if (chatWS.isConnected || chatWS.ws) {
-        console.log('DEBUG: Chat already connected, skipping duplicate initialization');
+        console.log('[ui/chat.js:initializeChatConnection] DEBUG: Chat already connected, skipping duplicate initialization');
         return;
     }
     chatWS.connect(e);

@@ -1,7 +1,6 @@
 import { showNotification } from "../ui/notification.js";
 import { checkSession, getCurrentUser } from "../session.js";
 import { initializeChatConnection } from "../ui/chat.js";
-import chatWS from "../ws.js";
 import { showMainFeedView } from "../ui/views.js";
 
 // Handle login form submission

@@ -1,7 +1,7 @@
 import { initializeRouter } from './router.js';
 
 function initializeApp() {
-    console.log("initializeApp after domcontentloaded");
+    console.log("[app.js:initializeApp] initializeApp after domcontentloaded");
     
     // Initialize the client-side router
     initializeRouter();

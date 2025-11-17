@@ -23,3 +23,13 @@ export function clearUIElement(element) {
             break;
     }
 }
+
+
+
+export function clear(e) {
+    while(e.firstChild ) {
+        console.log("eeeeeeeeeeeeeeeeeee")
+        e.removeChild(e.firstChild)
+    }
+    e.classList.add('hidden')
+}
