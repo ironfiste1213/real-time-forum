@@ -1,7 +1,7 @@
 import { handleLocation } from '../router.js';
 import { clear } from './clear.js';
 
-export function create404View(user) {
+export function create404View() {
     const container = document.createElement('div');
     container.className = 'card';
 
@@ -21,20 +21,16 @@ export function create404View(user) {
           if (path == '') {
             path = '/'
           }
-        if (user) {
-            path = "/"
-        }else {
-            path = "/login"
-        }
-          console.log("tttttttttttttttttttttttttttt",path)
-                    window.location = path
-
-        //clear(document.getElementById('not-found-view'));
-        //window.history.pushState({}, "", "/");
-        //handleLocation();
+          window.location = path
+          console.log(path)
+        clear(document.getElementById('not-found-view'));
+        window.history.pushState({}, "", "/");
+        handleLocation();
     });
     paragraph2.appendChild(button);
     container.appendChild(paragraph2);
 
     return container;
 }
+
+

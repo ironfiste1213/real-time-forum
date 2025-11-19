@@ -1,5 +1,5 @@
 import { showLoginForm, showRegisterForm} from './ui/auth.js';
-import { showMainFeedView } from './ui/views.js';
+import { showMainFeedView, show404View } from './ui/views.js';
 import { checkSession, getCurrentUser } from './session.js';
 
 // 1. Define Routes: Map paths to view-rendering functions.
@@ -39,7 +39,7 @@ console.log("[router.js:handleLocation] ------------------CHECK CURENT USER", us
     }
 
     // Find the handler for the current path.
-    const handler = routes[path] || show404View(user); // Default to 404 view if route not found
+    const handler = routes[path] || show404View; // Default to 404 view if route not found
 // calls the function retrieved from the routes object 
     handler();
 };
@@ -81,12 +81,7 @@ export async function initializeRouter() {
         // Chat connection will be initialized in showMainFeedView if user is logged in
 
     // Handle browser back/forward button clicks.
-    window.addEventListener("popstate",() => {handleLocation;
-        console.log("$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$", window.path)}
-        
-    );
+    window.addEventListener("popstate", handleLocation);
 
     console.log("[router.js:initializeRouter] Router initialized.");
 }
-
-window.onpopstate = handleLocation

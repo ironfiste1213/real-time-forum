@@ -7,6 +7,21 @@
     --muted: #bdbdbd;
     --accent: #4e51f0;
     --border: #3a3a3a;
+    --input-bg: #232323;
+    --accent-foreground: #ffffff;
+}
+
+/* Light theme overrides */
+:root[data-theme="light"] {
+    --bg: #f5f5f7;
+    --panel: #ffffff;
+    --card: #ffffff;
+    --text: #151515;
+    --muted: #555555;
+    --accent: #4e51f0;
+    --border: #d0d0d7;
+    --input-bg: #ffffff;
+    --accent-foreground: #ffffff;
 }
 
 /* Utility class to hide elements */
@@ -130,7 +145,7 @@ h2 {
     margin-bottom: 14.4px;
     border-radius: 6px;
     border: 2px solid var(--border);
-    background: #232323;
+    background: var(--input-bg);
     color: var(--text);
     font-size: 1.2em;
     box-shadow: none;
@@ -151,7 +166,7 @@ h2 {
     width: 100%;
     padding: 14.4px 19.2px;
     background: var(--accent);
-    color: #ffffff;
+    color: var(--accent-foreground);
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -232,6 +247,52 @@ nav > div:last-child {
     color: var(--text);
 }
 
+/* Theme toggle in navbar */
+#theme-toggle-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 12px;
+}
+
+#theme-toggle-label {
+    font-size: 0.85em;
+    color: var(--muted);
+}
+
+#theme-toggle {
+    padding: 4px 10px;
+    border-radius: 999px;
+    border: 2px solid var(--border);
+    background: var(--panel);
+    color: var(--text);
+    cursor: pointer;
+    font-size: 0.85em;
+}
+
+/* Accent color picker in navbar */
+#accent-color-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-right: 12px;
+}
+
+#accent-color-label {
+    font-size: 0.85em;
+    color: var(--muted);
+}
+
+#accent-color-picker {
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+}
+
 /* Buttons in navbar use accent for primary actions */
 #logout-button {
     background: #ff2b67;
@@ -255,7 +316,7 @@ nav > div:last-child {
 
 #chat-toggle-btn {
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     border: none;
     padding: 8px 14px;
     border-radius: 8px;
@@ -267,7 +328,7 @@ nav > div:last-child {
 /* Create Post Toggle Button */
 .create-post-toggle-btn {
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     border: none;
     padding: 8px 14px;
     border-radius: 8px;
@@ -346,7 +407,7 @@ nav > div:last-child {
     padding: 10px 12px;
     border: 2px solid var(--border);
     border-radius: 8px;
-    background-color: #232323;
+    background-color: var(--input-bg);
     color: var(--text);
     font-size: 1em;
 }
@@ -361,7 +422,7 @@ nav > div:last-child {
     width: 100%;
     padding: 14.4px 19.2px;
     background: var(--accent);
-    color: #ffffff;
+    color: var(--accent-foreground);
     border: none;
     border-radius: 8px;
     cursor: pointer;
@@ -415,7 +476,7 @@ nav > div:last-child {
 
 .categories-checkboxes input[type="checkbox"]:checked + label {
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     border-color: transparent;
 }
 
@@ -532,7 +593,7 @@ nav > div:last-child {
 
 .category {
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     padding: 6px 12px;
     border-radius: 14px;
     font-size: 0.8em;
@@ -543,8 +604,8 @@ nav > div:last-child {
 }
 
 .no-category {
-    background: white;
-    color: var(--accent);
+    background: var(--input-bg);
+    color: var(--text);
 }
 
 /* Empty state styling */
@@ -636,7 +697,7 @@ nav > div:last-child {
 /* Back button */
 .back-button {
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     border: none;
     width: 48px;
     height: 48px;
@@ -708,7 +769,7 @@ nav > div:last-child {
     padding: 10px 12px;
     border: 2px solid var(--border);
     border-radius: 8px;
-    background: #232323;
+    background: var(--input-bg);
     color: var(--text);
     min-height: 80px;
     resize: vertical;
@@ -718,7 +779,7 @@ nav > div:last-child {
     width: 100%;
     padding: 10px 12px;
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     border: none;
     border-radius: 8px;
     font-weight: 600;
@@ -769,7 +830,7 @@ nav > div:last-child {
     display: inline-block;
     padding: 10px 18px;
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     text-decoration: none;
     font-weight: 600;
     border-radius: 18px;
@@ -785,7 +846,7 @@ nav > div:last-child {
     border-radius: 28px;
     background: var(--accent);
     border: none;
-    color: #fff;
+    color: var(--accent-foreground);
     font-size: 20px;
     cursor: pointer;
     z-index: 999;
@@ -1053,7 +1114,7 @@ nav > div:last-child {
 
 .chat-message.own-message {
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     align-self: flex-end;
     margin-left: auto; /* push to right reliably */
 }
@@ -1082,7 +1143,7 @@ nav > div:last-child {
     color: var(--text);
 }
 /* Username color by side */
-.chat-message.own-message .message-username { color: #fff; }
+.chat-message.own-message .message-username { color: var(--accent-foreground); }
 .chat-message:not(.own-message) .message-username { color: var(--accent); }
 
 .message-text {
@@ -1170,7 +1231,7 @@ nav > div:last-child {
     border: 2px solid var(--border);
     border-radius: 8px;
     font-size: 1em;
-    background: #232323;
+    background: var(--input-bg);
     color: var(--text);
     transition: none;
 }
@@ -1181,7 +1242,7 @@ nav > div:last-child {
     width: auto;
     padding: 12px 16px;
     background: var(--accent);
-    color: white;
+    color: var(--accent-foreground);
     border: none;
     border-radius: 8px;
     font-size: 1em;

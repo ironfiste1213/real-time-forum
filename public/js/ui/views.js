@@ -7,6 +7,83 @@ import chatWS from "../ws.js";
 import { createChatPanel, setupChatEventListeners, initializeChatConnection, createFloatingChatButton } from "./chat.js";
 import { createCreatePostComponent } from "./creatpost.js";
 import { create404View } from "./notfound.js";
+
+// --- Theme / Accent color helpers ---
+const ACCENT_COLOR_STORAGE_KEY = "rtf-accent-color";
+const DEFAULT_ACCENT_COLOR = "#4e51f0"; // keep in sync with :root --accent in CSS
+
+const THEME_STORAGE_KEY = "rtf-theme";
+const DEFAULT_THEME = "dark";
+
+function getStoredAccentColor() {
+    try {
+        return localStorage.getItem(ACCENT_COLOR_STORAGE_KEY);
+    } catch (e) {
+        return null;
+    }
+}
+
+function getAccentForeground(color) {
+    if (!color) return "#ffffff";
+    let hex = color.trim();
+    if (hex[0] === '#') hex = hex.slice(1);
+    if (hex.length === 3) {
+        hex = hex.split('').map(ch => ch + ch).join('');
+    }
+    if (hex.length !== 6) {
+        return "#ffffff";
+    }
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) {
+        return "#ffffff";
+    }
+    // YIQ formula to determine brightness
+    const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+    return yiq >= 128 ? "#000000" : "#ffffff";
+}
+
+function applyAccentColor(color) {
+    if (!color) return;
+    const foreground = getAccentForeground(color);
+    document.documentElement.style.setProperty("--accent", color);
+    document.documentElement.style.setProperty("--accent-foreground", foreground);
+    try {
+        localStorage.setItem(ACCENT_COLOR_STORAGE_KEY, color);
+    } catch (e) {
+        // ignore storage errors (private mode, etc.)
+    }
+}
+
+function getStoredTheme() {
+    try {
+        return localStorage.getItem(THEME_STORAGE_KEY);
+    } catch (e) {
+        return null;
+    }
+}
+
+function applyTheme(theme) {
+    const value = theme === "light" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", value);
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, value);
+    } catch (e) {
+        // ignore storage errors
+    }
+}
+
+// Initialize theme and accent color from stored preferences, if any
+const initialTheme = getStoredTheme() || DEFAULT_THEME;
+applyTheme(initialTheme);
+
+const initialAccentColor = getStoredAccentColor();
+if (initialAccentColor) {
+    // This will also compute and set --accent-foreground
+    applyAccentColor(initialAccentColor);
+}
+
 // --- DOM Elements ---
 const DOMElements = {
     authContainer: document.getElementById('auth-container'),
@@ -35,12 +112,49 @@ function createNav(user) {
     centerSection.appendChild(createPostToggle);
     nav.appendChild(centerSection);
 
-    // Right section: Logout button
+    // Right section: Theme toggle, Accent color picker, Logout button
     const rightSection = document.createElement('div');
+
+    // Theme toggle
+    const themeToggleWrapper = document.createElement('div');
+    themeToggleWrapper.id = 'theme-toggle-wrapper';
+
+    const themeToggleLabel = document.createElement('span');
+    themeToggleLabel.id = 'theme-toggle-label';
+    themeToggleLabel.textContent = 'Theme';
+
+    const themeToggle = document.createElement('button');
+    themeToggle.id = 'theme-toggle';
+    const currentTheme = getStoredTheme() || DEFAULT_THEME;
+    themeToggle.textContent = currentTheme === 'light' ? 'Light' : 'Dark';
+    themeToggle.setAttribute('data-theme', currentTheme);
+
+    themeToggleWrapper.appendChild(themeToggleLabel);
+    themeToggleWrapper.appendChild(themeToggle);
+    rightSection.appendChild(themeToggleWrapper);
+
+    // Accent color picker
+    const accentWrapper = document.createElement('div');
+    accentWrapper.id = 'accent-color-wrapper';
+
+    const accentLabel = document.createElement('span');
+    accentLabel.id = 'accent-color-label';
+    accentLabel.textContent = 'Accent';
+
+    const accentColorPicker = document.createElement('input');
+    accentColorPicker.type = 'color';
+    accentColorPicker.id = 'accent-color-picker';
+    accentColorPicker.value = getStoredAccentColor() || DEFAULT_ACCENT_COLOR;
+
+    accentWrapper.appendChild(accentLabel);
+    accentWrapper.appendChild(accentColorPicker);
+    rightSection.appendChild(accentWrapper);
+
     const logoutButton = document.createElement('button');
     logoutButton.id = 'logout-button';
     logoutButton.textContent = '➜]';
     rightSection.appendChild(logoutButton);
+
     nav.appendChild(rightSection);
 
     return nav;
@@ -114,6 +228,8 @@ export function showMainFeedView(user) {
     const createPostForm = document.getElementById('create-post-form');
     const floatingChatBtn = document.getElementById('floating-chat-btn');
     const createPostToggle = document.getElementById('create-post-toggle');
+    const accentColorPicker = document.getElementById('accent-color-picker');
+    const themeToggle = document.getElementById('theme-toggle');
 
     if (logoutButton) {
         logoutButton.addEventListener('click', (e) => {
@@ -151,6 +267,22 @@ export function showMainFeedView(user) {
         });
     }
 
+    if (accentColorPicker) {
+        accentColorPicker.addEventListener('input', (e) => {
+            applyAccentColor(e.target.value);
+        });
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('click', () => {
+            const current = getStoredTheme() || DEFAULT_THEME;
+            const next = current === 'light' ? 'dark' : 'light';
+            applyTheme(next);
+            themeToggle.textContent = next === 'light' ? 'Light' : 'Dark';
+            themeToggle.setAttribute('data-theme', next);
+        });
+    }
+
     // Load dynamic content
     loadPosts(); // Load posts when showing the main view
     loadCategories(); // Load categories for the create post form
@@ -179,23 +311,23 @@ export function showAuthView() {
     // The router will handle showing login or register specifically.
 }
 
-// export function show404View() {
-//     // Hide all other views
-//     DOMElements.authContainer.classList.add('hidden');
-//     DOMElements.mainContainer.classList.add('hidden');
+export function show404View() {
+    // Hide all other views
+    DOMElements.authContainer.classList.add('hidden');
+    DOMElements.mainContainer.classList.add('hidden');
 
-//     // Clear existing content in notFoundView
-//     while (DOMElements.notFoundView.firstChild) {
-//         DOMElements.notFoundView.removeChild(DOMElements.notFoundView.firstChild);
-//     }
+    // Clear existing content in notFoundView
+    while (DOMElements.notFoundView.firstChild) {
+        DOMElements.notFoundView.removeChild(DOMElements.notFoundView.firstChild);
+    }
 
-//     // Create and append the 404 view content
-//     const notFoundContent = create404View();
-//     DOMElements.notFoundView.appendChild(notFoundContent);
+    // Create and append the 404 view content
+    const notFoundContent = create404View();
+    DOMElements.notFoundView.appendChild(notFoundContent);
 
-//     // Show the 404 view
-//     DOMElements.notFoundView.classList.remove('hidden');
-// }
+    // Show the 404 view
+    DOMElements.notFoundView.classList.remove('hidden');
+}
 
 // Toggle between main view and chat view
 function toggleChatView() {
