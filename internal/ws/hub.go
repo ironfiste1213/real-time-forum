@@ -3,9 +3,10 @@ package ws
 import (
 	"encoding/json"
 	"log"
-	"real-time-forum/internal/models"
 	"sync"
 	"time"
+
+	"real-time-forum/internal/models"
 )
 
 // Hub manages WebSocket connections and routes messages between clients
@@ -27,16 +28,19 @@ type Hub struct {
 	Users map[int]*Client // userID -> client mapping
 }
 
-// NewHub creates a new hub instance
+// NewHub creates a new hub instance with initialized channels and data structures
+// Returns a pointer to Hub ready to manage WebSocket connections and message routing
+// Initializes all necessary channels for client registration, unregistration, broadcasting,
+// private messaging, and history loading operations
 func NewHub() *Hub {
 	return &Hub{
-		clients:        make(map[*Client]bool),
-		Register:       make(chan *Client),
-		Unregister:     make(chan *Client),
-		Broadcast:      make(chan []byte),
-		PrivateMessage: make(chan PrivateMessageData),
-		LoadHistory:    make(chan *Message),
-		Users:          make(map[int]*Client),
+		clients:        make(map[*Client]bool),        // Map to track registered clients (client -> true)
+		Register:       make(chan *Client),            // Channel for client registration requests
+		Unregister:     make(chan *Client),            // Channel for client unregistration requests
+		Broadcast:      make(chan []byte),             // Channel for broadcasting messages to all clients
+		PrivateMessage: make(chan PrivateMessageData), // Channel for routing private messages between users
+		LoadHistory:    make(chan *Message),           // Channel for history loading requests
+		Users:          make(map[int]*Client),         // Map for quick userID -> client lookup
 	}
 }
 
@@ -62,26 +66,33 @@ func (h *Hub) Run() {
 	}
 }
 
-// registerClient adds a new client to the hub
+// registerClient adds a new client to the hub and performs initialization tasks
+// @param client - The WebSocket client to register
+// Registers the client, updates user mappings, broadcasts online status, and sends online users list
 func (h *Hub) registerClient(client *Client) {
-	log.Printf("[DEBUG] Registering client for user %d (%s)", client.userID, client.nickname)
+	// Step 1: Log the registration attempt
+	log.Printf("[hub.go:registerClient] Registering client for user %d (%s)", client.userID, client.nickname)
+
+	// Step 2: Add client to the clients map for tracking
 	h.clients[client] = true
+
+	// Step 3: Add to user lookup map (thread-safe)
 	h.Mu.Lock()
 	h.Users[client.userID] = client
 	h.Mu.Unlock()
 
-	// Broadcast user online status
-	log.Printf("[DEBUG] Broadcasting user online: %d (%s)", client.userID, client.nickname)
+	// Step 4: Broadcast user online status to all connected clients
+	log.Printf("[hub.go:registerClient] [DEBUG] Broadcasting user online: %d (%s)", client.userID, client.nickname)
 	h.broadcastUserOnline(client.userID, client.nickname)
 
-	// Send current online users list to the new client
-	log.Printf("[DEBUG] Sending online users list to new client %d", client.userID)
+	// Step 5: Send current online users list to the newly connected client
+	log.Printf("[hub.go:registerClient] Sending online users list to new client %d", client.userID)
 	h.sendOnlineUsersList(client)
 }
 
 // unregisterClient removes a client from the hub
 func (h *Hub) unregisterClient(client *Client) {
-	log.Printf("[DEBUG] Unregistering client for user %d (%s)", client.userID, client.nickname)
+	log.Printf("[hub.go:unregisterClient] [DEBUG] Unregistering client for user %d (%s)", client.userID, client.nickname)
 
 	if _, ok := h.clients[client]; ok {
 		delete(h.clients, client)
@@ -91,21 +102,27 @@ func (h *Hub) unregisterClient(client *Client) {
 		close(client.send)
 
 		// Broadcast user offline status
-		log.Printf("[DEBUG] Broadcasting user offline: %d (%s)", client.userID, client.nickname)
+		log.Printf("[hub.go:unregisterClient] [DEBUG] Broadcasting user offline: %d (%s)", client.userID, client.nickname)
 		h.broadcastUserOffline(client.userID, client.nickname)
 	}
 }
 
 // broadcastMessage sends a message to all connected clients
+// @param message - The byte array message to broadcast
+// Iterates through all clients and sends the message, removing unresponsive clients
 func (h *Hub) broadcastMessage(message []byte) {
-	log.Printf("[DEBUG] Broadcasting message to %d clients", len(h.clients))
+	// Step 1: Log broadcast attempt with client count
+	log.Printf("[hub.go:broadcastMessage] [DEBUG] Broadcasting message to %d clients", len(h.clients))
+
+	// Step 2: Iterate through all registered clients
 	for client := range h.clients {
 		select {
 		case client.send <- message:
-			log.Printf("[DEBUG] Message sent to user %d", client.userID)
+			// Step 3: Message sent successfully
+			log.Printf("[hub.go:broadcastMessage] [DEBUG] Message sent to user %d", client.userID)
 		default:
-			// Client channel is full, remove client
-			log.Printf("[DEBUG] Client channel full, removing user %d", client.userID)
+			// Step 4: Client channel is full (client unresponsive), remove from hub
+			log.Printf("[hub.go:broadcastMessage] [DEBUG] Client channel full, removing user %d", client.userID)
 			close(client.send)
 			delete(h.clients, client)
 			h.Mu.Lock()
@@ -117,25 +134,25 @@ func (h *Hub) broadcastMessage(message []byte) {
 
 // handlePrivateMessage routes a private message to the target user
 func (h *Hub) handlePrivateMessage(data PrivateMessageData) {
-	log.Printf("[DEBUG] Handling private message from %d to %d", data.Message.FromUserID, data.Message.ToUserID)
+	log.Printf("[hub.go:handlePrivateMessage] [DEBUG] Handling private message from %d to %d", data.Message.FromUserID, data.Message.ToUserID)
 	targetClient, exists := h.Users[data.ToUserID]
 	if !exists {
 		// Target user is offline, send failure notification back to sender
-		log.Printf("[DEBUG] Target user %d is offline, sending failure notification", data.ToUserID)
+		log.Printf("[hub.go:handlePrivateMessage][DEBUG] Target user %d is offline, sending failure notification", data.ToUserID)
 		h.sendMessageFailed(data.Message.FromUserID, data.Message.ToUserID)
 		return
 	}
 
 	// Send the message to target user
-	log.Printf("[DEBUG] Sending message to target user %d", data.ToUserID)
+	log.Printf("[hub.go:handlePrivateMessage] [DEBUG] Sending message to target user %d", data.ToUserID)
 	select {
 	case targetClient.send <- data.Data:
 		// Message sent successfully, notify sender
-		log.Printf("[DEBUG] Message delivered, notifying sender %d", data.Message.FromUserID)
+		log.Printf("[hub.go:handlePrivateMessage][DEBUG] Message delivered, notifying sender %d", data.Message.FromUserID)
 		h.sendMessageDelivered(data.Message.FromUserID, data.Message.MessageID)
 	default:
 		// Target client channel is full
-		log.Printf("[DEBUG] Target client channel full, sending failure notification")
+		log.Printf("[hub.go:handlePrivateMessage][DEBUG] Target client channel full, sending failure notification")
 		h.sendMessageFailed(data.Message.FromUserID, data.Message.ToUserID)
 	}
 }
@@ -172,9 +189,9 @@ func (h *Hub) sendOnlineUsersList(client *Client) {
 
 	select {
 	case client.send <- message.ToJSON():
-		log.Printf("[DEBUG] Sent online users list to user %d: %v", client.userID, onlineUsers)
+		log.Printf("[hub.go:sendOnlineUsersList][DEBUG] Sent online users list to user %d: %v", client.userID, onlineUsers)
 	default:
-		log.Printf("Could not send online users list to user %d", client.userID)
+		log.Printf("[hub.go:sendOnlineUsersList]Could not send online users list to user %d", client.userID)
 	}
 }
 
@@ -193,7 +210,7 @@ func (h *Hub) sendMessageDelivered(senderID int, messageID int) {
 	select {
 	case senderClient.send <- message.ToJSON():
 	default:
-		log.Printf("Could not send delivery confirmation to user %d", senderID)
+		log.Printf("[hub.go:sendMessageDelivered] Could not send delivery confirmation to user %d", senderID)
 	}
 }
 
@@ -212,18 +229,18 @@ func (h *Hub) sendMessageFailed(senderID int, receiverID int) {
 	select {
 	case senderClient.send <- message.ToJSON():
 	default:
-		log.Printf("Could not send failure notification to user %d", senderID)
+		log.Printf("[hub.go:sendMessageFailed] Could not send failure notification to user %d", senderID)
 	}
 }
 
 // handleLoadHistory loads message history for a conversation and sends it back to the requesting client
 func (h *Hub) handleLoadHistory(req *Message) {
-	log.Printf("[DEBUG] Handling load history request from %d for conversation with %d", req.FromUserID, req.ToUserID)
+	log.Printf("[hub.go:handleLoadHistory][DEBUG] Handling load history request from %d for conversation with %d", req.FromUserID, req.ToUserID)
 
 	// Get the requesting client
 	requestingClient, exists := h.Users[req.FromUserID]
 	if !exists {
-		log.Printf("[DEBUG] Requesting client %d not found", req.FromUserID)
+		log.Printf("[hub.go:handleLoadHistory][DEBUG] Requesting client %d not found", req.FromUserID)
 		return
 	}
 
@@ -239,12 +256,12 @@ func (h *Hub) handleLoadHistory(req *Message) {
 		// Use injected repository function
 		messages, err = messageRepoFunc(req.FromUserID, req.ToUserID, 50, req.Offset)
 		if err != nil {
-			log.Printf("[DEBUG] Failed to load message history via injected repo: %v", err)
+			log.Printf("[hub.go:handleLoadHistory][DEBUG] Failed to load message history via injected repo: %v", err)
 			return
 		}
 	} else {
 		// Fallback to placeholder (empty messages)
-		log.Printf("[DEBUG] No message repo injected, returning empty history")
+		log.Printf("[hub.go:handleLoadHistory][DEBUG] No message repo injected, returning empty history")
 		messages = []models.PrivateMessage{}
 	}
 
@@ -270,16 +287,16 @@ func (h *Hub) handleLoadHistory(req *Message) {
 	// Marshal to JSON
 	responseJSON, err := json.Marshal(responseData)
 	if err != nil {
-		log.Printf("[DEBUG] Failed to marshal history response: %v", err)
+		log.Printf("[hub.go:handleLoadHistory][DEBUG] Failed to marshal history response: %v", err)
 		return
 	}
 
 	// Send to requesting client
 	select {
 	case requestingClient.send <- responseJSON:
-		log.Printf("[DEBUG] Sent message history to user %d (%d messages)", req.FromUserID, len(messages))
+		log.Printf("[hub.go:handleLoadHistory][DEBUG] Sent message history to user %d (%d messages)", req.FromUserID, len(messages))
 	default:
-		log.Printf("[DEBUG] Could not send history to user %d", req.FromUserID)
+		log.Printf("[hub.go:handleLoadHistory][DEBUG] Could not send history to user %d", req.FromUserID)
 	}
 }
 

@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
+
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
-	"strconv"
-	"strings"
 )
 
 // CreatePostHandler handles the creation of a new post.
@@ -29,7 +30,7 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("CreatePostHandler: Authenticated user ID: %d, Nickname: %s", user.ID, user.Nickname)
+	log.Printf("[posts.go:CreatePostHandler] Authenticated user ID: %d, Nickname: %s", user.ID, user.Nickname)
 
 	// 3. Parse the JSON request body
 	var req models.CreatePostRequest
@@ -48,7 +49,7 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// --- DEBUG: Log the parsed data ---
-	log.Printf("CreatePostHandler: Parsed post data: Title='%s', Content='%s', CategoryIDs=%v", post.Title, post.Content, req.CategoryIDs)
+	log.Printf("[posts.go:CreatePostHandler] Parsed post data: Title='%s', Content='%s', CategoryIDs=%v", post.Title, post.Content, req.CategoryIDs)
 
 	// 5. Save the post to the database
 	postID, err := repo.CreatePost(post, req.CategoryIDs)
@@ -89,7 +90,7 @@ func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
 	idStr = strings.TrimSuffix(idStr, "/")                 // Remove trailing slash if it exists
 	id, err := strconv.Atoi(idStr)
 	if err != nil {
-		log.Printf("GetPostByIDHandler: Invalid post ID format: %s", idStr)
+		log.Printf("[posts.go:GetPostByIDHandler] Invalid post ID format: %s", idStr)
 		RespondWithError(w, http.StatusBadRequest, "Invalid post ID")
 		return
 	}
@@ -100,7 +101,7 @@ func GetPostByIDHandler(w http.ResponseWriter, r *http.Request) {
 	post, err := repo.GetPostByID(postID)
 	if err != nil {
 		// The repo layer will log the specific DB error. This log is for the handler context.
-		log.Printf("GetPostByIDHandler: repo.GetPostByID failed for ID %d: %v", postID, err)
+		log.Printf("[posts.go:GetPostByIDHandler] repo.GetPostByID failed for ID %d: %v", postID, err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve post")
 		return
 	}

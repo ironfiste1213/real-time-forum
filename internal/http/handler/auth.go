@@ -6,6 +6,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
@@ -117,7 +118,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	log.Printf("LOGIN HANDLER: Raw request body: %s", string(bodyBytes))
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		log.Printf("LOGIN HANDLER: ERROR decoding JSON: %v", err)
+		log.Printf("[auth.go:LoginHandler] ERROR decoding JSON: %v", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
@@ -126,20 +127,20 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// 2. Look up the user by email or nickname
 	user, err := repo.GetUserByEmailOrNickname(req.Identifier)
 	if err != nil {
-		log.Printf("LOGIN HANDLER: ERROR during user lookup: %v", err)
+		log.Printf("[auth.go:LoginHandler] ERROR during user lookup: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 	if user == nil {
-		log.Printf("LOGIN HANDLER: User not found for identifier: %s", req.Identifier)
+		log.Printf("[auth.go:LoginHandler] User not found for identifier: %s", req.Identifier)
 		RespondWithError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
-	log.Printf("LOGIN HANDLER: User found: %s (ID: %d)", user.Nickname, user.ID)
+	log.Printf("[auth.go:LoginHandler] User found: %s (ID: %d)", user.Nickname, user.ID)
 
 	// 3. Verify the password
 	if !auth.CheckPasswordHash(req.Password, user.PasswordHash) {
-		log.Printf("LOGIN HANDLER: Invalid password for user: %s", user.Nickname)
+		log.Printf("[auth.go:LoginHandler] Invalid password for user: %s", user.Nickname)
 		RespondWithError(w, http.StatusUnauthorized, "Invalid credentials")
 		return
 	}
@@ -147,14 +148,14 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	// 4. Create a new session
 	sessionToken, err := auth.CreateSession(user.ID)
 	if err != nil {
-		log.Printf("LOGIN HANDLER: ERROR creating session: %v", err)
+		log.Printf("[auth.go:LoginHandler] ERROR creating session: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	// 5. Set the session cookie
 	auth.SetSessionCookie(w, sessionToken)
-	log.Printf("LOGIN HANDLER: Session created successfully for user: %s", user.Nickname)
+	log.Printf("[auth.go:LoginHandler] Session created successfully for user: %s", user.Nickname)
 
 	// 6. Send a success response
 	w.Header().Set("Content-Type", "application/json")
@@ -205,7 +206,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		// Log the error for debugging, but continue to ensure the client-side cookie is removed.
 		// This makes the logout process more resilient.
-		log.Printf("LOGOUT HANDLER: Failed to delete session from database: %v", err)
+		log.Printf("[auth.go:LogoutHandler] Failed to delete session from database: %v", err)
 	}
 
 	auth.ClearSessionCookie(w)

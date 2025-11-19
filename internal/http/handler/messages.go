@@ -4,11 +4,12 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"time"
+
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
-	"strconv"
-	"time"
 )
 
 // SendPrivateMessageHandler handles sending private messages
@@ -56,7 +57,7 @@ func SendPrivateMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	err = repo.CreatePrivateMessage(message)
 	if err != nil {
-		log.Printf("Error creating private message: %v", err)
+		log.Printf("[messages.go:SendPrivateMessageHandler] Error creating private message: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to send message")
 		return
 	}
@@ -111,15 +112,18 @@ func GetPrivateMessagesHandler(w http.ResponseWriter, r *http.Request) {
 
 	messages, err := repo.GetPrivateMessagesBetweenUsers(user.ID, otherUserID, limit, offset)
 	if err != nil {
-		log.Printf("Error getting private messages: %v", err)
+		// Flow: Failed to retrieve messages
+		log.Printf("[messages.go:GetPrivateMessagesHandler] Failed to get messages: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve messages")
 		return
 	}
+	// Flow: Retrieved messages successfully
+	log.Printf("Messages: Retrieved %d messages for user %d", len(messages), user.ID)
 
 	// Mark messages as read
 	err = repo.MarkMessagesAsRead(otherUserID, user.ID)
 	if err != nil {
-		log.Printf("Error marking messages as read: %v", err)
+		log.Printf("[messages.go:GetPrivateMessagesHandler] Failed to mark messages as read: %v", err)
 		// Don't fail the request for this
 	}
 
@@ -152,7 +156,7 @@ func GetConversationsHandler(w http.ResponseWriter, r *http.Request) {
 
 	conversations, err := repo.GetRecentConversations(user.ID, limit)
 	if err != nil {
-		log.Printf("Error getting conversations: %v", err)
+		log.Printf("[messages.go:GetConversationsHandler] Error getting conversations: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Failed to retrieve conversations")
 		return
 	}

@@ -97,7 +97,7 @@ func InitDB(dataSourceName string) error {
 		return err
 	}
 
-	log.Println("Database connected successfully!")
+	log.Println("[db.go:InitDB] Database connected successfully!")
 	return nil
 }
 

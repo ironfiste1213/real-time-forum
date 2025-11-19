@@ -179,23 +179,23 @@ export function showAuthView() {
     // The router will handle showing login or register specifically.
 }
 
-export function show404View() {
-    // Hide all other views
-    DOMElements.authContainer.classList.add('hidden');
-    DOMElements.mainContainer.classList.add('hidden');
+// export function show404View() {
+//     // Hide all other views
+//     DOMElements.authContainer.classList.add('hidden');
+//     DOMElements.mainContainer.classList.add('hidden');
 
-    // Clear existing content in notFoundView
-    while (DOMElements.notFoundView.firstChild) {
-        DOMElements.notFoundView.removeChild(DOMElements.notFoundView.firstChild);
-    }
+//     // Clear existing content in notFoundView
+//     while (DOMElements.notFoundView.firstChild) {
+//         DOMElements.notFoundView.removeChild(DOMElements.notFoundView.firstChild);
+//     }
 
-    // Create and append the 404 view content
-    const notFoundContent = create404View();
-    DOMElements.notFoundView.appendChild(notFoundContent);
+//     // Create and append the 404 view content
+//     const notFoundContent = create404View();
+//     DOMElements.notFoundView.appendChild(notFoundContent);
 
-    // Show the 404 view
-    DOMElements.notFoundView.classList.remove('hidden');
-}
+//     // Show the 404 view
+//     DOMElements.notFoundView.classList.remove('hidden');
+// }
 
 // Toggle between main view and chat view
 function toggleChatView() {

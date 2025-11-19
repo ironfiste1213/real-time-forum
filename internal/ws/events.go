@@ -4,6 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+
+	//"log"
 	"time"
 )
 
@@ -80,7 +82,7 @@ func NewMessage(msgType MessageType, fromUserID, toUserID int, content string) *
 func (m *Message) ToJSON() []byte {
 	data, err := json.Marshal(m)
 	if err != nil {
-		log.Printf("Error marshaling message: %v", err)
+		log.Printf("[events.go:ToJSON] Error marshaling message: %v", err)
 		return []byte{}
 	}
 	return data
@@ -97,6 +99,6 @@ func FromJSON(data []byte) (*Message, error) {
 
 // logError is a helper for consistent error logging
 func logError(msg string) error {
-	log.Printf("Message validation error: %s", msg)
+	log.Printf("[events.go:logError] Message validation error: %s", msg)
 	return fmt.Errorf("message validation error: %s", msg)
 }

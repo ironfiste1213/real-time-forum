@@ -1,98 +1,127 @@
- // WebSocket client for real-time chat
- import { checkSession } from './session.js';
+// WebSocket client for real-time chat functionality
+// This class manages the WebSocket connection, handles incoming/outgoing messages,
+// maintains user online status, conversation state, and provides methods for
+// sending private messages and managing the chat UI state.
+import { checkSession } from './session.js';
 
-
- class ChatWebSocket {
+class ChatWebSocket {
+    /**
+     * Constructor initializes all properties for the WebSocket client
+     * Sets up data structures to track connection state, users, conversations, and messages
+     */
     constructor() {
-        this.ws = null;
-        this.isConnected = false;
-        this.connectionStatus = 'disconnected';
-        this.onlineUsers = [];
-        this.allUsers = []; // All registered users
-        this.conversations = []; // Recent conversations
-        this.activeConversation = null; // Currently selected conversation
-        this.privateMessages = {}; // userId -> messages array
-        this.currentUser = null;
-        this.reconnectAttempts = 0;
-        this.maxReconnectDelay = 30000; // 30 seconds
-        this.reconnectDelay = 1000; // Start with 1 second
-        this.isChatOpen = false;
-        this.messageIdCounter = 0;
-        this.conversationBars = {}; // userId -> conversation bar element
+        // WebSocket connection management
+        this.ws = null; // The actual WebSocket connection object. Null when not connected.
+        this.isConnected = false; // Quick boolean check for connection status (true/false)
+        this.connectionStatus = 'disconnected'; // String status for UI: 'connecting', 'connected', 'disconnected', 'error'
+
+        // User and online status tracking
+        this.onlineUsers = []; // Array of nicknames currently online (updated via WebSocket messages)
+        this.allUsers = []; // Complete list of all registered users from /api/users endpoint
+        this.conversations = []; // Array of conversation objects with user_id, nickname, unread_count, last_message_time
+
+        // Active conversation state
+        this.activeConversation = null; // Currently selected private chat: {userId: number, nickname: string}
+        this.privateMessages = {}; // Object storing message arrays keyed by user ID: {userId: [messages]}
+
+        // Authentication and session
+        this.currentUser = null; // Authenticated user object with id, nickname, etc.
+
+        // Reconnection logic
+        this.reconnectAttempts = 0; // Number of reconnection attempts made
+        this.maxReconnectDelay = 30000; // Maximum delay between reconnection attempts (30 seconds)
+        this.reconnectDelay = 1000; // Current delay, starts at 1s, doubles each attempt
+
+        // UI state management
+        this.isChatOpen = false; // Whether the chat panel is currently visible
+        this.messageIdCounter = 0; // Counter for generating unique temporary message IDs
+        this.conversationBars = {}; // Map of userId -> floating notification bar elements
     }
 
-    // Initialize WebSocket connection
+    /**
+     * Initializes and establishes a WebSocket connection to the server
+     * @param {Object} e - The authenticated user object containing user details
+     * Sets up event handlers for connection lifecycle and loads initial data
+     */
     connect(e) {
-        console.log('[ws.js:connect] [DEBUG] ChatWebSocket.connect called with:', e);
+        // Step 1: Check if already connected to avoid duplicate connections
+        console.log('WebSocket: Connecting...');
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            console.log('[ws.js:connect] [DEBUG] Already connected, skipping');
-            return; // Already connected
+            console.log('WebSocket: Already connected, skipping');
+            return; // Exit early if connection already exists
         }
 
+        // Step 2: Update connection status to 'connecting' for UI feedback
         this.connectionStatus = 'connecting';
         this.updateConnectionStatus();
 
-        // Get current user from parameter (already checked in session)
+        // Step 3: Store the authenticated user object for message sending and UI logic
         this.currentUser = e;
-        console.log('[ws.js:connect] ---------------------------------[DEBUG] Current user set to:', this.currentUser);
+        console.log('WebSocket: User authenticated');
 
+        // Step 4: Validate user session - abort if no valid user
         if (!this.currentUser) {
-            console.error('[ws.js:connect] [DEBUG] No user session found, aborting connection');
+            console.error('WebSocket: No user session found, aborting connection');
             return;
         }
 
-        // Simplified connection - use user ID from session for now
+        // Step 5: Extract user ID for WebSocket URL parameter
         const userId = this.getCurrentUserId(e);
-        console.log('[ws.js:connect] [DEBUG] User ID for WebSocket:', userId);
+        console.log(`WebSocket: Connecting user ${userId}`);
 
+        // Step 6: Create WebSocket connection with user ID in URL
         const wsUrl = `ws://localhost:8083/ws?user_id=${userId}`;
-        console.log('[ws.js:connect] [DEBUG] Connecting to WebSocket URL:', wsUrl);
         this.ws = new WebSocket(wsUrl);
 
-        // Load all users list when connecting
-        console.log('[ws.js:connect] [DEBUG] Calling loadAllUsers');
-        this.loadAllUsers();
+        // Step 7: Load initial data (users and conversations) while connecting
+        this.loadAllUsers(); // Fetch all registered users for the users list
+        this.loadConversations(); // Fetch user's conversation history
 
-        // Load conversations when connecting
-        console.log('[ws.js:connect] [DEBUG] Calling loadConversations');
-        this.loadConversations();
+        // Step 8: Set up WebSocket event handlers
 
+        // Handle successful connection establishment
         this.ws.onopen = (event) => {
             console.log('[ws.js:connect] [DEBUG] WebSocket connected successfully');
+            // Update connection state
             this.isConnected = true;
             this.connectionStatus = 'connected';
+            // Reset reconnection counters on successful connection
             this.reconnectAttempts = 0;
             this.reconnectDelay = 1000;
             this.updateConnectionStatus();
 
-            // Send join message
+            // Notify server that user has joined the chat system
             console.log('[ws.js:connect] [DEBUG] Sending join message');
             this.sendJoinMessage();
         };
 
+        // Handle incoming messages from server
         this.ws.onmessage = (event) => {
-            console.log('[ws.js:connect] [DEBUG] WebSocket message received:', event.data);
             try {
+                // Parse JSON message from server
                 const data = JSON.parse(event.data);
-                console.log('[ws.js:connect] [DEBUG] Parsed WebSocket message:', data);
+                // Route message to appropriate handler based on message type
                 this.handleMessage(data);
             } catch (error) {
-                console.error('[ws.js:connect] [DEBUG] Error parsing WebSocket message:', error);
+                console.error('WebSocket: Error parsing message:', error);
             }
         };
 
+        // Handle connection closure
         this.ws.onclose = (event) => {
             console.log('[ws.js:connect] WebSocket disconnected:', event.code, event.reason);
+            // Update connection state
             this.isConnected = false;
             this.connectionStatus = 'disconnected';
             this.updateConnectionStatus();
 
-            // Attempt reconnection if not intentional disconnect
+            // Attempt reconnection unless it was an intentional disconnect (code 1000)
             if (event.code !== 1000) { // 1000 = normal closure
                 this.attemptReconnection();
             }
         };
 
+        // Handle connection errors
         this.ws.onerror = (error) => {
             console.error('[ws.js:connect] WebSocket error:', error);
             this.connectionStatus = 'error';
@@ -111,19 +140,28 @@
         this.updateConnectionStatus();
     }
 
-    // Send message to server
+    /**
+     * Sends a message to the WebSocket server
+     * @param {string} type - The message type (e.g., 'private_message', 'join', 'leave')
+     * @param {Object} data - Additional message data to include
+     * Only sends if WebSocket is in OPEN state, otherwise logs warning
+     */
     send(type, data = {}) {
+        // Step 1: Check if WebSocket connection is available and open
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+            // Step 2: Construct message object with type and additional data
             const message = { type, ...data };
+            // Step 3: Send JSON-encoded message to server
             this.ws.send(JSON.stringify(message));
         } else {
+            // Step 4: Log warning if unable to send (connection not ready)
             console.warn('[ws.js:send] WebSocket not connected, cannot send message');
         }
     }
 
     // Send join message
     sendJoinMessage() {
-        this.send('join', { username: this.currentUser.nickname });
+        this.send('join', { username: this.currentUser.nickname }); 
     }
 
     // Send leave message
@@ -168,17 +206,29 @@
 
 
 
-    // Handle user online
+    /**
+     * Handles notification that a user has come online
+     * @param {string} nickname - The nickname of the user who came online
+     * Updates online users list, refreshes UI, and shows notification if chat not open
+     */
     handleUserOnline(nickname) {
         console.log('[ws.js:handleUserOnline] [DEBUG] handleUserOnline called with nickname:', nickname);
+
+        // Step 1: Validate nickname and check if user is not already in online list
         if (nickname && !this.onlineUsers.includes(nickname)) {
+            // Step 2: Add user to online users array
             console.log('[ws.js:handleUserOnline] [DEBUG] Adding user to online list:', nickname);
             this.onlineUsers.push(nickname);
-            this.updateUsersList(); // Update the users list to reflect online status
-            if (nickname !==this.currentUser?.nickname && !this.isChatOpen) {
+
+            // Step 3: Update the users list UI to show online status
+            this.updateUsersList();
+
+            // Step 4: Show notification if it's not the current user and chat panel is closed
+            if (nickname !== this.currentUser?.nickname && !this.isChatOpen) {
                 this.showOnlineNotification(nickname);
             }
         } else {
+            // Step 5: Skip if user already online or invalid nickname
             console.log('[ws.js:handleUserOnline] [DEBUG] User already online or invalid nickname:', nickname);
         }
     }
@@ -244,7 +294,26 @@
     // Handle message delivered confirmation
     handleMessageDelivered(messageId) {
         console.log('[ws.js:handleMessageDelivered] Message delivered:', messageId);
-        // Could add visual confirmation here if needed
+
+        // Find the message in privateMessages and mark as delivered
+        let found = false;
+        for (const userId in this.privateMessages) {
+            const messages = this.privateMessages[userId];
+            const message = messages.find(msg => msg.id === messageId || msg.temp_id === messageId);
+            if (message) {
+                message.delivered = true;
+                found = true;
+                console.log('[ws.js:handleMessageDelivered] Marked message as delivered:', messageId);
+                // Refresh the display if this is the active conversation
+                if (this.activeConversation && parseInt(userId) === this.activeConversation.userId) {
+                    this.displayPrivateMessages(userId);
+                }
+                break;
+            }
+        }
+        if (!found) {
+            console.warn('[ws.js:handleMessageDelivered] Message not found for delivery confirmation:', messageId);
+        }
     }
 
     // Handle message delivery failure
@@ -274,8 +343,13 @@
 
 
 
-    // Generate unique message ID
+    /**
+     * Generates a unique temporary message ID for local tracking
+     * @returns {string} Unique message identifier combining timestamp and counter
+     * Used for tracking messages before server confirmation
+     */
     generateMessageId() {
+        // Step 1: Combine current timestamp with incrementing counter for uniqueness
         return `msg_${Date.now()}_${this.messageIdCounter++}`;
     }
 
@@ -342,32 +416,47 @@
         return null;
     }
 
-    // Load all users from API
+    /**
+     * Loads all registered users from the API to populate the users list
+     * Fetches user data and updates the UI to show online/offline status
+     * Essential for displaying available chat partners
+     */
     async loadAllUsers() {
         try {
+            // Step 1: Log loading attempt
             console.log('[ws.js:loadAllUsers] [DEBUG] Loading all users from API...');
+
+            // Step 2: Make API request to fetch all users
             const response = await fetch('/api/users', {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'same-origin' // Include session cookies
+                credentials: 'same-origin' // Include session cookies for authentication
             });
 
+            // Step 3: Check response status
             console.log('[ws.js:loadAllUsers] [DEBUG] Users API response status:', response.status);
             if (response.ok) {
+                // Step 4: Parse successful response
                 const users = await response.json();
                 console.log('[ws.js:loadAllUsers] [DEBUG] Loaded users:', users);
-                this.allUsers = users; // Store all users
+
+                // Step 5: Store users in instance variable
+                this.allUsers = users;
                 console.log('[ws.js:loadAllUsers] [DEBUG] allUsers now contains', this.allUsers.length, 'users');
+
+                // Step 6: Update UI to display users with online/offline status
                 console.log('[ws.js:loadAllUsers] [DEBUG] Calling updateUsersList to render users');
-                this.updateUsersList(); // Update the UI with online/offline status
+                this.updateUsersList();
                 console.log('[ws.js:loadAllUsers] [DEBUG] updateUsersList completed, users should be clickable now');
             } else {
+                // Step 7: Handle API error response
                 const errorText = await response.text();
                 console.error('[ws.js:loadAllUsers] [DEBUG] Failed to load users:', response.status, errorText);
             }
         } catch (error) {
+            // Step 8: Handle network or parsing errors
             console.error('[ws.js:loadAllUsers] [DEBUG] Error loading users:', error);
         }
     }
@@ -484,29 +573,34 @@
         console.log('[ws.js:updateUsersList] [DEBUG] updateUsersList completed');
     }
 
-    // Start conversation with a user
+    /**
+     * Initiates a private conversation with the specified user
+     * @param {number|string} userId - The ID of the user to start conversation with
+     * @param {string} nickname - The nickname of the user
+     * Sets up UI for private messaging and loads message history
+     */
     startConversation(userId, nickname) {
         console.log(`[ws.js:startConversation] Starting conversation with ${nickname} (ID: ${userId})`);
 
-        // Allow starting conversations - online status will be updated in real-time
-        // Don't block based on initial online status as it may not be synced yet
+        // Step 1: Allow starting conversations regardless of online status
+        // Online status may not be fully synced yet, so don't block based on it
 
-        // Set active conversation
+        // Step 2: Set the active conversation state
         this.activeConversation = { userId: parseInt(userId), nickname };
 
-        // Reflect name at the top header
+        // Step 3: Update the chat header to show the conversation partner's name
         this.updateChatHeaderTitle(nickname);
 
-        // Always load conversation history so server can mark messages as read
+        // Step 4: Load conversation history from server (also marks messages as read)
         this.loadConversationHistory(userId);
 
-        // Update UI to show private chat mode
+        // Step 5: Switch UI to private chat mode (shows input field, etc.)
         this.updateChatMode('private');
 
-        // Create or show conversation bar for this user
+        // Step 6: Create floating notification bar for this conversation
         this.createConversationBar(userId, nickname);
 
-        // Show the chat panel if it's not already open
+        // Step 7: Ensure chat panel is visible
         if (!this.isChatOpen) {
             this.showChat();
         }
@@ -614,6 +708,15 @@
             const timestamp = msg.createdAt || msg.created_at;
             timeSpan.textContent = new Date(timestamp).toLocaleTimeString();
             messageElement.appendChild(timeSpan);
+
+            // Add delivery checkmark for own messages that have been delivered
+            if (isOwnMessage && msg.delivered) {
+                const checkmarkSpan = document.createElement('span');
+                checkmarkSpan.className = 'message-delivered';
+                checkmarkSpan.textContent = '✔️';
+                checkmarkSpan.title = 'Delivered';
+                messageElement.appendChild(checkmarkSpan);
+            }
 
             messagesContainer.appendChild(messageElement);
             console.log('[ws.js:displayPrivateMessages] [DEBUG] Added message element to container');

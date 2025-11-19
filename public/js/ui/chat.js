@@ -1,5 +1,6 @@
 // Chat UI components and event handlers
 import chatWS from '../ws.js';
+import { handleLogout } from '../api/logout.js';
 
 // Chat UI initialization is now handled in views.js when showing main view
 
@@ -26,9 +27,14 @@ export function createChatPanel() {
     headerTitle.textContent = 'Chat';
     headerCenter.appendChild(headerTitle);
 
-    // Right: close button
+    // Right: logout and close buttons
     const headerRight = document.createElement('div');
     headerRight.className = 'chat-header-right';
+    const logoutBtn = document.createElement('button');
+    logoutBtn.id = 'chat-logout-btn';
+    logoutBtn.className = 'chat-logout-btn';
+    logoutBtn.textContent = '➜]';
+    headerRight.appendChild(logoutBtn);
     const closeBtn = document.createElement('button');
     closeBtn.id = 'chat-close-btn';
     closeBtn.className = 'chat-close-btn';
@@ -96,6 +102,8 @@ export function createChatPanel() {
 
 // Set up all chat-related event listeners (exported for use in views.js)
 export function setupChatEventListeners() {
+    // Flow: Setting up chat event listeners for UI interactions
+
     // Remove existing event listeners to prevent duplicates
     const chatToggleBtn = document.getElementById('chat-toggle-btn');
     if (chatToggleBtn) {
@@ -107,16 +115,26 @@ export function setupChatEventListeners() {
         });
     }
 
-    // No minimize button needed for separate conversation bars
+    // Chat logout button
+    const chatLogoutBtn = document.getElementById('chat-logout-btn');
+    if (chatLogoutBtn) {
+        // Clone and replace to remove existing listeners
+        const newChatLogoutBtn = chatLogoutBtn.cloneNode(true);
+        chatLogoutBtn.parentNode.replaceChild(newChatLogoutBtn, chatLogoutBtn);
+        newChatLogoutBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleLogout();
+        });
+    }
 
-    // Chat close button
+    // Chat close button - restores main view
     const chatCloseBtn = document.getElementById('chat-close-btn');
     if (chatCloseBtn) {
         // Clone and replace to remove existing listeners
         const newChatCloseBtn = chatCloseBtn.cloneNode(true);
         chatCloseBtn.parentNode.replaceChild(newChatCloseBtn, chatCloseBtn);
         newChatCloseBtn.addEventListener('click', () => {
-            // Instead of just closing chat, restore main view
+            // Flow: Closing chat and restoring main view
             const mainContainer = document.getElementById('main-container');
             const chatPanel = document.getElementById('chat-panel');
             const floatingChatBtn = document.getElementById('floating-chat-btn');
@@ -126,8 +144,6 @@ export function setupChatEventListeners() {
             if (floatingChatBtn) floatingChatBtn.style.display = 'block';
         });
     }
-
-    // No minimized chat bar handling needed for separate conversation bars
 
     // Chat form submission
     const chatForm = document.getElementById('chat-form');
@@ -155,9 +171,10 @@ export function setupChatEventListeners() {
         });
     }
 
-    // Window beforeunload (only add once)
+    // Window beforeunload - cleanup on page close
     if (!window.chatUnloadListenerAdded) {
         window.addEventListener('beforeunload', () => {
+            // Flow: Cleaning up WebSocket connection on page unload
             chatWS.sendLeaveMessage();
             chatWS.disconnect();
         });
@@ -195,6 +212,8 @@ export function initializeChatConnection(e) {
 
 // Disconnect chat (called from logout handler)
 export function disconnectChat() {
+    // Flow: Disconnecting chat and cleaning up
+    console.log('Chat: Disconnecting and clearing messages');
     chatWS.sendLeaveMessage();
     chatWS.disconnect();
     chatWS.clearMessages();

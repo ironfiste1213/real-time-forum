@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"path/filepath"
+	"runtime"
+
 	router "real-time-forum/internal/http"
 	"real-time-forum/internal/repo"
 )
@@ -20,7 +23,9 @@ func main() {
 	// --- Print all users to the terminal for debugging ---
 	users, err := repo.GetAllUsers()
 	if err != nil {
-		log.Printf("Could not retrieve users for debug printing: %v", err)
+		pc, file, line, _ := runtime.Caller(0)
+		fn := runtime.FuncForPC(pc).Name()
+		log.Printf("[%s:%s:%d] Could not retrieve users for debug printing: %v", filepath.Base(file), fn, line, err)
 	} else {
 		log.Println("--- Registered Users ---")
 		if len(users) == 0 {
@@ -42,8 +47,12 @@ func main() {
 	router.RegisterRoutes(mux)
 
 	// TODO: Add WebSocket endpoint /ws
-	log.Println("Starting server on http://localhost:8083")
+	pc, file, line, _ := runtime.Caller(0)
+	fn := runtime.FuncForPC(pc).Name()
+	log.Printf("[%s:%s:%d] Starting server on http://localhost:8083", filepath.Base(file), fn, line)
 	if err := http.ListenAndServe(":8083", mux); err != nil {
-		log.Fatalf("Could not start server: %s\n", err)
+		pc, file, line, _ := runtime.Caller(0)
+		fn := runtime.FuncForPC(pc).Name()
+		log.Fatalf("[%s:%s:%d] Could not start server: %s\n", filepath.Base(file), fn, line, err)
 	}
 }

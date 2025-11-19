@@ -2,6 +2,7 @@ package ws
 
 import (
 	"log"
+	
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -49,7 +50,7 @@ func (c *Client) Start() {
 func (c *Client) readPump() {
 	defer func() {
 		// Cleanup when read pump exits
-		log.Printf("[DEBUG] Client readPump exiting for user %d (%s)", c.userID, c.nickname)
+		log.Printf("[client.go:readPump] Client: ReadPump exiting for user %d (%s)", c.userID, c.nickname)
 		c.hub.Unregister <- c // Tell hub we're leaving
 		c.conn.Close()        // Close WebSocket connection
 	}()
@@ -61,23 +62,25 @@ func (c *Client) readPump() {
 		return nil
 	})
 
-	log.Printf("[DEBUG] Client readPump started for user %d (%s)", c.userID, c.nickname)
+	// Flow: Client readPump started
+	log.Printf("[client.go:readPump] Client: ReadPump started for user %d (%s)", c.userID, c.nickname)
 	for {
 		// Read message from WebSocket
 		_, data, err := c.conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("[DEBUG] WebSocket error for user %d (%s): %v", c.userID, c.nickname, err)
+				log.Printf("[client.go:readPump] Client: WebSocket error for user %d (%s): %v", c.userID, c.nickname, err)
 			}
 			break // Exit read loop on error
 		}
 
-		log.Printf("[DEBUG] Received message from user %d (%s): %s", c.userID, c.nickname, string(data))
+		// Flow: Processing incoming message
+		log.Printf("[client.go:readPump] Client: Received message from user %d (%s)", c.userID, c.nickname)
 
 		// Parse the message
 		message, err := FromJSON(data)
 		if err != nil {
-			log.Printf("[DEBUG] Failed to parse message from user %d: %v", c.userID, err)
+			log.Printf("[client.go:readPump] Client: Failed to parse message from user %d: %v", c.userID, err)
 			continue // Skip invalid messages
 		}
 
@@ -87,7 +90,8 @@ func (c *Client) readPump() {
 
 		// Validate the message
 		if err := message.ValidateMessage(); err != nil {
-			log.Printf("[DEBUG] Invalid message from user %d: %v", c.userID, err)
+			
+			log.Printf("[client.go:readPump] [DEBUG] Invalid message from user %d: %v",  c.userID, err)
 			continue // Skip invalid messages
 		}
 
@@ -95,7 +99,7 @@ func (c *Client) readPump() {
 		switch message.Type {
 		case PrivateMessage:
 			// Send private message to hub for routing
-			log.Printf("[DEBUG] Routing private message from %d to %d", message.FromUserID, message.ToUserID)
+			log.Printf("[client.go:readPump][DEBUG] Routing private message from %d to %d", message.FromUserID, message.ToUserID)
 			c.hub.PrivateMessage <- PrivateMessageData{
 				ToUserID: message.ToUserID,
 				Data:     message.ToJSON(),
@@ -103,10 +107,10 @@ func (c *Client) readPump() {
 			}
 		case LoadHistory:
 			// Send history loading request to hub
-			log.Printf("[DEBUG] Routing history loading request from %d for conversation with %d", message.FromUserID, message.ToUserID)
+			log.Printf("[client.go:readPump][DEBUG] Routing history loading request from %d for conversation with %d", message.FromUserID, message.ToUserID)
 			c.hub.LoadHistory <- message
 		default:
-			log.Printf("[DEBUG] Unknown message type from user %d: %s", c.userID, message.Type)
+			log.Printf("[client.go:readPump][DEBUG] Unknown message type from user %d: %s", c.userID, message.Type)
 		}
 	}
 }
@@ -133,7 +137,7 @@ func (c *Client) writePump() {
 
 			// Send message as text message
 			if err := c.conn.WriteMessage(websocket.TextMessage, message); err != nil {
-				log.Printf("Error writing message to user %d: %v", c.userID, err)
+				log.Printf("[client.go:writePump] Client: Error writing message to user %d: %v", c.userID, err)
 				return
 			}
 

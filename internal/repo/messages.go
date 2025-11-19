@@ -2,6 +2,7 @@ package repo
 
 import (
 	"log"
+
 	"real-time-forum/internal/models"
 )
 
@@ -13,7 +14,7 @@ func CreatePrivateMessage(message *models.PrivateMessage) error {
 	`
 	_, err := DB.Exec(query, message.SenderID, message.ReceiverID, message.Content, message.CreatedAt, message.IsRead)
 	if err != nil {
-		log.Printf("Error creating private message: %v", err)
+		log.Printf("[messages.go:CreatePrivateMessage] Error creating private message: %v", err)
 		return err
 	}
 	return nil
@@ -30,7 +31,7 @@ func GetPrivateMessagesBetweenUsers(userID1, userID2 int, limit, offset int) ([]
 	`
 	rows, err := DB.Query(query, userID1, userID2, userID2, userID1, limit, offset)
 	if err != nil {
-		log.Printf("Error querying private messages: %v", err)
+		log.Printf("[messages.go:GetPrivateMessagesBetweenUsers] Error querying private messages: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -40,7 +41,7 @@ func GetPrivateMessagesBetweenUsers(userID1, userID2 int, limit, offset int) ([]
 		var msg models.PrivateMessage
 		err := rows.Scan(&msg.ID, &msg.SenderID, &msg.ReceiverID, &msg.Content, &msg.CreatedAt, &msg.IsRead)
 		if err != nil {
-			log.Printf("Error scanning private message: %v", err)
+			log.Printf("[messages.go:GetPrivateMessagesBetweenUsers] Error scanning private message: %v", err)
 			return nil, err
 		}
 		messages = append(messages, msg)
@@ -63,7 +64,7 @@ func MarkMessagesAsRead(senderID, receiverID int) error {
 	`
 	_, err := DB.Exec(query, senderID, receiverID)
 	if err != nil {
-		log.Printf("Error marking messages as read: %v", err)
+		log.Printf("[messages.go:MarkMessagesAsRead] Error marking messages as read: %v", err)
 		return err
 	}
 	return nil
@@ -79,7 +80,7 @@ func GetUnreadMessageCount(userID int) (int, error) {
 	var count int
 	err := DB.QueryRow(query, userID).Scan(&count)
 	if err != nil {
-		log.Printf("Error getting unread message count: %v", err)
+		log.Printf("[messages.go:GetUnreadMessageCount] Error getting unread message count: %v", err)
 		return 0, err
 	}
 	return count, nil
@@ -113,7 +114,7 @@ func GetRecentConversations(userID int, limit int) ([]map[string]interface{}, er
 
 	rows, err := DB.Query(query, userID, userID, userID, userID, userID, userID, limit)
 	if err != nil {
-		log.Printf("Error getting recent conversations: %v", err)
+		log.Printf("[messages.go:GetRecentConversations] Error getting recent conversations: %v", err)
 		return nil, err
 	}
 	defer rows.Close()
@@ -127,7 +128,7 @@ func GetRecentConversations(userID int, limit int) ([]map[string]interface{}, er
 
 		err := rows.Scan(&otherUserID, &nickname, &lastMessage, &lastMessageTime, &unreadCount)
 		if err != nil {
-			log.Printf("Error scanning conversation: %v", err)
+			log.Printf("[messages.go:GetRecentConversations] Error scanning conversation: %v", err)
 			continue
 		}
 

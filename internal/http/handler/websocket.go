@@ -3,6 +3,7 @@ package handler
 import (
 	"log"
 	"net/http"
+
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
@@ -37,12 +38,13 @@ func InitWebSocket() {
 
 // WebSocketHandler handles WebSocket connections
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
-	log.Printf("[DEBUG] WebSocket connection attempt from: %s", r.RemoteAddr)
+	// Flow: WebSocket connection attempt
+	log.Printf("[websocket.go:WebSocketHandler] Connection attempt from %s", r.RemoteAddr)
 
 	// Validate session token from cookie
 	sessionToken, err := r.Cookie("session_token")
 	if err != nil {
-		log.Printf("[DEBUG] Missing session token: %v", err)
+		log.Printf("[websocket.go:WebSocketHandler] Missing session token")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -50,7 +52,7 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	// Get user from session
 	user, err := auth.GetUserBySessionToken(sessionToken.Value)
 	if err != nil || user == nil {
-		log.Printf("[DEBUG] Invalid session token: %v", err)
+		log.Printf("[websocket.go:WebSocketHandler] Invalid session token")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}
@@ -58,24 +60,25 @@ func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	userID := user.ID
 	nickname := user.Nickname
 
-	log.Printf("[DEBUG] Upgrading connection for user %d (%s)", userID, nickname)
+	// Flow: Upgrading connection
+	log.Printf("[websocket.go:WebSocketHandler] Upgrading connection for user %d (%s)", userID, nickname)
 
 	// Upgrade HTTP connection to WebSocket
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
-		log.Printf("[DEBUG] Failed to upgrade connection: %v", err)
+		log.Printf("[websocket.go:WebSocketHandler] Failed to upgrade connection: %v", err)
 		return
 	}
 
 	// Create new client and register with hub
 	client := ws.NewClient(hub, conn, userID, nickname)
-	log.Printf("[DEBUG] Registering client with hub for user %d (%s)", userID, nickname)
 	hub.Register <- client
 
 	// Start client goroutines
 	client.Start()
 
-	log.Printf("[DEBUG] WebSocket connection established for user %d (%s)", userID, nickname)
+	// Flow: WebSocket connection established
+	log.Printf("[websocket.go:WebSocketHandler] Connection established for user %d (%s)", userID, nickname)
 }
 
 // GetHub returns the global hub instance

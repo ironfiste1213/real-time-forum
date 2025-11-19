@@ -2,8 +2,9 @@ package repo
 
 import (
 	"log"
-	"real-time-forum/internal/models"
 	"time"
+
+	"real-time-forum/internal/models"
 )
 
 // CreateComment inserts a new comment into the database.
@@ -13,7 +14,7 @@ func CreateComment(comment *models.Comment) (int64, error) {
 		VALUES (?, ?, ?, ?)
 	`)
 	if err != nil {
-		log.Printf("Error preparing create comment statement: %v", err)
+		log.Printf("[comments.go:CreateComment] Error preparing create comment statement: %v", err)
 		return 0, err
 	}
 	defer stmt.Close()

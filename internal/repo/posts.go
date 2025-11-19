@@ -3,9 +3,10 @@ package repo
 import (
 	"database/sql"
 	"log"
-	"real-time-forum/internal/models"
 	"strings"
 	"time"
+
+	"real-time-forum/internal/models"
 )
 
 // CreatePost inserts a new post and its category associations into the database.
@@ -154,9 +155,9 @@ func GetPostByID(id int64) (*models.Post, error) {
 	)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			log.Printf("GetPostByID: No post found for ID: %d", id)
+			log.Printf("[posts.go:GetPostByID] GetPostByID: No post found for ID: %d", id)
 		} else {
-			log.Printf("GetPostByID: Error scanning post data for ID %d: %v", id, err)
+			log.Printf("[posts.go:GetPostByID] Error scanning post data for ID %d: %v", id, err)
 		}
 		return nil, err
 	}

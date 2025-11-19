@@ -46,4 +46,5 @@ function clearAllUIElements() {
     // Close chat panel and clear messages
     chatWS.clearMessages();
     chatWS.closeChat();
+    
 }
