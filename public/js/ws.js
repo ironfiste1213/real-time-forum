@@ -2,6 +2,8 @@
 import { checkSession } from './session.js';
 
 
+import { showNotification } from './ui/notification.js';
+
 class ChatWebSocket {
     constructor() {
         this.ws = null;
@@ -488,6 +490,12 @@ class ChatWebSocket {
     startConversation(userId, nickname) {
         console.log(`[ws.js:startConversation] Starting conversation with ${nickname} (ID: ${userId})`);
 
+        // Check if user is online
+        if (!this.onlineUsers.includes(nickname)) {
+            showNotification("User is offline", "error");
+            return;
+        }
+
         // Allow starting conversations - online status will be updated in real-time
         // Don't block based on initial online status as it may not be synced yet
 
@@ -542,12 +550,14 @@ class ChatWebSocket {
 
             console.log(`[ws.js:loadConversationHistory] [DEBUG] Loading conversation history with user ${userId}, offset: ${offset}`);
             const limit = 10; // Load 10 at a time as requested
-            const response = await fetch(`/api/messages?user_id=${userId}&limit=${limit}&offset=${offset}`, {
+            // Add timestamp to prevent caching
+            const response = await fetch(`/api/messages?user_id=${userId}&limit=${limit}&offset=${offset}&_t=${Date.now()}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                credentials: 'same-origin'
+                credentials: 'same-origin',
+                cache: 'no-store' // Prevent caching
             });
 
             console.log('[ws.js:loadConversationHistory] [DEBUG] Conversation history response status:', response.status);
@@ -647,7 +657,7 @@ class ChatWebSocket {
             timeSpan.className = 'message-time';
             // Handle both camelCase (API) and snake_case (WebSocket) property names
             const timestamp = msg.createdAt || msg.created_at;
-            timeSpan.textContent = new Date(timestamp).toLocaleTimeString();
+            timeSpan.textContent = new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
             messageElement.appendChild(timeSpan);
 
             messagesContainer.appendChild(messageElement);

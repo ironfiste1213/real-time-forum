@@ -95,10 +95,14 @@ func GetPrivateMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	limitStr := r.URL.Query().Get("limit")
-	limit := 20 // default
+	limit := 10 // default strict limit
 	if limitStr != "" {
-		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 && l <= 100 {
-			limit = l
+		if l, err := strconv.Atoi(limitStr); err == nil && l > 0 {
+			if l > 10 {
+				limit = 10 // strict cap
+			} else {
+				limit = l
+			}
 		}
 	}
 
@@ -128,6 +132,9 @@ func GetPrivateMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
+	w.Header().Set("Pragma", "no-cache")
+	w.Header().Set("Expires", "0")
 	json.NewEncoder(w).Encode(map[string]interface{}{
 		"messages": messages,
 	})

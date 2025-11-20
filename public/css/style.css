@@ -35,6 +35,7 @@ h1 {
     color: var(--accent);
     font-family: "Momo Trust Display", serif;
 }
+
 /* Basic reset */
 * {
     margin: 0;
@@ -72,7 +73,8 @@ h2 {
 }
 
 /* Forms containers */
-#auth-container, #main-container {
+#auth-container,
+#main-container {
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -107,10 +109,14 @@ h2 {
 }
 
 /* Remove any card shimmer pseudo element */
-.card::before { display: none; content: none; }
+.card::before {
+    display: none;
+    content: none;
+}
 
 /* Auth sections (login/register) */
-#register, #login {
+#register,
+#login {
     background: var(--card);
     color: var(--text);
     border-radius: 8px;
@@ -124,12 +130,14 @@ h2 {
     transition: opacity 0.5s ease-in-out;
 }
 
-#register.fade-in, #login.fade-in {
+#register.fade-in,
+#login.fade-in {
     opacity: 1;
 }
 
 /* Auth form headings */
-#register h2, #login h2 {
+#register h2,
+#login h2 {
     color: var(--text);
     text-align: center;
     font-size: 2.4em;
@@ -137,8 +145,12 @@ h2 {
 }
 
 /* Inputs inside auth forms — flat, no animations */
-#register input, #register select, #register textarea,
-#login input, #login select, #login textarea {
+#register input,
+#register select,
+#register textarea,
+#login input,
+#login select,
+#login textarea {
     display: block;
     width: 100%;
     padding: 14.4px 16.8px;
@@ -153,16 +165,22 @@ h2 {
 }
 
 /* Focus state — use accent but no motion */
-#register input:focus, #register select:focus, #register textarea:focus,
-#login input:focus, #login select:focus, #login textarea:focus {
+#register input:focus,
+#register select:focus,
+#register textarea:focus,
+#login input:focus,
+#login select:focus,
+#login textarea:focus {
     border-color: var(--accent);
     outline: none;
     box-shadow: none;
 }
 
 /* Buttons in auth forms — flat accent, no gradients/animations */
-#register button, #login button,
-#register form button, #login form button {
+#register button,
+#login button,
+#register form button,
+#login form button {
     width: 100%;
     padding: 14.4px 19.2px;
     background: var(--accent);
@@ -181,27 +199,33 @@ h2 {
 }
 
 /* Hover — raise up and change colors */
-#register button:hover, #login button:hover,
-#register form button:hover, #login form button:hover {
+#register button:hover,
+#login button:hover,
+#register form button:hover,
+#login form button:hover {
     background: white;
     color: var(--accent);
     transform: translateY(-1px);
 }
 
 /* Remove decorative pseudo-elements for auth buttons/forms */
-#register button::before, #login button::before,
-#register form button::before, #login form button::before {
+#register button::before,
+#login button::before,
+#register form button::before,
+#login form button::before {
     content: none !important;
     display: none !important;
 }
 
 /* Links inside auth zone use accent */
-#register a, #login a {
+#register a,
+#login a {
     color: var(--accent);
     text-decoration: none;
 }
 
-#register a:hover, #login a:hover {
+#register a:hover,
+#login a:hover {
     text-decoration: underline;
 }
 
@@ -220,22 +244,22 @@ nav {
     margin-left: calc(-50vw + 50% + 12px);
 }
 
-nav > div {
+nav>div {
     display: flex;
     align-items: center;
 }
 
-nav > div:first-child {
+nav>div:first-child {
     justify-content: flex-start;
     flex: 1;
 }
 
-nav > div:nth-child(2) {
+nav>div:nth-child(2) {
     flex: 0 0 auto;
     margin: 0 auto;
 }
 
-nav > div:last-child {
+nav>div:last-child {
     justify-content: flex-end;
     flex: 1;
 }
@@ -244,7 +268,7 @@ nav > div:last-child {
 #welcome-message {
     font-size: 1.05em;
     font-weight: 500;
-    color: var(--text);
+    color: var(--accent);
 }
 
 /* Theme toggle in navbar */
@@ -377,7 +401,10 @@ nav > div:last-child {
     margin-bottom: 20px;
 }
 
-#create-post-section::before { display: none; content: none; }
+#create-post-section::before {
+    display: none;
+    content: none;
+}
 
 #create-post-section h3 {
     color: var(--text);
@@ -474,7 +501,7 @@ nav > div:last-child {
     display: none;
 }
 
-.categories-checkboxes input[type="checkbox"]:checked + label {
+.categories-checkboxes input[type="checkbox"]:checked+label {
     background: var(--accent);
     color: var(--accent-foreground);
     border-color: transparent;
@@ -534,8 +561,8 @@ nav > div:last-child {
 }
 
 .post h3 {
-    color: var(--text);
-    font-size: 1.25em;
+    color: var(--accent);
+    font-size: 1.5em;
     margin-bottom: 8px;
     font-weight: 700;
 }
@@ -625,7 +652,7 @@ nav > div:last-child {
 
 /* Error state styling */
 #post-feed p:only-child:not([data-empty-state]) {
-    background: #3a2a2a;
+    background: #3a2a3a;
     color: #ffb3b3;
     border: 2px solid #5a2a2a;
     border-radius: 8px;
@@ -635,13 +662,15 @@ nav > div:last-child {
 }
 
 /* misc links */
-#logfromreg, #regfromlog {
+#logfromreg,
+#regfromlog {
     color: var(--accent);
     font-weight: bold;
     text-decoration: none;
 }
 
-#logfromreg:hover, #regfromlog:hover {
+#logfromreg:hover,
+#regfromlog:hover {
     text-decoration: underline;
 }
 
@@ -854,7 +883,8 @@ nav > div:last-child {
     align-items: center;
     justify-content: center;
     padding: 0;
-    overflow: visible; /* allow unread badge to protrude */
+    overflow: visible;
+    /* allow unread badge to protrude */
     transition: width 0.25s ease, padding 0.25s ease, background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
     will-change: width, padding, transform;
 }
@@ -876,7 +906,8 @@ nav > div:last-child {
     align-items: center;
     justify-content: center;
     border: 2px solid var(--panel);
-    pointer-events: none; /* don't block clicks on the button */
+    pointer-events: none;
+    /* don't block clicks on the button */
 }
 
 .floating-chat-btn:hover {
@@ -957,7 +988,8 @@ nav > div:last-child {
     right: 20px;
     bottom: 20px;
     left: 20px;
-    top: 100px; /* Clear the navbar */
+    top: 100px;
+    /* Clear the navbar */
     width: auto;
     height: auto;
     max-width: none;
@@ -1033,9 +1065,19 @@ nav > div:last-child {
     color: var(--text);
     border-bottom: 2px solid var(--border);
 }
-.chat-header-left { justify-self: start; }
-.chat-header-center { justify-self: center; text-align: center; }
-.chat-header-right { justify-self: end; }
+
+.chat-header-left {
+    justify-self: start;
+}
+
+.chat-header-center {
+    justify-self: center;
+    text-align: center;
+}
+
+.chat-header-right {
+    justify-self: end;
+}
 
 /* Group title and connection status on the left */
 .chat-header-left {
@@ -1084,10 +1126,25 @@ nav > div:last-child {
     text-transform: uppercase;
 }
 
-.connection-status.disconnected { background-color: #9b2d2d; color: white; }
-.connection-status.connecting { background-color: #a06a00; color: white; }
-.connection-status.connected { background-color: #2d7a3b; color: white; }
-.connection-status.error { background-color: #9b2d2d; color: white; }
+.connection-status.disconnected {
+    background-color: #9b2d2d;
+    color: white;
+}
+
+.connection-status.connecting {
+    background-color: #a06a00;
+    color: white;
+}
+
+.connection-status.connected {
+    background-color: #2d7a3b;
+    color: white;
+}
+
+.connection-status.error {
+    background-color: #9b2d2d;
+    color: white;
+}
 
 /* Messages */
 .chat-messages {
@@ -1109,21 +1166,25 @@ nav > div:last-child {
     border-radius: 12px;
     max-width: 85%;
     word-wrap: break-word;
-    align-self: flex-start; /* default: left */
-    width: fit-content; /* bubble fits content */
+    align-self: flex-start;
+    /* default: left */
+    width: fit-content;
+    /* bubble fits content */
 }
 
 .chat-message.own-message {
     background: var(--accent);
     color: var(--accent-foreground);
     align-self: flex-end;
-    margin-left: auto; /* push to right reliably */
+    margin-left: auto;
+    /* push to right reliably */
 }
 
 .chat-message:not(.own-message) {
     background: #3a3a3a;
     color: var(--text);
-    margin-right: auto; /* keep to left */
+    margin-right: auto;
+    /* keep to left */
 }
 
 .chat-message.system {
@@ -1132,7 +1193,8 @@ nav > div:last-child {
     text-align: center;
     font-style: italic;
     max-width: 100%;
-    align-self: center; /* center system messages */
+    align-self: center;
+    /* center system messages */
 }
 
 /* message meta */
@@ -1143,9 +1205,15 @@ nav > div:last-child {
     font-size: 0.9em;
     color: var(--text);
 }
+
 /* Username color by side */
-.chat-message.own-message .message-username { color: var(--accent-foreground); }
-.chat-message:not(.own-message) .message-username { color: var(--accent); }
+.chat-message.own-message .message-username {
+    color: var(--accent-foreground);
+}
+
+.chat-message:not(.own-message) .message-username {
+    color: var(--accent);
+}
 
 .message-text {
     font-size: 1.1em;
@@ -1154,7 +1222,8 @@ nav > div:last-child {
 }
 
 .message-time {
-    display: block; /* place under message text */
+    display: block;
+    /* place under message text */
     width: 100%;
     font-size: 0.75em;
     opacity: 0.7;
@@ -1166,6 +1235,7 @@ nav > div:last-child {
 .chat-message.own-message .message-time {
     text-align: right;
 }
+
 .chat-message:not(.own-message) .message-time {
     text-align: left;
 }
@@ -1204,16 +1274,34 @@ nav > div:last-child {
     border-radius: 4px;
 }
 
-.chat-user:hover { background: #313131; }
+.chat-user:hover {
+    background: #313131;
+}
 
-.chat-user.online { background: rgba(70,110,242,0.07); }
-.chat-user.offline { background: transparent; }
+.chat-user.online {
+    background: rgba(70, 110, 242, 0.07);
+}
 
-.user-status { margin-right: 8px; font-size: 0.8em; }
+.chat-user.offline {
+    background: transparent;
+}
 
-.user-nickname { flex: 1; font-weight: 500; color: var(--text); }
+.user-status {
+    margin-right: 8px;
+    font-size: 0.8em;
+}
 
-.no-users { text-align: center; color: var(--muted); padding: 12px; }
+.user-nickname {
+    flex: 1;
+    font-weight: 500;
+    color: var(--text);
+}
+
+.no-users {
+    text-align: center;
+    color: var(--muted);
+    padding: 12px;
+}
 
 /* Chat form */
 .chat-form {
@@ -1237,7 +1325,9 @@ nav > div:last-child {
     transition: none;
 }
 
-.chat-form input[type="text"]::placeholder { color: #8b8b8b; }
+.chat-form input[type="text"]::placeholder {
+    color: #8b8b8b;
+}
 
 .chat-form button {
     width: auto;
