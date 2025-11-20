@@ -1,8 +1,8 @@
- // WebSocket client for real-time chat
- import { checkSession } from './session.js';
+// WebSocket client for real-time chat
+import { checkSession } from './session.js';
 
 
- class ChatWebSocket {
+class ChatWebSocket {
     constructor() {
         this.ws = null;
         this.isConnected = false;
@@ -175,7 +175,7 @@
             console.log('[ws.js:handleUserOnline] [DEBUG] Adding user to online list:', nickname);
             this.onlineUsers.push(nickname);
             this.updateUsersList(); // Update the users list to reflect online status
-            if (nickname !==this.currentUser?.nickname && !this.isChatOpen) {
+            if (nickname !== this.currentUser?.nickname && !this.isChatOpen) {
                 this.showOnlineNotification(nickname);
             }
         } else {
@@ -317,7 +317,7 @@
 
     // Get current user ID from session
     getCurrentUserId(e) {
-     //   const user =  checkSession();
+        //   const user =  checkSession();
         console.log('[ws.js:getCurrentUserId] e.id:', e.id);
 
         if (e && e.id) {
@@ -459,7 +459,7 @@
                 userUnread.textContent = unreadCount;
                 nicknameSpan.appendChild(userUnread);
             }
-            
+
             // Add visual indication for offline users
             if (!user.is_online) {
                 const offlineText = document.createElement('span');
@@ -492,10 +492,28 @@
         // Don't block based on initial online status as it may not be synced yet
 
         // Set active conversation
-        this.activeConversation = { userId: parseInt(userId), nickname };
+        this.activeConversation = {
+            userId: parseInt(userId),
+            nickname,
+            offset: 0,
+            hasMore: true,
+            isLoading: false
+        };
 
         // Reflect name at the top header
         this.updateChatHeaderTitle(nickname);
+
+        // Clear existing messages in UI first
+        const messagesContainer = document.getElementById('chat-messages');
+        if (messagesContainer) {
+            messagesContainer.innerHTML = '';
+            // Remove old scroll listener if any (though we usually recreate the element or it's global)
+            // We will attach a new one in displayPrivateMessages or here
+        }
+
+        // Reset local message cache for this user to ensure fresh start or handle it in loadConversationHistory
+        // Actually, we might want to keep cache but for this task let's reset to ensure correct pagination
+        this.privateMessages[userId] = [];
 
         // Always load conversation history so server can mark messages as read
         this.loadConversationHistory(userId);
@@ -513,10 +531,18 @@
     }
 
     // Load conversation history from API
-    async loadConversationHistory(userId) {
+    async loadConversationHistory(userId, offset = 0) {
+        if (this.activeConversation && this.activeConversation.isLoading) return;
+
+        // If loading more (offset > 0) and we know there's no more, stop.
+        if (offset > 0 && this.activeConversation && !this.activeConversation.hasMore) return;
+
         try {
-            console.log(`[ws.js:loadConversationHistory] [DEBUG] Loading conversation history with user ${userId}`);
-            const response = await fetch(`/api/messages?user_id=${userId}`, {
+            if (this.activeConversation) this.activeConversation.isLoading = true;
+
+            console.log(`[ws.js:loadConversationHistory] [DEBUG] Loading conversation history with user ${userId}, offset: ${offset}`);
+            const limit = 10; // Load 10 at a time as requested
+            const response = await fetch(`/api/messages?user_id=${userId}&limit=${limit}&offset=${offset}`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -530,56 +556,55 @@
                 console.log('[ws.js:loadConversationHistory] [DEBUG] Conversation history data:', data);
                 const loadedMessages = data.messages || [];
 
-                // Replace local cache with authoritative server history to avoid duplicates
-                this.privateMessages[userId] = Array.isArray(loadedMessages) ? loadedMessages.slice() : [];
+                if (loadedMessages.length < limit) {
+                    if (this.activeConversation) this.activeConversation.hasMore = false;
+                }
 
                 // Sort messages chronologically (oldest first)
-                this.privateMessages[userId].sort((a, b) => {
+                loadedMessages.sort((a, b) => {
                     const aTime = a.createdAt || a.created_at;
                     const bTime = b.createdAt || b.created_at;
                     return new Date(aTime) - new Date(bTime);
                 });
 
-                console.log('[ws.js:loadConversationHistory] [DEBUG] Set privateMessages for user', userId, 'total messages:', this.privateMessages[userId].length);
-                this.displayPrivateMessages(userId);
+                if (offset === 0) {
+                    // Initial load
+                    this.privateMessages[userId] = loadedMessages;
+                    this.displayPrivateMessages(userId, true); // true = scroll to bottom
+                } else {
+                    // Prepend messages
+                    this.privateMessages[userId] = [...loadedMessages, ...this.privateMessages[userId]];
+                    this.displayPrivateMessages(userId, false, loadedMessages.length); // false = maintain position
+                }
+
                 // Refresh conversations to update unread counts (since server marked messages as read)
-                this.loadConversations();
+                if (offset === 0) this.loadConversations();
             } else {
                 const errorText = await response.text();
                 console.error('[ws.js:loadConversationHistory] [DEBUG] Failed to load conversation history:', response.status, errorText);
-                // Still display existing conversation if API fails
-                if (!this.privateMessages[userId]) {
-                    this.privateMessages[userId] = [];
-                }
-                this.displayPrivateMessages(userId);
             }
         } catch (error) {
             console.error('[ws.js:loadConversationHistory] [DEBUG] Error loading conversation history:', error);
-            // Still display existing conversation if API fails
-            if (!this.privateMessages[userId]) {
-                this.privateMessages[userId] = [];
-            }
-            this.displayPrivateMessages(userId);
+        } finally {
+            if (this.activeConversation) this.activeConversation.isLoading = false;
         }
     }
 
     // Display private messages for a conversation
-    displayPrivateMessages(userId) {
+    displayPrivateMessages(userId, scrollToBottom = true, newMessagesCount = 0) {
         console.log('[ws.js:displayPrivateMessages] [DEBUG] displayPrivateMessages called for userId:', userId);
         const messages = this.privateMessages[userId] || [];
-        console.log('[ws.js:displayPrivateMessages] [DEBUG] Messages for this conversation:', messages);
         const messagesContainer = document.getElementById('chat-messages');
-        if (!messagesContainer) {
-            console.log('[ws.js:displayPrivateMessages] [DEBUG] chat-messages container not found');
-            return;
+        if (!messagesContainer) return;
+
+        // Save scroll position if we are prepending
+        let oldScrollHeight = 0;
+        if (!scrollToBottom) {
+            oldScrollHeight = messagesContainer.scrollHeight;
         }
-        console.log('[ws.js:displayPrivateMessages] [DEBUG] Found chat-messages container');
 
         // Clear existing messages
-        while (messagesContainer.firstChild) {
-            messagesContainer.removeChild(messagesContainer.firstChild);
-        }
-        console.log('[ws.js:displayPrivateMessages] [DEBUG] Cleared existing messages');
+        messagesContainer.innerHTML = '';
 
         // Update chat header title to other user's nickname if available
         const conversation = this.activeConversation;
@@ -589,18 +614,28 @@
             this.updateChatHeaderTitle('Chat');
         }
 
+        // Add loading indicator at top if there are more messages
+        if (conversation && conversation.hasMore) {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.className = 'chat-loading-history';
+            loadingDiv.textContent = 'Loading history...';
+            loadingDiv.style.textAlign = 'center';
+            loadingDiv.style.padding = '10px';
+            loadingDiv.style.fontSize = '0.8em';
+            loadingDiv.style.color = '#888';
+            messagesContainer.appendChild(loadingDiv);
+
+            // Setup intersection observer or scroll listener for infinite scroll
+            // We'll use a simple scroll listener on the container
+        }
+
         // Display messages
         messages.forEach((msg, index) => {
-            console.log('[ws.js:displayPrivateMessages] [DEBUG] Displaying message', index, ':', msg);
-            console.log('[ws.js:displayPrivateMessages] [DEBUG] currentUser:', this.currentUser);
             // Handle both camelCase (API) and snake_case (WebSocket) property names
             const senderId = msg.senderId || msg.sender_id;
-            console.log('[ws.js:displayPrivateMessages] [DEBUG] senderId:', senderId, 'type:', typeof senderId);
-            console.log('[ws.js:displayPrivateMessages] [DEBUG] currentUser.id:', this.currentUser?.id, 'type:', typeof this.currentUser?.id);
             const messageElement = document.createElement('div');
             // Safe comparison - ensure both IDs are compared as integers
             const isOwnMessage = this.currentUser && (parseInt(senderId) === parseInt(this.currentUser.id));
-            console.log('[ws.js:displayPrivateMessages] [DEBUG] isOwnMessage:', isOwnMessage, 'comparison:', parseInt(senderId), '===', parseInt(this.currentUser?.id));
             messageElement.className = `chat-message private-message ${isOwnMessage ? 'own-message' : 'other-message'}`;
 
             const messageSpan = document.createElement('span');
@@ -616,11 +651,26 @@
             messageElement.appendChild(timeSpan);
 
             messagesContainer.appendChild(messageElement);
-            console.log('[ws.js:displayPrivateMessages] [DEBUG] Added message element to container');
         });
 
-        console.log('[ws.js:displayPrivateMessages] [DEBUG] Finished displaying', messages.length, 'messages');
-        this.scrollToBottom();
+        // Attach scroll listener if not already attached
+        if (!messagesContainer.hasAttribute('data-scroll-listener')) {
+            messagesContainer.addEventListener('scroll', () => {
+                if (messagesContainer.scrollTop === 0 && this.activeConversation && this.activeConversation.hasMore && !this.activeConversation.isLoading) {
+                    this.activeConversation.offset += 10;
+                    this.loadConversationHistory(this.activeConversation.userId, this.activeConversation.offset);
+                }
+            });
+            messagesContainer.setAttribute('data-scroll-listener', 'true');
+        }
+
+        if (scrollToBottom) {
+            this.scrollToBottom();
+        } else {
+            // Restore scroll position
+            const newScrollHeight = messagesContainer.scrollHeight;
+            messagesContainer.scrollTop = newScrollHeight - oldScrollHeight;
+        }
     }
 
     // Send private message
@@ -903,8 +953,17 @@
     showChat() {
         this.isChatOpen = true;
         const chatPanel = document.getElementById('chat-panel');
+        const floatingChatBtn = document.getElementById('floating-chat-btn');
+        const createPostToggle = document.getElementById('create-post-toggle');
+
         if (chatPanel) {
             chatPanel.classList.add('open', 'fullscreen');
+        }
+        if (floatingChatBtn) floatingChatBtn.style.display = 'none';
+        if (createPostToggle) {
+            createPostToggle.disabled = true;
+            createPostToggle.style.opacity = '0.5';
+            createPostToggle.style.cursor = 'not-allowed';
         }
     }
 
@@ -912,9 +971,28 @@
     toggleChat() {
         this.isChatOpen = !this.isChatOpen;
         const chatPanel = document.getElementById('chat-panel');
+        const floatingChatBtn = document.getElementById('floating-chat-btn');
+        const createPostToggle = document.getElementById('create-post-toggle');
+
         if (chatPanel) {
             chatPanel.classList.toggle('open', this.isChatOpen);
             chatPanel.classList.add('fullscreen'); // Always keep fullscreen
+        }
+
+        if (this.isChatOpen) {
+            if (floatingChatBtn) floatingChatBtn.style.display = 'none';
+            if (createPostToggle) {
+                createPostToggle.disabled = true;
+                createPostToggle.style.opacity = '0.5';
+                createPostToggle.style.cursor = 'not-allowed';
+            }
+        } else {
+            if (floatingChatBtn) floatingChatBtn.style.display = 'block';
+            if (createPostToggle) {
+                createPostToggle.disabled = false;
+                createPostToggle.style.opacity = '1';
+                createPostToggle.style.cursor = 'pointer';
+            }
         }
     }
 
@@ -1023,8 +1101,17 @@
     closeChat() {
         this.isChatOpen = false;
         const chatPanel = document.getElementById('chat-panel');
+        const floatingChatBtn = document.getElementById('floating-chat-btn');
+        const createPostToggle = document.getElementById('create-post-toggle');
+
         if (chatPanel) {
             chatPanel.classList.remove('open');
+        }
+        if (floatingChatBtn) floatingChatBtn.style.display = 'block';
+        if (createPostToggle) {
+            createPostToggle.disabled = false;
+            createPostToggle.style.opacity = '1';
+            createPostToggle.style.cursor = 'pointer';
         }
     }
     // Show online notification

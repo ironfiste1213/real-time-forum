@@ -952,16 +952,17 @@ nav > div:last-child {
 }
 
 /* Keep an explicit fullscreen modifier if needed (e.g. .chat-panel.fullscreen) */
+/* Keep an explicit fullscreen modifier if needed (e.g. .chat-panel.fullscreen) */
 .chat-panel.fullscreen {
-    right: 0;
-    bottom: 0;
-    left: 0;
-    top: 0;
-    width: 100vw;
-    height: 100vh;
+    right: 20px;
+    bottom: 20px;
+    left: 20px;
+    top: 100px; /* Clear the navbar */
+    width: auto;
+    height: auto;
     max-width: none;
     max-height: none;
-    border-radius: 0;
+    border-radius: 12px;
 }
 
 /* Chat Container */

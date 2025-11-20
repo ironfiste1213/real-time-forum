@@ -331,19 +331,27 @@ export function show404View() {
 
 // Toggle between main view and chat view
 function toggleChatView() {
-    const mainContainer = DOMElements.mainContainer;
     const chatPanel = document.getElementById('chat-panel');
     const floatingChatBtn = document.getElementById('floating-chat-btn');
+    const createPostToggle = document.getElementById('create-post-toggle');
 
-    if (mainContainer.classList.contains('hidden')) {
-        // Currently in chat view, switch back to main
-        mainContainer.classList.remove('hidden');
-        if (chatPanel) chatPanel.classList.remove('open');
+    if (chatPanel && chatPanel.classList.contains('open')) {
+        // Currently open, close it
+        chatPanel.classList.remove('open');
         if (floatingChatBtn) floatingChatBtn.style.display = 'block';
+        if (createPostToggle) {
+            createPostToggle.disabled = false;
+            createPostToggle.style.opacity = '1';
+            createPostToggle.style.cursor = 'pointer';
+        }
     } else {
-        // Currently in main view, switch to chat
-        mainContainer.classList.add('hidden');
+        // Currently closed, open it
         if (chatPanel) chatPanel.classList.add('open');
         if (floatingChatBtn) floatingChatBtn.style.display = 'none';
+        if (createPostToggle) {
+            createPostToggle.disabled = true;
+            createPostToggle.style.opacity = '0.5';
+            createPostToggle.style.cursor = 'not-allowed';
+        }
     }
 }

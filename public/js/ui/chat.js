@@ -124,6 +124,13 @@ export function setupChatEventListeners() {
             if (mainContainer) mainContainer.classList.remove('hidden');
             if (chatPanel) chatPanel.classList.remove('open');
             if (floatingChatBtn) floatingChatBtn.style.display = 'block';
+
+            const createPostToggle = document.getElementById('create-post-toggle');
+            if (createPostToggle) {
+                createPostToggle.disabled = false;
+                createPostToggle.style.opacity = '1';
+                createPostToggle.style.cursor = 'pointer';
+            }
         });
     }
 
