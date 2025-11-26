@@ -13,10 +13,8 @@ import (
 type Hub struct {
 	// Mutex for thread-safe access to users map
 	Mu sync.RWMutex
-
 	// Registered clients
 	clients map[*Client]bool
-
 	// Inbound channels for hub operations
 	Register       chan *Client            // Register requests from clients
 	Unregister     chan *Client            // Unregister requests from clients

@@ -5,6 +5,7 @@ import { checkSession } from './session.js';
 import { showNotification } from './ui/notification.js';
 
 class ChatWebSocket {
+    
     constructor() {
         this.ws = null;
         this.isConnected = false;

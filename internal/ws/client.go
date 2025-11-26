@@ -59,6 +59,7 @@ func (c *Client) readPump() {
 	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	c.conn.SetPongHandler(func(string) error {
 		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
+		log.Printf("[client.go:readPump] Client: recive pong from teh browser  for user %d (%s)", c.userID, c.nickname)		
 		return nil
 	})
 

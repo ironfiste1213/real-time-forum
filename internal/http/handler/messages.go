@@ -130,14 +130,12 @@ func GetPrivateMessagesHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("[messages.go:GetPrivateMessagesHandler] Failed to mark messages as read: %v", err)
 		// Don't fail the request for this
 	}
-
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-	w.Header().Set("Pragma", "no-cache")
-	w.Header().Set("Expires", "0")
-	json.NewEncoder(w).Encode(map[string]interface{}{
-		"messages": messages,
-	})
+	w.Header().Set("Cache-Control", "no-store")
+	json.NewEncoder(w).Encode(struct {
+		Messages interface{} `json:"messages"`
+	}{messages})
+	
 }
 
 // GetConversationsHandler retrieves recent conversations for the user

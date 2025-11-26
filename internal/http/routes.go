@@ -2,11 +2,9 @@ package http
 
 import (
 	"encoding/json"
-	"fmt"
+
 	"log"
 	"net/http"
-	"path/filepath"
-	"runtime"
 	"strings"
 
 	"real-time-forum/internal/auth"
@@ -14,16 +12,6 @@ import (
 )
 
 // debugLog is a helper function to add file and function name to debug logs
-func debugLog(format string, args ...interface{}) {
-	pc, file, _, ok := runtime.Caller(1)
-	if !ok {
-		log.Printf(format, args...)
-		return
-	}
-	fn := runtime.FuncForPC(pc).Name()
-	newFormat := fmt.Sprintf("[%s:%s] %s", filepath.Base(file), fn, format)
-	log.Printf(newFormat, args...)
-}
 
 // InitWebSocket initializes the WebSocket hub
 func InitWebSocket() {
