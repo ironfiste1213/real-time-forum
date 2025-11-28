@@ -110,11 +110,18 @@ func (c *Client) readPump() {
 			// Send history loading request to hub
 			log.Printf("[client.go:readPump][DEBUG] Routing history loading request from %d for conversation with %d", message.FromUserID, message.ToUserID)
 			c.hub.LoadHistory <- message
+		case Typing_Start:
+			message.ToUserID = message.
+			c.hub.Typing <- message
+		case 
 		default:
 			log.Printf("[client.go:readPump][DEBUG] Unknown message type from user %d: %s", c.userID, message.Type)
 		}
 	}
 }
+
+// [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20]  k =4
+// []
 
 // writePump writes messages to the WebSocket connection
 // Runs in its own goroutine for the lifetime of the connection

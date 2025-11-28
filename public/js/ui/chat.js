@@ -147,7 +147,6 @@ export function setupChatEventListeners() {
             handleChatSubmit();
         });
     }
-
     // Enter key in chat input
     const chatInput = document.getElementById('chat-input');
     if (chatInput) {
@@ -160,6 +159,20 @@ export function setupChatEventListeners() {
                 handleChatSubmit();
             }
         });
+        const { userId } = this.activeConversation;
+        let istyping = false
+        let typingdelay = null
+        newChatInput.addEventListener('input', () => {
+            clearTimeout(typingdelay);
+            if (!istyping) {
+                istyping = true;
+                chatWS.send('typing_start', {to_user_id: userId })
+            }
+            typingdelay = setTimeout(() => {
+                istyping = false
+                chatWS.send('typing_end', {to_user_id: userId})
+            },1000)
+        })
     }
 
     // Window beforeunload (only add once)
@@ -189,6 +202,8 @@ function handleChatSubmit() {
         chatInput.focus(); // Keep focus for next message
     }
 }
+
+
 
 // Initialize chat connection (called from auth.js on login success)
 export function initializeChatConnection(e) {

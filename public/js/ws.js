@@ -164,6 +164,8 @@ class ChatWebSocket {
                 console.log('[ws.js:handleMessage] [DEBUG] Message type: online_users');
                 this.handleOnlineUsers(data);
                 break;
+            case 'usertyping' :
+                
             default:
                 console.log('[ws.js:handleMessage] [DEBUG] Unknown message type:', data.type);
         }
