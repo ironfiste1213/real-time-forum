@@ -21,8 +21,6 @@ type Hub struct {
 	Broadcast      chan []byte             // Broadcast messages to all clients
 	PrivateMessage chan PrivateMessageData // Private messages between specific users
 	LoadHistory    chan *Message           // History loading requests
-	TypingStart    chan *Message
-	TypingEnd      chan *Message
 	// User tracking
 	Users map[int]*Client // userID -> client mapping
 }
@@ -61,14 +59,11 @@ func (h *Hub) Run() {
 
 		case historyReq := <-h.LoadHistory:
 			h.handleLoadHistory(historyReq)
-
-		case message := <-h.TypingStart:
-			h.typingstart(message.FromUserID, message.ToUserID)	
 		}
-	   
 	}
 }
 func (h *Hub) typingstart(from, reciver int)
+
 // registerClient adds a new client to the hub and performs initialization tasks
 // @param client - The WebSocket client to register
 // Registers the client, updates user mappings, broadcasts online status, and sends online users list

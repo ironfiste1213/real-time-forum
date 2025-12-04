@@ -159,20 +159,7 @@ export function setupChatEventListeners() {
                 handleChatSubmit();
             }
         });
-        const { userId } = this.activeConversation;
-        let istyping = false
-        let typingdelay = null
-        newChatInput.addEventListener('input', () => {
-            clearTimeout(typingdelay);
-            if (!istyping) {
-                istyping = true;
-                chatWS.send('typing_start', {to_user_id: userId })
-            }
-            typingdelay = setTimeout(() => {
-                istyping = false
-                chatWS.send('typing_end', {to_user_id: userId})
-            },1000)
-        })
+
     }
 
     // Window beforeunload (only add once)

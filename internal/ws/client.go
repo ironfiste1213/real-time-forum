@@ -2,7 +2,6 @@ package ws
 
 import (
 	"log"
-	
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -59,7 +58,7 @@ func (c *Client) readPump() {
 	c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
 	c.conn.SetPongHandler(func(string) error {
 		c.conn.SetReadDeadline(time.Now().Add(60 * time.Second))
-		log.Printf("[client.go:readPump] Client: recive pong from teh browser  for user %d (%s)", c.userID, c.nickname)		
+		log.Printf("[client.go:readPump] Client: recive pong from teh browser  for user %d (%s)", c.userID, c.nickname)
 		return nil
 	})
 
@@ -91,8 +90,8 @@ func (c *Client) readPump() {
 
 		// Validate the message
 		if err := message.ValidateMessage(); err != nil {
-			
-			log.Printf("[client.go:readPump] [DEBUG] Invalid message from user %d: %v",  c.userID, err)
+
+			log.Printf("[client.go:readPump] [DEBUG] Invalid message from user %d: %v", c.userID, err)
 			continue // Skip invalid messages
 		}
 
@@ -110,10 +109,6 @@ func (c *Client) readPump() {
 			// Send history loading request to hub
 			log.Printf("[client.go:readPump][DEBUG] Routing history loading request from %d for conversation with %d", message.FromUserID, message.ToUserID)
 			c.hub.LoadHistory <- message
-		case Typing_Start:
-			message.ToUserID = message.
-			c.hub.Typing <- message
-		case 
 		default:
 			log.Printf("[client.go:readPump][DEBUG] Unknown message type from user %d: %s", c.userID, message.Type)
 		}

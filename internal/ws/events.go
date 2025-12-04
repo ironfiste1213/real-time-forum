@@ -22,8 +22,6 @@ const (
 	PrivateMessage MessageType = "private_message" // Private message between users
 	LoadHistory    MessageType = "load_history"    // Request to load message history
 	HistoryLoaded  MessageType = "history_loaded"  // Response with message history
-	Typing_Start    MessageType = "typing_start"
-	Typing_End     MessageType = "typing_end"
 
 	// Status notifications
 	UserOnline  MessageType = "user_online"  // User came online
