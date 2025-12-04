@@ -62,7 +62,6 @@ func (h *Hub) Run() {
 		}
 	}
 }
-func (h *Hub) typingstart(from, reciver int)
 
 // registerClient adds a new client to the hub and performs initialization tasks
 // @param client - The WebSocket client to register
