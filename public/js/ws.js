@@ -5,7 +5,7 @@ import { checkSession } from './session.js';
 import { showNotification } from './ui/notification.js';
 
 class ChatWebSocket {
-    
+
     constructor() {
         this.ws = null;
         this.isConnected = false;
@@ -142,7 +142,7 @@ class ChatWebSocket {
         switch (data.type) {
             case 'user_online':
                 console.log('[ws.js:handleMessage] [DEBUG] Message type: user_online');
-                this.handleUserOnline(data.nickname);
+                this.handleUserOnline(data);
                 break;
             case 'user_offline':
                 console.log('[ws.js:handleMessage] [DEBUG] Message type: user_offline');
@@ -164,8 +164,7 @@ class ChatWebSocket {
                 console.log('[ws.js:handleMessage] [DEBUG] Message type: online_users');
                 this.handleOnlineUsers(data);
                 break;
-            case 'usertyping' :
-                
+
             default:
                 console.log('[ws.js:handleMessage] [DEBUG] Unknown message type:', data.type);
         }
@@ -174,17 +173,24 @@ class ChatWebSocket {
 
 
     // Handle user online
-    handleUserOnline(nickname) {
-        console.log('[ws.js:handleUserOnline] [DEBUG] handleUserOnline called with nickname:', nickname);
-        if (nickname && !this.onlineUsers.includes(nickname)) {
-            console.log('[ws.js:handleUserOnline] [DEBUG] Adding user to online list:', nickname);
-            this.onlineUsers.push(nickname);
+    handleUserOnline(data) {
+        console.log('[ws.js:handleUserOnline] [DEBUG] handleUserOnline called with nickname:', data.nickname);
+        if (data.nickname && !this.onlineUsers.includes(data.nickname)) {
+            console.log('[ws.js:handleUserOnline] [DEBUG] Adding user to online list:', data.nickname);
+            if (!this.onlineUsers.includes(data.nickname)) {
+                this.onlineUsers.push(data.nickname);
+            }
+
+            if (!this.allUsers.includes(data.nickname)) {
+                this.allUsers.push(data.nickname);
+            }
+
             this.updateUsersList(); // Update the users list to reflect online status
-            if (nickname !== this.currentUser?.nickname && !this.isChatOpen) {
-                this.showOnlineNotification(nickname);
+            if (data.nickname !== this.currentUser?.nickname && !this.isChatOpen) {
+                this.showOnlineNotification(data.nickname);
             }
         } else {
-            console.log('[ws.js:handleUserOnline] [DEBUG] User already online or invalid nickname:', nickname);
+            console.log('[ws.js:handleUserOnline] [DEBUG] User already online or invalid data.nickname:', data.nickname);
         }
     }
 
