@@ -177,15 +177,10 @@ class ChatWebSocket {
         console.log('[ws.js:handleUserOnline] [DEBUG] handleUserOnline called with nickname:', data.nickname);
         if (data.nickname && !this.onlineUsers.includes(data.nickname)) {
             console.log('[ws.js:handleUserOnline] [DEBUG] Adding user to online list:', data.nickname);
-            if (!this.onlineUsers.includes(data.nickname)) {
-                this.onlineUsers.push(data.nickname);
-            }
-
-            if (!this.allUsers.includes(data.nickname)) {
-                this.allUsers.push(data.nickname);
-            }
-
+            this.onlineUsers.push(data.nickname);
             this.updateUsersList(); // Update the users list to reflect online status
+            // Only show notification if chat is not open and it's not the current user
+            // This prevents spam notifications on page refresh
             if (data.nickname !== this.currentUser?.nickname && !this.isChatOpen) {
                 this.showOnlineNotification(data.nickname);
             }
@@ -369,7 +364,7 @@ class ChatWebSocket {
             if (response.ok) {
                 const users = await response.json();
                 console.log('[ws.js:loadAllUsers] [DEBUG] Loaded users:', users);
-                this.allUsers = users; // Store all users
+                this.allUsers = users.filter(user => user && typeof user.id === 'number' && typeof user.nickname === 'string');
                 console.log('[ws.js:loadAllUsers] [DEBUG] allUsers now contains', this.allUsers.length, 'users');
                 console.log('[ws.js:loadAllUsers] [DEBUG] Calling updateUsersList to render users');
                 this.updateUsersList(); // Update the UI with online/offline status
@@ -437,7 +432,9 @@ class ChatWebSocket {
             console.log('[ws.js:updateUsersList] [DEBUG] Sorting user:', a.nickname, 'online:', a.is_online);
             if (a.is_online && !b.is_online) return -1;
             if (!a.is_online && b.is_online) return 1;
-            return a.nickname.localeCompare(b.nickname);
+            const aNick = a.nickname || '';
+            const bNick = b.nickname || '';
+            return aNick.localeCompare(bNick);
         });
 
         sortedUsers.forEach(user => {
