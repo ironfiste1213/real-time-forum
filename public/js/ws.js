@@ -78,6 +78,9 @@ class ChatWebSocket {
             try {
                 const data = JSON.parse(event.data);
                 console.log('[ws.js:connect] [DEBUG] Parsed WebSocket message:', data);
+                if (data.type == 'user_online' && !this.allUsers.includes(data.nickname)) {
+                    this.loadAllUsers();
+                }
                 this.handleMessage(data);
             } catch (error) {
                 console.error('[ws.js:connect] [DEBUG] Error parsing WebSocket message:', error);
@@ -170,7 +173,7 @@ class ChatWebSocket {
         }
     }
 
-
+    
 
     // Handle user online
     handleUserOnline(data) {
@@ -236,10 +239,13 @@ class ChatWebSocket {
         this.privateMessages[fromUserId].push(message);
         console.log('[ws.js:handlePrivateMessage] [DEBUG] Stored private message');
 
-        // If this conversation is active, display it immediately
+        // If this conversation is active, display it immediately and mark messages as read
         if (this.activeConversation && this.activeConversation.userId === fromUserId) {
             console.log('[ws.js:handlePrivateMessage] [DEBUG] Active conversation matches, displaying messages');
             this.displayPrivateMessages(fromUserId);
+            // Mark messages as read since we're in the conversation
+            this.markMessagesAsRead(fromUserId);
+            return
         }
 
         // Update conversations list to show new message
@@ -495,7 +501,7 @@ class ChatWebSocket {
     // Start conversation with a user
     startConversation(userId, nickname) {
         console.log(`[ws.js:startConversation] Starting conversation with ${nickname} (ID: ${userId})`);
-
+       
         // Check if user is online
         if (!this.onlineUsers.includes(nickname)) {
             showNotification("User is offline", "error");
@@ -1167,6 +1173,29 @@ class ChatWebSocket {
         }, 4000);
     }
 
+
+    // Mark messages as read for a conversation
+    async markMessagesAsRead(userId) {
+        try {
+            const response = await fetch(`/api/messages/mark-read?user_id=${userId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                credentials: 'same-origin'
+            });
+
+            if (response.ok) {
+                console.log('[ws.js:markMessagesAsRead] Messages marked as read for user:', userId);
+                // Refresh conversations to update unread counts
+                this.loadConversations();
+            } else {
+                console.error('[ws.js:markMessagesAsRead] Failed to mark messages as read:', response.status);
+            }
+        } catch (error) {
+            console.error('[ws.js:markMessagesAsRead] Error marking messages as read:', error);
+        }
+    }
 
     // Show error message to user
     showErrorMessage(message) {

@@ -103,6 +103,9 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.HandleFunc("/api/messages/unread", func(w http.ResponseWriter, r *http.Request) {
 		AuthMiddleware(http.HandlerFunc(handler.GetUnreadCountHandler)).ServeHTTP(w, r)
 	})
+	mux.HandleFunc("/api/messages/mark-read", func(w http.ResponseWriter, r *http.Request) {
+		AuthMiddleware(http.HandlerFunc(handler.MarkMessageRead)).ServeHTTP(w, r)
+	})
 
 	// WebSocket route
 	mux.HandleFunc("/ws", handler.WebSocketHandler)

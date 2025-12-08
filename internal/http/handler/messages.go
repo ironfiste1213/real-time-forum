@@ -68,6 +68,43 @@ func SendPrivateMessageHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "Message sent successfully",
 	})
 }
+func MarkMessageRead(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
+
+	user, ok := auth.GetUserFromContext(r.Context())
+	if !ok {
+		RespondWithError(w, http.StatusUnauthorized, "Unauthorized")
+		return
+	}
+
+	otherUserIDStr := r.URL.Query().Get("user_id")
+	if otherUserIDStr == "" {
+		RespondWithError(w, http.StatusBadRequest, "Missing user_id parameter")
+		return
+	}
+
+	otherUserID, err := strconv.Atoi(otherUserIDStr)
+	if err != nil {
+		RespondWithError(w, http.StatusBadRequest, "Invalid user_id parameter")
+		return
+	}
+
+	err = repo.MarkMessagesAsRead(otherUserID, user.ID)
+	if err != nil {
+		log.Printf("[messages.go:MarkMessageRead] Failed to mark messages as read: %v", err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to mark messages as read")
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(map[string]interface{}{
+		"success": true,
+		"message": "Messages marked as read",
+	})
+}
 
 // GetPrivateMessagesHandler retrieves private messages between two users
 func GetPrivateMessagesHandler(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +172,7 @@ func GetPrivateMessagesHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(struct {
 		Messages interface{} `json:"messages"`
 	}{messages})
-	
+
 }
 
 // GetConversationsHandler retrieves recent conversations for the user

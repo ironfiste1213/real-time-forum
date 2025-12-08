@@ -54,7 +54,7 @@ func GetPrivateMessagesBetweenUsers(userID1, userID2 int, limit, offset int) ([]
 
 	return messages, nil
 }
-
+  
 // MarkMessagesAsRead marks messages from sender to receiver as read
 func MarkMessagesAsRead(senderID, receiverID int) error {
 	query := `
