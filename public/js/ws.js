@@ -22,6 +22,7 @@ class ChatWebSocket {
         this.isChatOpen = false;
         this.messageIdCounter = 0;
         this.conversationBars = {}; // userId -> conversation bar element
+        this.loadUsersIntervalId = null; // Interval ID for periodic loadAllUsers calls
     }
 
     // Initialize WebSocket connection
@@ -56,7 +57,7 @@ class ChatWebSocket {
         console.log('[ws.js:connect] [DEBUG] Calling loadAllUsers');
         this.loadAllUsers();
 
-        // Load conversations when connecting
+    // Load conversations when connecting
         console.log('[ws.js:connect] [DEBUG] Calling loadConversations');
         this.loadConversations();
 
@@ -71,6 +72,11 @@ class ChatWebSocket {
             // Send join message
             console.log('[ws.js:connect] [DEBUG] Sending join message');
             this.sendJoinMessage();
+
+            // Start periodic loadAllUsers calls every 10 seconds
+            this.loadUsersIntervalId = setInterval(() => {
+                this.loadAllUsers();
+            }, 10000); // 10 seconds
         };
 
         this.ws.onmessage = (event) => {
@@ -93,6 +99,12 @@ class ChatWebSocket {
             this.connectionStatus = 'disconnected';
             this.updateConnectionStatus();
 
+            // Stop periodic loadAllUsers calls
+            if (this.loadUsersIntervalId) {
+                clearInterval(this.loadUsersIntervalId);
+                this.loadUsersIntervalId = null;
+            }
+
             // Attempt reconnection if not intentional disconnect
             if (event.code !== 1000) { // 1000 = normal closure
                 this.attemptReconnection();
@@ -108,6 +120,12 @@ class ChatWebSocket {
 
     // Disconnect WebSocket
     disconnect() {
+        // Stop periodic loadAllUsers calls
+        if (this.loadUsersIntervalId) {
+            clearInterval(this.loadUsersIntervalId);
+            this.loadUsersIntervalId = null;
+        }
+
         if (this.ws) {
             this.ws.close(1000, 'User disconnected');
             this.ws = null;
@@ -239,13 +257,11 @@ class ChatWebSocket {
         this.privateMessages[fromUserId].push(message);
         console.log('[ws.js:handlePrivateMessage] [DEBUG] Stored private message');
 
-        // If this conversation is active, display it immediately and mark messages as read
+        // If this conversation is active, display it immediately
         if (this.activeConversation && this.activeConversation.userId === fromUserId) {
             console.log('[ws.js:handlePrivateMessage] [DEBUG] Active conversation matches, displaying messages');
             this.displayPrivateMessages(fromUserId);
-            // Mark messages as read since we're in the conversation
-            this.markMessagesAsRead(fromUserId);
-            return
+            
         }
 
         // Update conversations list to show new message

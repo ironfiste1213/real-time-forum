@@ -116,7 +116,7 @@ export function setupChatEventListeners() {
         const newChatCloseBtn = chatCloseBtn.cloneNode(true);
         chatCloseBtn.parentNode.replaceChild(newChatCloseBtn, chatCloseBtn);
         newChatCloseBtn.addEventListener('click', () => {
-            // Instead of just closing chat, restore main view
+            // Close chat completely and reset to initial state
             const mainContainer = document.getElementById('main-container');
             const chatPanel = document.getElementById('chat-panel');
             const floatingChatBtn = document.getElementById('floating-chat-btn');
@@ -131,6 +131,10 @@ export function setupChatEventListeners() {
                 createPostToggle.style.opacity = '1';
                 createPostToggle.style.cursor = 'pointer';
             }
+
+            // Clear chat state and reset to initial state
+          //  chatWS.clearMessages();
+          //  chatWS.renderMessages();
         });
     }
 
@@ -157,6 +161,13 @@ export function setupChatEventListeners() {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
                 handleChatSubmit();
+            }
+        });
+
+        // Mark messages as read when clicking on the input
+        newChatInput.addEventListener('focus', () => {
+            if (chatWS.activeConversation) {
+                chatWS.markMessagesAsRead(chatWS.activeConversation.userId);
             }
         });
 
