@@ -49,7 +49,7 @@ class ChatWebSocket {
         const userId = this.getCurrentUserId(e);
         console.log('[ws.js:connect] [DEBUG] User ID for WebSocket:', userId);
 
-        const wsUrl = `ws://localhost:8083/ws?user_id=${userId}`;
+        const wsUrl = `ws://localhost:8083/ws?user_id=${userId}`;  
         console.log('[ws.js:connect] [DEBUG] Connecting to WebSocket URL:', wsUrl);
         this.ws = new WebSocket(wsUrl);
 
@@ -449,15 +449,51 @@ class ChatWebSocket {
             is_online: this.onlineUsers.includes(user.nickname)
         }));
 
-        // Sort users: online first, then alphabetically
-        const sortedUsers = usersWithOnlineStatus.sort((a, b) => {
-            console.log('[ws.js:updateUsersList] [DEBUG] Sorting user:', a.nickname, 'online:', a.is_online);
+        // Separate users into conversation users and non-conversation users
+        const conversationUserIds = new Set(this.conversations.map(conv => parseInt(conv.user_id)));
+        const conversationUsers = [];
+        const nonConversationUsers = [];
+
+        usersWithOnlineStatus.forEach(user => {
+            if (conversationUserIds.has(parseInt(user.id))) {
+                // Find the conversation data for this user
+                const conversation = this.conversations.find(conv => parseInt(conv.user_id) === parseInt(user.id));
+                conversationUsers.push({
+                    ...user,
+                    last_message_time: conversation ? conversation.last_message_time : null
+                });
+            } else {
+                nonConversationUsers.push(user);
+            }
+        });
+
+        // Sort conversation users by last message time (most recent first), then by online status
+        conversationUsers.sort((a, b) => {
+            const aTime = new Date(a.last_message_time || 0).getTime();
+            const bTime = new Date(b.last_message_time || 0).getTime();
+            if (aTime !== bTime) {
+                return bTime - aTime; // Descending order (most recent first)
+            }
+            // If same time, sort by online status
             if (a.is_online && !b.is_online) return -1;
             if (!a.is_online && b.is_online) return 1;
+            return 0;
+        });
+
+        // Sort non-conversation users alphabetically, then by online status
+        nonConversationUsers.sort((a, b) => {
             const aNick = a.nickname || '';
             const bNick = b.nickname || '';
-            return aNick.localeCompare(bNick);
+            const nickCompare = aNick.localeCompare(bNick);
+            if (nickCompare !== 0) return nickCompare;
+            // If same nickname, sort by online status
+            if (a.is_online && !b.is_online) return -1;
+            if (!a.is_online && b.is_online) return 1;
+            return 0;
         });
+
+        // Combine: conversation users first, then non-conversation users
+        const sortedUsers = [...conversationUsers, ...nonConversationUsers];
 
         sortedUsers.forEach(user => {
             console.log('[ws.js:updateUsersList] [DEBUG] Creating element for user:', user.nickname, 'online:', user.is_online);
@@ -838,8 +874,9 @@ class ChatWebSocket {
                         if (b > a) byUser[uid] = conv;
                     }
                 }
-                this.conversations = Object.values(byUser);
-                this.renderConversations();
+                 this.conversations = Object.values(byUser);
+                 console.log(this.conversations.length, this.conversations)
+                 this.renderConversations();
                 // Update unread badges in users list and chat button
                 this.updateUsersList();
                 this.updateChatUnreadUI();
@@ -849,6 +886,15 @@ class ChatWebSocket {
         } catch (error) {
             console.error('[ws.js:loadConversations] Error loading conversations:', error);
         }
+    }
+
+    // Sort conversations by last message time (most recent first)
+    sortConversationsByLastMessageTime() {
+        this.conversations.sort((a, b) => {
+            const aTime = new Date(a.last_message_time || 0).getTime();
+            const bTime = new Date(b.last_message_time || 0).getTime();
+            return bTime - aTime; // Descending order (most recent first)
+        });
     }
 
     // Render conversations list
@@ -953,31 +999,6 @@ class ChatWebSocket {
     }
 
 
-
-    // Render online users
-    renderOnlineUsers() {
-        const usersElement = document.getElementById('chat-online-users');
-        if (usersElement) {
-            usersElement.textContent = `Online: ${this.onlineUsers.join(', ')}`;
-        }
-    }
-
-    // Render messages (for public chat mode - currently empty since we only have private messaging)
-    renderMessages() {
-        const messagesContainer = document.getElementById('chat-messages');
-        if (!messagesContainer) return;
-
-        // Clear existing messages
-        while (messagesContainer.firstChild) {
-            messagesContainer.removeChild(messagesContainer.firstChild);
-        }
-
-        // For now, just show a placeholder or welcome message in public mode
-        const welcomeElement = document.createElement('div');
-        welcomeElement.className = 'chat-message system';
-        welcomeElement.textContent = 'Welcome to the chat! Select a user to start a private conversation.';
-        messagesContainer.appendChild(welcomeElement);
-    }
 
     // Scroll to bottom of messages
     scrollToBottom() {
@@ -1130,7 +1151,6 @@ class ChatWebSocket {
         Object.keys(this.conversationBars).forEach(userId => {
             this.closeConversationBar(userId);
         });
-        this.renderOnlineUsers();
         this.renderConversations();
         this.updateChatMode('public'); // Reset to public mode
     }
