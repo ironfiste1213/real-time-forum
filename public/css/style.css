@@ -591,7 +591,7 @@ nav>div:last-child {
 
 .username {
     font-weight: 600;
-    color: var(--text);
+    color: #87CEEB;
 }
 
 .post-date {
@@ -1000,7 +1000,7 @@ nav>div:last-child {
 /* Chat Container */
 .chat-container {
     display: grid;
-    grid-template-columns: 20% 80%;
+    grid-template-columns: 30% 70%;
     flex: 1;
     overflow: hidden;
 }
@@ -1208,11 +1208,11 @@ nav>div:last-child {
 
 /* Username color by side */
 .chat-message.own-message .message-username {
-    color: var(--accent-foreground);
+    color: #87CEEB;
 }
 
 .chat-message:not(.own-message) .message-username {
-    color: var(--accent);
+    color: #87CEEB;
 }
 
 .message-text {
@@ -1289,6 +1289,14 @@ nav>div:last-child {
 .user-status {
     margin-right: 8px;
     font-size: 0.8em;
+}
+
+.user-status.online {
+    color: green;
+}
+
+.user-status.offline {
+    color: red;
 }
 
 .user-nickname {

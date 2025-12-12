@@ -193,8 +193,9 @@ function handleChatSubmit() {
         // Check if we're in private chat mode
         if (chatWS.activeConversation) {
             chatWS.sendPrivateMessage(message);
-        } else {
-            chatWS.sendChatMessage(message);
+            // Move the conversation user to the top and update the list
+            chatWS.moveUserToTop(chatWS.activeConversation.userId, true);
+            chatWS.updateUsersList();
         }
         chatInput.value = ''; // Clear input
         chatInput.focus(); // Keep focus for next message

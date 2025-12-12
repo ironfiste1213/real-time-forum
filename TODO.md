@@ -1,1 +1,0 @@
-- [x] Add sortConversationsByLastMessageTime() method to ChatWebSocket class in public/js/ws.js

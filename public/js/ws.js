@@ -23,6 +23,7 @@ class ChatWebSocket {
         this.messageIdCounter = 0;
         this.conversationBars = {}; // userId -> conversation bar element
         this.loadUsersIntervalId = null; // Interval ID for periodic loadAllUsers calls
+        this.SortedUserslist = null
     }
 
     // Initialize WebSocket connection
@@ -60,7 +61,6 @@ class ChatWebSocket {
     // Load conversations when connecting
         console.log('[ws.js:connect] [DEBUG] Calling loadConversations');
         this.loadConversations();
-
         this.ws.onopen = (event) => {
             console.log('[ws.js:connect] [DEBUG] WebSocket connected successfully');
             this.isConnected = true;
@@ -76,7 +76,8 @@ class ChatWebSocket {
             // Start periodic loadAllUsers calls every 10 seconds
             this.loadUsersIntervalId = setInterval(() => {
                 this.loadAllUsers();
-            }, 10000); // 10 seconds
+                this.loadConversations();
+            }, 5000); // 10 seconds
         };
 
         this.ws.onmessage = (event) => {
@@ -156,7 +157,6 @@ class ChatWebSocket {
     }
 
 
-
     // Handle incoming messages
     handleMessage(data) {
         console.log('[ws.js:handleMessage] [DEBUG] Handling message:', data);
@@ -205,6 +205,10 @@ class ChatWebSocket {
             if (data.nickname !== this.currentUser?.nickname && !this.isChatOpen) {
                 this.showOnlineNotification(data.nickname);
             }
+            // If this user is in our active conversation, update chat mode to show input
+            if (this.activeConversation && data.nickname === this.activeConversation.nickname) {
+                this.updateChatMode('private');
+            }
         } else {
             console.log('[ws.js:handleUserOnline] [DEBUG] User already online or invalid data.nickname:', data.nickname);
         }
@@ -217,6 +221,10 @@ class ChatWebSocket {
             console.log('[ws.js:handleUserOffline] [DEBUG] Removing user from online list:', nickname);
             this.onlineUsers = this.onlineUsers.filter(user => user !== nickname);
             this.updateUsersList(); // Update the users list to reflect offline status
+            // If this user is in our active conversation, update chat mode to hide input
+            if (this.activeConversation && nickname === this.activeConversation.nickname) {
+                this.updateChatMode('private');
+            }
         } else {
             console.log('[ws.js:handleUserOffline] [DEBUG] Invalid nickname for offline:', nickname);
         }
@@ -257,11 +265,17 @@ class ChatWebSocket {
         this.privateMessages[fromUserId].push(message);
         console.log('[ws.js:handlePrivateMessage] [DEBUG] Stored private message');
 
+        // Move user to top and update unread count
+        this.moveUserToTop(fromUserId);
+
+        // Update users list to reflect changes
+        this.updateUsersList();
+
         // If this conversation is active, display it immediately
         if (this.activeConversation && this.activeConversation.userId === fromUserId) {
             console.log('[ws.js:handlePrivateMessage] [DEBUG] Active conversation matches, displaying messages');
             this.displayPrivateMessages(fromUserId);
-            
+
         }
 
         // Update conversations list to show new message
@@ -302,12 +316,6 @@ class ChatWebSocket {
 
 
 
-    // Generate unique message ID
-    generateMessageId() {
-        return `msg_${Date.now()}_${this.messageIdCounter++}`;
-    }
-
-
 
     // Attempt reconnection with exponential backoff
     attemptReconnection() {
@@ -327,22 +335,7 @@ class ChatWebSocket {
         this.reconnectDelay = Math.min(this.reconnectDelay * 2, this.maxReconnectDelay);
     }
 
-    // Get current user from session
-    getCurrentUser() {
-        // This should match how auth.js stores user data
-        const userData = localStorage.getItem('user');
-        if (userData) {
-            try {
-                return JSON.parse(userData);
-            } catch (error) {
-                console.error('[ws.js:getCurrentUser] Error parsing user data:', error);
-            }
-        }
-        console.log('[ws.js:getCurrentUser] userData:', userData);
-
-        return null;
-    }
-
+  
     // Get current user ID from session
     getCurrentUserId(e) {
         //   const user =  checkSession();
@@ -355,21 +348,7 @@ class ChatWebSocket {
         return null;
     }
 
-    // Get session token
-    getSessionToken() {
-        const token = this.getCookie('session_token');
-        console.log('[ws.js:getSessionToken] WebSocket getting session token:', token ? 'found' : 'not found');
-        return token;
-    }
-
-    // Get cookie value
-    getCookie(name) {
-        const value = `; ${document.cookie}`;
-        const parts = value.split(`; ${name}=`);
-        if (parts.length === 2) return parts.pop().split(';').shift();
-        return null;
-    }
-
+  
     // Load all users from API
     async loadAllUsers() {
         try {
@@ -389,7 +368,7 @@ class ChatWebSocket {
                 this.allUsers = users.filter(user => user && typeof user.id === 'number' && typeof user.nickname === 'string');
                 console.log('[ws.js:loadAllUsers] [DEBUG] allUsers now contains', this.allUsers.length, 'users');
                 console.log('[ws.js:loadAllUsers] [DEBUG] Calling updateUsersList to render users');
-                this.updateUsersList(); // Update the UI with online/offline status
+              //  this.updateUsersList(); // Update the UI with online/offline status
                 console.log('[ws.js:loadAllUsers] [DEBUG] updateUsersList completed, users should be clickable now');
             } else {
                 const errorText = await response.text();
@@ -415,24 +394,13 @@ class ChatWebSocket {
 
     // Update users list in UI
     updateUsersList() {
-        console.log('[ws.js:updateUsersList] [DEBUG] updateUsersList called');
-
         const usersListElement = document.getElementById('chat-users-list');
-        if (!usersListElement) {
-            console.log('[ws.js:updateUsersList] [DEBUG] chat-users-list element not found');
-            return;
-        }
-        console.log('[ws.js:updateUsersList] [DEBUG] Found chat-users-list element');
+        if (!usersListElement) return;
 
         // Clear existing list
-        while (usersListElement.firstChild) {
-            console.log('[ws.js:updateUsersList] [DEBUG] Removing child element');
-            usersListElement.removeChild(usersListElement.firstChild);
-        }
-        console.log('[ws.js:updateUsersList] [DEBUG] Cleared existing list');
+        usersListElement.innerHTML = '';
 
-        if (!this.allUsers || this.allUsers.length === 0) {
-            console.log('[ws.js:updateUsersList] [DEBUG] No users found, showing no users message');
+        if (!this.SortedUserslist || this.SortedUserslist.length === 0) {
             const noUsersElement = document.createElement('div');
             noUsersElement.className = 'no-users';
             noUsersElement.textContent = 'No users found';
@@ -440,128 +408,45 @@ class ChatWebSocket {
             return;
         }
 
-        const unreadMap = this.getUnreadMap();
-        console.log('[ws.js:updateUsersList] [DEBUG] Processing', this.allUsers.length, 'users');
+        this.SortedUserslist.forEach(user => {
+            // Skip current user
+            if (user.id === this.currentUser.id) return;
 
-        // Update online status based on real-time onlineUsers array
-        const usersWithOnlineStatus = this.allUsers.map(user => ({
-            ...user,
-            is_online: this.onlineUsers.includes(user.nickname)
-        }));
+        const userElement = document.createElement('div');
+        userElement.className = 'chat-user' + (this.onlineUsers.includes(user.nickname) ? ' online' : '');
+        userElement.setAttribute('data-user-id', user.id);
 
-        // Separate users into conversation users and non-conversation users
-        const conversationUserIds = new Set(this.conversations.map(conv => parseInt(conv.user_id)));
-        const conversationUsers = [];
-        const nonConversationUsers = [];
+        const nicknameSpan = document.createElement('span');
+        nicknameSpan.className = 'user-nickname';
+        nicknameSpan.textContent = '👤 '+user.nickname;
 
-        usersWithOnlineStatus.forEach(user => {
-            if (conversationUserIds.has(parseInt(user.id))) {
-                // Find the conversation data for this user
-                const conversation = this.conversations.find(conv => parseInt(conv.user_id) === parseInt(user.id));
-                conversationUsers.push({
-                    ...user,
-                    last_message_time: conversation ? conversation.last_message_time : null
-                });
-            } else {
-                nonConversationUsers.push(user);
-            }
-        });
+        if (user.unread_count > 0) {
+            const userUnread = document.createElement('span');
+            userUnread.className = 'user-unread-badge';
+            userUnread.textContent = user.unread_count;
+            nicknameSpan.appendChild(userUnread);
+        }
 
-        // Sort conversation users by last message time (most recent first), then by online status
-        conversationUsers.sort((a, b) => {
-            const aTime = new Date(a.last_message_time || 0).getTime();
-            const bTime = new Date(b.last_message_time || 0).getTime();
-            if (aTime !== bTime) {
-                return bTime - aTime; // Descending order (most recent first)
-            }
-            // If same time, sort by online status
-            if (a.is_online && !b.is_online) return -1;
-            if (!a.is_online && b.is_online) return 1;
-            return 0;
-        });
+        userElement.appendChild(nicknameSpan);
 
-        // Sort non-conversation users alphabetically, then by online status
-        nonConversationUsers.sort((a, b) => {
-            const aNick = a.nickname || '';
-            const bNick = b.nickname || '';
-            const nickCompare = aNick.localeCompare(bNick);
-            if (nickCompare !== 0) return nickCompare;
-            // If same nickname, sort by online status
-            if (a.is_online && !b.is_online) return -1;
-            if (!a.is_online && b.is_online) return 1;
-            return 0;
-        });
+        const statusSpan = document.createElement('span');
+        statusSpan.className = 'user-status ' + (this.onlineUsers.includes(user.nickname) ? 'online' : 'offline');
+        statusSpan.textContent = this.onlineUsers.includes(user.nickname) ? 'online' : 'offline';
+        userElement.appendChild(statusSpan);
 
-        // Combine: conversation users first, then non-conversation users
-        const sortedUsers = [...conversationUsers, ...nonConversationUsers];
-
-        sortedUsers.forEach(user => {
-            console.log('[ws.js:updateUsersList] [DEBUG] Creating element for user:', user.nickname, 'online:', user.is_online);
-
-            // Skip current user - don't show themselves in the list
-            if (user.id === this.currentUser.id) {
-                console.log('[ws.js:updateUsersList] [DEBUG] Skipping current user:', user.nickname);
-                return;
-            }
-
-            const userElement = document.createElement('div');
-            userElement.className = `chat-user ${user.is_online ? 'online' : 'offline'}`;
-            userElement.setAttribute('data-user-id', user.id);
-
-            const statusIndicator = document.createElement('span');
-            statusIndicator.className = 'user-status';
-            statusIndicator.textContent = user.is_online ? '●' : '○';
-            userElement.appendChild(statusIndicator);
-
-            const nicknameSpan = document.createElement('span');
-            nicknameSpan.className = 'user-nickname';
-            nicknameSpan.textContent = user.nickname;
-
-            // Per-user unread badge
-            const unreadCount = unreadMap[parseInt(user.id)] || 0;
-            if (unreadCount > 0) {
-                const userUnread = document.createElement('span');
-                userUnread.className = 'user-unread-badge';
-                userUnread.textContent = unreadCount;
-                nicknameSpan.appendChild(userUnread);
-            }
-
-            // Add visual indication for offline users
-            if (!user.is_online) {
-                const offlineText = document.createElement('span');
-                offlineText.className = 'offline-text';
-                offlineText.textContent = ' (Offline)';
-                offlineText.style.fontSize = '0.8em';
-                offlineText.style.color = '#747f8d';
-                nicknameSpan.appendChild(offlineText);
-            }
-            userElement.appendChild(nicknameSpan);
-
-            // Add click handler for all users (can view message history even if offline)
             userElement.addEventListener('click', () => {
-                console.log('[ws.js:updateUsersList] [DEBUG] User clicked:', user.nickname);
                 this.startConversation(user.id, user.nickname);
             });
 
             usersListElement.appendChild(userElement);
-            console.log('[ws.js:updateUsersList] [DEBUG] Added user element to list');
         });
-
-        console.log('[ws.js:updateUsersList] [DEBUG] updateUsersList completed');
     }
 
     // Start conversation with a user
     startConversation(userId, nickname) {
         console.log(`[ws.js:startConversation] Starting conversation with ${nickname} (ID: ${userId})`);
-       
-        // Check if user is online
-        if (!this.onlineUsers.includes(nickname)) {
-            showNotification("User is offline", "error");
-            return;
-        }
 
-        // Allow starting conversations - online status will be updated in real-time
-        // Don't block based on initial online status as it may not be synced yet
+        // Allow starting conversations with any user (online or offline) for history viewing
 
         // Set active conversation
         this.activeConversation = {
@@ -590,7 +475,7 @@ class ChatWebSocket {
         // Always load conversation history so server can mark messages as read
         this.loadConversationHistory(userId);
 
-        // Update UI to show private chat mode
+        // Update UI to show private chat mode (will hide input if user is offline)
         this.updateChatMode('private');
 
         // Create or show conversation bar for this user
@@ -806,10 +691,7 @@ class ChatWebSocket {
     updateChatMode(mode) {
         console.log('[ws.js:updateChatMode] [DEBUG] updateChatMode called with mode:', mode);
         const chatPanel = document.getElementById('chat-panel');
-        if (chatPanel) {
-            chatPanel.className = `chat-panel fullscreen discord-style open ${mode}-mode`;
-        }
-
+       
         // Update chat header title
         const title = mode === 'private' && this.activeConversation ? this.activeConversation.nickname : 'Chat';
         this.updateChatHeaderTitle(title);
@@ -820,11 +702,19 @@ class ChatWebSocket {
             chatInput.placeholder = mode === 'private' ? 'Type a private message...' : 'Type a message...';
         }
 
-        // Show/hide chat form based on mode
+        // Show/hide chat form based on mode and online status
         const chatForm = document.getElementById('chat-form');
         if (chatForm) {
-            chatForm.style.display = mode === 'private' ? 'flex' : 'none';
-            console.log('[ws.js:updateChatMode] [DEBUG] Set chat form display to:', mode === 'private' ? 'flex' : 'none');
+            if (mode === 'private' && this.activeConversation) {
+                // In private mode, show form only if the other user is online
+                const isOtherUserOnline = this.onlineUsers.includes(this.activeConversation.nickname);
+                chatForm.style.display = isOtherUserOnline ? 'flex' : 'none';
+                console.log('[ws.js:updateChatMode] [DEBUG] Set chat form display to:', isOtherUserOnline ? 'flex' : 'none', '(user online:', isOtherUserOnline, ')');
+            } else {
+                // In public mode or no active conversation, hide form
+                chatForm.style.display = 'none';
+                console.log('[ws.js:updateChatMode] [DEBUG] Set chat form display to: none (public mode or no conversation)');
+            }
         }
 
         // Show/hide conversations and users lists based on mode
@@ -876,9 +766,11 @@ class ChatWebSocket {
                 }
                  this.conversations = Object.values(byUser);
                  console.log(this.conversations.length, this.conversations)
-                 this.renderConversations();
+             //    this.renderConversations();
                 // Update unread badges in users list and chat button
-                this.updateUsersList();
+               // this.updateUsersList();
+               this.getSortedUserList();
+               this.updateUsersList();
                 this.updateChatUnreadUI();
             } else {
                 console.error('[ws.js:loadConversations] Failed to load conversations:', response.status);
@@ -897,55 +789,50 @@ class ChatWebSocket {
         });
     }
 
-    // Render conversations list
-    renderConversations() {
-        const conversationsElement = document.getElementById('chat-conversations');
-        if (!conversationsElement) return;
+    // Get sorted list of users based on conversations and all users
+    getSortedUserList() {
+        // Sort conversations by last message time
+        this.sortConversationsByLastMessageTime();
 
-        // Clear existing conversations
-        while (conversationsElement.firstChild) {
-            conversationsElement.removeChild(conversationsElement.firstChild);
-        }
+        // Create a set of user IDs that have conversations
+        const conversationUserIds = new Set(this.conversations.map(conv => parseInt(conv.user_id)));
 
-        if (this.conversations.length === 0) {
-            const noConversationsElement = document.createElement('div');
-            noConversationsElement.className = 'no-conversations';
-            noConversationsElement.textContent = 'No conversations yet';
-            conversationsElement.appendChild(noConversationsElement);
-            return;
-        }
+        // Map conversations to user objects
+        const conversationUsers = this.conversations.map(conv => ({
+            id: parseInt(conv.user_id),
+            nickname: conv.nickname,
+            unread_count: conv.unread_count || 0
+        }));
 
-        this.conversations.forEach(conv => {
-            const convElement = document.createElement('div');
-            convElement.className = `conversation-item ${this.activeConversation && this.activeConversation.userId === conv.user_id ? 'active' : ''}`;
-            convElement.setAttribute('data-user-id', conv.user_id);
+        // Get users from allUsers not in conversations
+        const nonConversationUsers = this.allUsers
+            .filter(user => !conversationUserIds.has(parseInt(user.id)))
+            .sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''))
+            .map(user => ({
+                id: parseInt(user.id),
+                nickname: user.nickname,
+                unread_count: 0
+            }));
 
-            const nicknameSpan = document.createElement('span');
-            nicknameSpan.className = 'conversation-nickname';
-            nicknameSpan.textContent = conv.nickname;
-            convElement.appendChild(nicknameSpan);
+        // Combine: conversation users first, then non-conversation users
 
-            if (conv.unread_count > 0) {
-                const unreadBadge = document.createElement('span');
-                unreadBadge.className = 'unread-badge';
-                unreadBadge.textContent = conv.unread_count;
-                convElement.appendChild(unreadBadge);
-            }
-
-            const lastMessageSpan = document.createElement('span');
-            lastMessageSpan.className = 'last-message';
-            lastMessageSpan.textContent = conv.last_message || 'No messages yet';
-            convElement.appendChild(lastMessageSpan);
-
-            // Add click handler
-            convElement.addEventListener('click', () => {
-                this.startConversation(conv.user_id, conv.nickname);
-            });
-
-            conversationsElement.appendChild(convElement);
-        });
+        this.SortedUserslist =  [...conversationUsers, ...nonConversationUsers];
     }
 
+    // Move user to top of sorted list and update unread count
+    moveUserToTop(userId, fromus = false) {
+        const userIndex = this.SortedUserslist.findIndex(user => parseInt(user.id) === parseInt(userId));
+        if (userIndex !== -1) {
+            // Increment unread count
+            if (!fromus) {
+            this.SortedUserslist[userIndex].unread_count = (this.SortedUserslist[userIndex].unread_count || 0) + 1;}
+            // Move user to the front
+            const user = this.SortedUserslist.splice(userIndex, 1)[0];
+            this.SortedUserslist.unshift(user);
+        }
+    }
+
+   
     // Update connection status in UI
     updateConnectionStatus() {
         const statusElement = document.getElementById('chat-connection-status');
@@ -961,7 +848,7 @@ class ChatWebSocket {
     updateChatHeaderTitle(title) {
         const titleEl = document.getElementById('chat-title');
         if (titleEl) {
-            titleEl.textContent = title || 'Chat';
+            titleEl.textContent = title ? '👤 ' + title : 'Chat';
         }
     }
 
@@ -1151,7 +1038,6 @@ class ChatWebSocket {
         Object.keys(this.conversationBars).forEach(userId => {
             this.closeConversationBar(userId);
         });
-        this.renderConversations();
         this.updateChatMode('public'); // Reset to public mode
     }
 
