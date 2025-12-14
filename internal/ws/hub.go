@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"sync"
-	"time"
 
 	"real-time-forum/internal/models"
 )
@@ -20,7 +19,6 @@ type Hub struct {
 	Unregister     chan *Client            // Unregister requests from clients
 	Broadcast      chan []byte             // Broadcast messages to all clients
 	PrivateMessage chan PrivateMessageData // Private messages between specific users
-	LoadHistory    chan *Message           // History loading requests
 	// User tracking
 	Users map[int][]*Client // userID -> array of clients mapping
 }
@@ -36,7 +34,6 @@ func NewHub() *Hub {
 		Unregister:     make(chan *Client),            // Channel for client unregistration requests
 		Broadcast:      make(chan []byte),             // Channel for broadcasting messages to all clients
 		PrivateMessage: make(chan PrivateMessageData), // Channel for routing private messages between users
-		LoadHistory:    make(chan *Message),           // Channel for history loading requests
 		Users:          make(map[int][]*Client),       // Map for userID -> slice of client connections
 	}
 }
@@ -56,9 +53,6 @@ func (h *Hub) Run() {
 
 		case privateMsg := <-h.PrivateMessage:
 			h.handlePrivateMessage(privateMsg)
-
-		case historyReq := <-h.LoadHistory:
-			h.handleLoadHistory(historyReq)
 		}
 	}
 }
@@ -231,6 +225,9 @@ func (h *Hub) handlePrivateMessage(data PrivateMessageData) {
 			data.Message.FromUserID,
 		)
 		h.sendMessageDelivered(data.Message.FromUserID, data.Message.MessageID)
+
+		// Check if sender has multiple connections and send "message_from_me" to other connections
+		h.sendMessageFromMeToOtherConnections(data.Message.FromUserID, data.Message, data.SenderClient)
 	} else {
 		// No connection could receive the message
 		log.Printf(
@@ -240,7 +237,6 @@ func (h *Hub) handlePrivateMessage(data PrivateMessageData) {
 		h.sendMessageFailed(data.Message.FromUserID, data.Message.ToUserID)
 	}
 }
-
 
 // broadcastUserOnline notifies all clients that a user came online
 func (h *Hub) broadcastUserOnline(userID int, nickname string) {
@@ -255,6 +251,7 @@ func (h *Hub) broadcastUserOffline(userID int, nickname string) {
 	message.Nickname = nickname
 	h.broadcastMessage(message.ToJSON())
 }
+
 // sendOnlineUsersList sends the current list of online users to a specific client
 func (h *Hub) sendOnlineUsersList(client *Client) {
 	h.Mu.RLock()
@@ -321,6 +318,7 @@ func (h *Hub) sendMessageDelivered(senderID int, messageID int) {
 		}
 	}
 }
+
 // sendMessageFailed notifies the sender that their message failed to deliver
 func (h *Hub) sendMessageFailed(senderID int, receiverID int) {
 	clients, exists := h.Users[senderID]
@@ -348,71 +346,51 @@ func (h *Hub) sendMessageFailed(senderID int, receiverID int) {
 	}
 }
 
-// handleLoadHistory loads message history for a conversation and sends it back to the requesting client
-func (h *Hub) handleLoadHistory(req *Message) {
-	log.Printf("[hub.go:handleLoadHistory][DEBUG] Handling load history request from %d for conversation with %d", req.FromUserID, req.ToUserID)
+// sendMessageFromMeToOtherConnections sends "message_from_me" to other connections of the sender
+func (h *Hub) sendMessageFromMeToOtherConnections(senderID int, originalMessage Message, senderClient *Client) {
+	clients, exists := h.Users[senderID]
+	log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Checking connections for user %d, exists: %v, client count: %d", senderID, exists, len(clients))
 
-	// Get the requesting client
-	requestingClient, exists := h.Users[req.FromUserID]
-	if !exists {
-		log.Printf("[hub.go:handleLoadHistory][DEBUG] Requesting client %d not found", req.FromUserID)
+	if !exists || len(clients) <= 1 {
+		log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] No other connections to send to for user %d", senderID)
 		return
 	}
 
-	// Import the repo package for database access
-	// Note: This creates a circular import issue, so we'll need to pass the repo functions
-	// For now, we'll create a placeholder that will be implemented with proper dependency injection
+	message := Message{
+		Type:       MessageFromMe,
+		Content:    originalMessage.Content,
+		FromUserID: senderID,
+		ToUserID:   originalMessage.ToUserID,
+		Timestamp:  originalMessage.Timestamp,
+		MessageID:  originalMessage.MessageID,
+	}
 
-	// Load messages from database
-	var messages []models.PrivateMessage
-	var err error
+	data := message.ToJSON()
+	log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Created message_from_me: %+v", message)
 
-	if messageRepoFunc != nil {
-		// Use injected repository function
-		messages, err = messageRepoFunc(req.FromUserID, req.ToUserID, 50, req.Offset)
-		if err != nil {
-			log.Printf("[hub.go:handleLoadHistory][DEBUG] Failed to load message history via injected repo: %v", err)
-			return
+	sentCount := 0
+	for _, client := range clients {
+		// Skip the sender client to avoid sending the message back to itself
+		if client == senderClient {
+			log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Skipping sender client for user %d", senderID)
+			continue
 		}
-	} else {
-		// Fallback to placeholder (empty messages)
-		log.Printf("[hub.go:handleLoadHistory][DEBUG] No message repo injected, returning empty history")
-		messages = []models.PrivateMessage{}
-	}
 
-	// Convert messages to JSON format for the response
-	messageList := make([]map[string]interface{}, len(messages))
-	for i, msg := range messages {
-		messageList[i] = map[string]interface{}{
-			"id":         msg.ID,
-			"sender_id":  msg.SenderID,
-			"content":    msg.Content,
-			"created_at": msg.CreatedAt.Format(time.RFC3339),
-			"is_read":    msg.IsRead,
+		select {
+		case client.send <- data:
+			log.Printf(
+				"[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Successfully sent message_from_me to connection of user %d (client: %p)",
+				senderID, client,
+			)
+			sentCount++
+		default:
+			log.Printf(
+				"[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Could not send message_from_me to connection of user %d (client: %p) - channel full",
+				senderID, client,
+			)
 		}
 	}
-
-	// Create the full response message
-	responseData := map[string]interface{}{
-		"type":         "history_loaded",
-		"with_user_id": req.ToUserID,
-		"messages":     messageList,
-	}
-
-	// Marshal to JSON
-	responseJSON, err := json.Marshal(responseData)
-	if err != nil {
-		log.Printf("[hub.go:handleLoadHistory][DEBUG] Failed to marshal history response: %v", err)
-		return
-	}
-
-	// Send to requesting client
-	select {
-	case requestingClient.send <- responseJSON:
-		log.Printf("[hub.go:handleLoadHistory][DEBUG] Sent message history to user %d (%d messages)", req.FromUserID, len(messages))
-	default:
-		log.Printf("[hub.go:handleLoadHistory][DEBUG] Could not send history to user %d", req.FromUserID)
-	}
+	log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Sent message_from_me to %d connections for user %d", sentCount, senderID)
 }
 
 // messageRepoFunc stores the injected repository function

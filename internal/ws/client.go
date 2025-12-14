@@ -20,7 +20,7 @@ type Client struct {
 	send chan []byte // Channel for messages to send to this client
 
 	// Hub reference for cleanup
-	hub *Hub
+	hub  *Hub
 	idex int
 }
 
@@ -32,7 +32,7 @@ func NewClient(hub *Hub, conn *websocket.Conn, userID int, nickname string) *Cli
 		nickname: nickname,
 		send:     make(chan []byte, 256), // Buffered channel to prevent blocking
 		hub:      hub,
-		idex: 0,
+		idex:     0,
 	}
 }
 
@@ -103,14 +103,11 @@ func (c *Client) readPump() {
 			// Send private message to hub for routing
 			log.Printf("[client.go:readPump][DEBUG] Routing private message from %d to %d", message.FromUserID, message.ToUserID)
 			c.hub.PrivateMessage <- PrivateMessageData{
-				ToUserID: message.ToUserID,
-				Data:     message.ToJSON(),
-				Message:  *message,
+				ToUserID:     message.ToUserID,
+				Data:         message.ToJSON(),
+				Message:      *message,
+				SenderClient: c, // Include the sender client to exclude from message_from_me
 			}
-		case LoadHistory:
-			// Send history loading request to hub
-			log.Printf("[client.go:readPump][DEBUG] Routing history loading request from %d for conversation with %d", message.FromUserID, message.ToUserID)
-			c.hub.LoadHistory <- message
 		default:
 			log.Printf("[client.go:readPump][DEBUG] Unknown message type from user %d: %s", c.userID, message.Type)
 		}

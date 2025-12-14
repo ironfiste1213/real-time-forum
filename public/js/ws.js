@@ -21,7 +21,7 @@ class ChatWebSocket {
         this.reconnectDelay = 1000; // Start with 1 second
         this.isChatOpen = false;
         this.messageIdCounter = 0;
-        this.conversationBars = {}; // userId -> conversation bar element
+
         this.loadUsersIntervalId = null; // Interval ID for periodic loadAllUsers calls
         this.SortedUserslist = null
     }
@@ -185,6 +185,10 @@ class ChatWebSocket {
                 console.log('[ws.js:handleMessage] [DEBUG] Message type: online_users');
                 this.handleOnlineUsers(data);
                 break;
+            case 'message_from_me':
+                console.log('[ws.js:handleMessage] [DEBUG] Message type: message_from_me');
+                this.handleMessageFromMe(data);
+                break;
 
             default:
                 console.log('[ws.js:handleMessage] [DEBUG] Unknown message type:', data.type);
@@ -278,13 +282,7 @@ class ChatWebSocket {
 
         }
 
-        // Create conversation bar notification if chat is not open
-        if (!this.isChatOpen) {
-            console.log(`[ws.js:handlePrivateMessage] Chat is not open, creating conversation bar for user ${fromUserId}`);
-            this.createConversationBar(fromUserId, this.allUsers.find(u => u.id === fromUserId)?.nickname || 'Unknown');
-        } else {
-            console.log(`[ws.js:handlePrivateMessage] Chat is open, skipping conversation bar creation`);
-        }
+
 
         // Update conversations list to show new message
         console.log('[ws.js:handlePrivateMessage] [DEBUG] Loading conversations after private message');
@@ -319,6 +317,49 @@ class ChatWebSocket {
             this.updateUsersList();
         } catch (error) {
             console.error('[ws.js:handleOnlineUsers] [DEBUG] Error parsing online users data:', error);
+        }
+    }
+
+    // Handle message from me (sent from another connection)
+    handleMessageFromMe(data) {
+        console.log('[ws.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME RECEIVED =====');
+        console.log('[ws.js:handleMessageFromMe] [DEBUG] Raw data:', JSON.stringify(data, null, 2));
+        const toUserId = data.to_user_id;
+        console.log('[ws.js:handleMessageFromMe] [DEBUG] To user ID:', toUserId);
+        console.log('[ws.js:handleMessageFromMe] [DEBUG] Current user ID:', this.currentUser?.id);
+        console.log('[ws.js:handleMessageFromMe] [DEBUG] Active conversation:', this.activeConversation);
+
+        // Check if we are in conversation with the recipient
+        if (this.activeConversation && this.activeConversation.userId === toUserId) {
+            console.log('[ws.js:handleMessageFromMe] [DEBUG] ✓ Active conversation matches, processing message');
+
+            const message = {
+                sender_id: this.currentUser.id,
+                receiver_id: toUserId,
+                content: data.content,
+                created_at: data.timestamp || new Date().toISOString(),
+                is_read: false,
+                id: data.id, // Include database ID if available
+                source: 'message_from_me' // Mark the source for debugging
+            };
+
+            console.log('[ws.js:handleMessageFromMe] [DEBUG] Created message object:', message);
+
+            // Store the message
+            if (!this.privateMessages[toUserId]) {
+                this.privateMessages[toUserId] = [];
+                console.log('[ws.js:handleMessageFromMe] [DEBUG] Created new message array for user', toUserId);
+            }
+            this.privateMessages[toUserId].push(message);
+            console.log('[ws.js:handleMessageFromMe] [DEBUG] Added message to privateMessages. Total messages for user', toUserId, ':', this.privateMessages[toUserId].length);
+
+            // Display the message in the active conversation
+            console.log('[ws.js:handleMessageFromMe] [DEBUG] Calling displayPrivateMessages for user', toUserId);
+            this.displayPrivateMessages(toUserId);
+            console.log('[ws.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME PROCESSED SUCCESSFULLY =====');
+        } else {
+            console.log('[ws.js:handleMessageFromMe] [DEBUG] ✗ No active conversation with recipient (expected user ID:', toUserId, ', active conversation user ID:', this.activeConversation?.userId, '), ignoring message');
+            console.log('[ws.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME IGNORED =====');
         }
     }
 
@@ -486,8 +527,7 @@ class ChatWebSocket {
         // Update UI to show private chat mode (will hide input if user is offline)
         this.updateChatMode('private');
 
-        // Create or show conversation bar for this user
-        this.createConversationBar(userId, nickname);
+
 
         // Show the chat panel if it's not already open
         if (!this.isChatOpen) {
@@ -950,96 +990,7 @@ class ChatWebSocket {
         }
     }
 
-    // Create conversation bar for a user
-    createConversationBar(userId, nickname) {
-        console.log(`[ws.js:createConversationBar] Creating conversation bar for user ${nickname} (ID: ${userId})`);
-        const barId = `conversation-bar-${userId}`;
 
-        // Remove existing bar if it exists
-        const existingBar = document.getElementById(barId);
-        if (existingBar) {
-            console.log(`[ws.js:createConversationBar] Removing existing conversation bar for user ${userId}`);
-            existingBar.remove();
-        }
-
-        // Create new conversation bar
-        const bar = document.createElement('div');
-        bar.id = barId;
-        bar.className = 'conversation-bar';
-        bar.setAttribute('data-user-id', userId);
-        console.log(`[ws.js:createConversationBar] Created conversation bar element with ID: ${barId}`);
-
-        // Create bar content
-        const content = document.createElement('div');
-        content.className = 'conversation-bar-content';
-
-        const avatar = document.createElement('div');
-        avatar.className = 'conversation-bar-avatar';
-        avatar.textContent = nickname.charAt(0).toUpperCase();
-
-        const info = document.createElement('div');
-        info.className = 'conversation-bar-info';
-
-        const name = document.createElement('div');
-        name.className = 'conversation-bar-name';
-        name.textContent = nickname;
-
-        const preview = document.createElement('div');
-        preview.className = 'conversation-bar-preview';
-        preview.textContent = 'Click to chat';
-
-        info.appendChild(name);
-        info.appendChild(preview);
-
-        const closeBtn = document.createElement('button');
-        closeBtn.className = 'conversation-bar-close';
-        closeBtn.textContent = '×';
-        closeBtn.onclick = (e) => {
-            e.stopPropagation();
-            this.closeConversationBar(userId);
-        };
-
-        content.appendChild(avatar);
-        content.appendChild(info);
-        content.appendChild(closeBtn);
-
-        bar.appendChild(content);
-
-        // Add click handler to open conversation
-        bar.onclick = () => {
-            this.activeConversation = { userId: parseInt(userId), nickname };
-            this.displayPrivateMessages(userId);
-            this.updateChatMode('private');
-            this.showChat();
-        };
-
-        // Add to page
-        document.body.appendChild(bar);
-
-        // Store reference
-        this.conversationBars[userId] = bar;
-
-        // Auto-hide after 30 seconds if not clicked (increased for debugging)
-        setTimeout(() => {
-            if (this.conversationBars[userId]) {
-                console.log(`[ws.js:createConversationBar] Auto-hiding conversation bar for user ${userId}`);
-                bar.classList.add('fading');
-                setTimeout(() => {
-                    this.closeConversationBar(userId);
-                    console.log(`[ws.js:createConversationBar] Conversation bar removed for user ${userId}`);
-                }, 1000);
-            }
-        }, 30000); // 30 seconds instead of 5
-    }
-
-    // Close conversation bar
-    closeConversationBar(userId) {
-        const bar = this.conversationBars[userId];
-        if (bar) {
-            bar.remove();
-            delete this.conversationBars[userId];
-        }
-    }
 
     // Clear messages (on logout)
     clearMessages() {
@@ -1047,10 +998,7 @@ class ChatWebSocket {
         this.conversations = [];
         this.activeConversation = null;
         this.privateMessages = {};
-        // Close all conversation bars
-        Object.keys(this.conversationBars).forEach(userId => {
-            this.closeConversationBar(userId);
-        });
+
         this.updateChatMode('public'); // Reset to public mode
     }
 

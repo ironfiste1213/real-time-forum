@@ -20,8 +20,6 @@ const (
 
 	// Private messaging
 	PrivateMessage MessageType = "private_message" // Private message between users
-	LoadHistory    MessageType = "load_history"    // Request to load message history
-	HistoryLoaded  MessageType = "history_loaded"  // Response with message history
 
 	// Status notifications
 	UserOnline  MessageType = "user_online"  // User came online
@@ -31,6 +29,7 @@ const (
 	// System messages
 	MessageDelivered MessageType = "message_delivered" // Confirmation of message delivery
 	MessageFailed    MessageType = "message_failed"    // Message delivery failed
+	MessageFromMe    MessageType = "message_from_me"   // Message sent from another connection of the same user
 )
 
 // Message represents a WebSocket message structure
@@ -47,9 +46,10 @@ type Message struct {
 
 // PrivateMessageData is used internally for routing private messages through channels
 type PrivateMessageData struct {
-	ToUserID int     // Target user ID for routing
-	Data     []byte  // JSON-encoded message data
-	Message  Message // Parsed message for processing
+	ToUserID     int     // Target user ID for routing
+	Data         []byte  // JSON-encoded message data
+	Message      Message // Parsed message for processing
+	SenderClient *Client // The client that sent the message (to exclude from message_from_me)
 }
 
 // ValidateMessage checks if a message has required fields based on its type
@@ -58,10 +58,6 @@ func (m *Message) ValidateMessage() error {
 	case PrivateMessage:
 		if m.Content == "" || m.ToUserID == 0 || m.FromUserID == 0 {
 			return logError("private message missing required fields")
-		}
-	case LoadHistory:
-		if m.ToUserID == 0 || m.FromUserID == 0 {
-			return logError("load history missing user IDs")
 		}
 	}
 	return nil
