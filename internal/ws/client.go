@@ -21,6 +21,7 @@ type Client struct {
 
 	// Hub reference for cleanup
 	hub *Hub
+	idex int
 }
 
 // NewClient creates a new client instance
@@ -31,6 +32,7 @@ func NewClient(hub *Hub, conn *websocket.Conn, userID int, nickname string) *Cli
 		nickname: nickname,
 		send:     make(chan []byte, 256), // Buffered channel to prevent blocking
 		hub:      hub,
+		idex: 0,
 	}
 }
 

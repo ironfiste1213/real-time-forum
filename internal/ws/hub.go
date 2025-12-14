@@ -22,7 +22,7 @@ type Hub struct {
 	PrivateMessage chan PrivateMessageData // Private messages between specific users
 	LoadHistory    chan *Message           // History loading requests
 	// User tracking
-	Users map[int]*Client // userID -> client mapping
+	Users map[int][]*Client // userID -> array of clients mapping
 }
 
 // NewHub creates a new hub instance with initialized channels and data structures
@@ -37,7 +37,7 @@ func NewHub() *Hub {
 		Broadcast:      make(chan []byte),             // Channel for broadcasting messages to all clients
 		PrivateMessage: make(chan PrivateMessageData), // Channel for routing private messages between users
 		LoadHistory:    make(chan *Message),           // Channel for history loading requests
-		Users:          make(map[int]*Client),         // Map for quick userID -> client lookup
+		Users:          make(map[int][]*Client),       // Map for userID -> slice of client connections
 	}
 }
 
@@ -66,40 +66,74 @@ func (h *Hub) Run() {
 // registerClient adds a new client to the hub and performs initialization tasks
 // @param client - The WebSocket client to register
 // Registers the client, updates user mappings, broadcasts online status, and sends online users list
+// registerClient registers the client, updates user mappings, broadcasts online status, and sends online users list
 func (h *Hub) registerClient(client *Client) {
-	// Step 1: Log the registration attempt
-	log.Printf("[hub.go:registerClient] Registering client for user %d (%s)", client.userID, client.nickname)
+	log.Printf(
+		"[hub.go:registerClient] Registering client for user %d (%s)",
+		client.userID,
+		client.nickname,
+	)
 
-	// Step 2: Add client to the clients map for tracking
+	// Add client to the global clients set
 	h.clients[client] = true
 
-	// Step 3: Add to user lookup map (thread-safe)
+	// Add client to the user's connections slice (thread-safe)
 	h.Mu.Lock()
-	h.Users[client.userID] = client
+	h.Users[client.userID] = append(h.Users[client.userID], client)
 	h.Mu.Unlock()
 
-	// Step 4: Broadcast user online status to all connected clients
-	log.Printf("[hub.go:registerClient] [DEBUG] Broadcasting user online: %d (%s)", client.userID, client.nickname)
+	// Broadcast user online status to all connected clients
+	log.Printf(
+		"[hub.go:registerClient] [DEBUG] Broadcasting user online: %d (%s)",
+		client.userID,
+		client.nickname,
+	)
 	h.broadcastUserOnline(client.userID, client.nickname)
 
-	// Step 5: Send current online users list to the newly connected client
-	log.Printf("[hub.go:registerClient] Sending online users list to new client %d", client.userID)
+	// Send the current online users list to the newly connected client
+	log.Printf(
+		"[hub.go:registerClient] Sending online users list to new client %d",
+		client.userID,
+	)
 	h.sendOnlineUsersList(client)
 }
 
 // unregisterClient removes a client from the hub
 func (h *Hub) unregisterClient(client *Client) {
-	log.Printf("[hub.go:unregisterClient] [DEBUG] Unregistering client for user %d (%s)", client.userID, client.nickname)
+	log.Printf(
+		"[hub.go:unregisterClient] [DEBUG] Unregistering client for user %d (%s)",
+		client.userID,
+		client.nickname,
+	)
 
+	h.Mu.Lock()
+	defer h.Mu.Unlock()
+
+	// Remove from global clients set
 	if _, ok := h.clients[client]; ok {
 		delete(h.clients, client)
-		h.Mu.Lock()
-		delete(h.Users, client.userID)
-		h.Mu.Unlock()
-		close(client.send)
+	}
 
-		// Broadcast user offline status
-		log.Printf("[hub.go:unregisterClient] [DEBUG] Broadcasting user offline: %d (%s)", client.userID, client.nickname)
+	// Remove this client from the user's slice
+	clients := h.Users[client.userID]
+	for i, c := range clients {
+		if c == client {
+			h.Users[client.userID] = append(clients[:i], clients[i+1:]...)
+			break
+		}
+	}
+
+	// Close the client's send channel
+	close(client.send)
+
+	// If user has no more active connections, remove user and broadcast offline
+	if len(h.Users[client.userID]) == 0 {
+		delete(h.Users, client.userID)
+		log.Printf(
+			"[hub.go:unregisterClient] [DEBUG] Broadcasting user offline: %d (%s)",
+			client.userID,
+			client.nickname,
+		)
 		h.broadcastUserOffline(client.userID, client.nickname)
 	}
 }
@@ -108,22 +142,47 @@ func (h *Hub) unregisterClient(client *Client) {
 // @param message - The byte array message to broadcast
 // Iterates through all clients and sends the message, removing unresponsive clients
 func (h *Hub) broadcastMessage(message []byte) {
-	// Step 1: Log broadcast attempt with client count
-	log.Printf("[hub.go:broadcastMessage] [DEBUG] Broadcasting message to %d clients", len(h.clients))
+	log.Printf(
+		"[hub.go:broadcastMessage] [DEBUG] Broadcasting message to %d clients",
+		len(h.clients),
+	)
 
-	// Step 2: Iterate through all registered clients
 	for client := range h.clients {
 		select {
 		case client.send <- message:
-			// Step 3: Message sent successfully
-			log.Printf("[hub.go:broadcastMessage] [DEBUG] Message sent to user %d", client.userID)
+			log.Printf(
+				"[hub.go:broadcastMessage] [DEBUG] Message sent to user %d",
+				client.userID,
+			)
+
 		default:
-			// Step 4: Client channel is full (client unresponsive), remove from hub
-			log.Printf("[hub.go:broadcastMessage] [DEBUG] Client channel full, removing user %d", client.userID)
+			// This specific connection is dead / blocked
+			log.Printf(
+				"[hub.go:broadcastMessage] [DEBUG] Client channel full, removing ONE connection of user %d",
+				client.userID,
+			)
+
+			// Remove from global clients set
 			close(client.send)
 			delete(h.clients, client)
+
+			// Remove ONLY this client from h.Users[userID]
 			h.Mu.Lock()
-			delete(h.Users, client.userID)
+			clients := h.Users[client.userID]
+
+			for i, c := range clients {
+				if c == client {
+					// remove client from slice
+					h.Users[client.userID] = append(clients[:i], clients[i+1:]...)
+					break
+				}
+			}
+
+			// If user has no more active connections → remove user
+			if len(h.Users[client.userID]) == 0 {
+				delete(h.Users, client.userID)
+			}
+
 			h.Mu.Unlock()
 		}
 	}
@@ -131,28 +190,57 @@ func (h *Hub) broadcastMessage(message []byte) {
 
 // handlePrivateMessage routes a private message to the target user
 func (h *Hub) handlePrivateMessage(data PrivateMessageData) {
-	log.Printf("[hub.go:handlePrivateMessage] [DEBUG] Handling private message from %d to %d", data.Message.FromUserID, data.Message.ToUserID)
-	targetClient, exists := h.Users[data.ToUserID]
-	if !exists {
-		// Target user is offline, send failure notification back to sender
-		log.Printf("[hub.go:handlePrivateMessage][DEBUG] Target user %d is offline, sending failure notification", data.ToUserID)
+	log.Printf(
+		"[hub.go:handlePrivateMessage] [DEBUG] Handling private message from %d to %d",
+		data.Message.FromUserID,
+		data.Message.ToUserID,
+	)
+
+	clients, exists := h.Users[data.ToUserID]
+	if !exists || len(clients) == 0 {
+		// Target user is offline
+		log.Printf(
+			"[hub.go:handlePrivateMessage][DEBUG] Target user %d is offline",
+			data.ToUserID,
+		)
 		h.sendMessageFailed(data.Message.FromUserID, data.Message.ToUserID)
 		return
 	}
 
-	// Send the message to target user
-	log.Printf("[hub.go:handlePrivateMessage] [DEBUG] Sending message to target user %d", data.ToUserID)
-	select {
-	case targetClient.send <- data.Data:
-		// Message sent successfully, notify sender
-		log.Printf("[hub.go:handlePrivateMessage][DEBUG] Message delivered, notifying sender %d", data.Message.FromUserID)
+	delivered := false
+
+	// Send the message to ALL active connections of the target user
+	for _, client := range clients {
+		select {
+		case client.send <- data.Data:
+			delivered = true
+		default:
+			// This specific connection is busy/full, skip it
+			log.Printf(
+				"[hub.go:handlePrivateMessage][DEBUG] Client channel full for user %d, skipping one connection",
+				data.ToUserID,
+			)
+		}
+	}
+
+	if delivered {
+		// At least one connection received the message
+		log.Printf(
+			"[hub.go:handlePrivateMessage][DEBUG] Message delivered to user %d, notifying sender %d",
+			data.ToUserID,
+			data.Message.FromUserID,
+		)
 		h.sendMessageDelivered(data.Message.FromUserID, data.Message.MessageID)
-	default:
-		// Target client channel is full
-		log.Printf("[hub.go:handlePrivateMessage][DEBUG] Target client channel full, sending failure notification")
+	} else {
+		// No connection could receive the message
+		log.Printf(
+			"[hub.go:handlePrivateMessage][DEBUG] Message delivery failed to all connections of user %d",
+			data.ToUserID,
+		)
 		h.sendMessageFailed(data.Message.FromUserID, data.Message.ToUserID)
 	}
 }
+
 
 // broadcastUserOnline notifies all clients that a user came online
 func (h *Hub) broadcastUserOnline(userID int, nickname string) {
@@ -167,14 +255,22 @@ func (h *Hub) broadcastUserOffline(userID int, nickname string) {
 	message.Nickname = nickname
 	h.broadcastMessage(message.ToJSON())
 }
-
 // sendOnlineUsersList sends the current list of online users to a specific client
 func (h *Hub) sendOnlineUsersList(client *Client) {
 	h.Mu.RLock()
-	onlineUsers := make([]string, 0, len(h.clients))
+
+	// Use map as a set to avoid duplicate nicknames
+	seen := make(map[string]struct{})
+	onlineUsers := make([]string, 0)
+
 	for c := range h.clients {
+		if _, exists := seen[c.nickname]; exists {
+			continue
+		}
+		seen[c.nickname] = struct{}{}
 		onlineUsers = append(onlineUsers, c.nickname)
 	}
+
 	h.Mu.RUnlock()
 
 	// Create message with online users list
@@ -186,16 +282,23 @@ func (h *Hub) sendOnlineUsersList(client *Client) {
 
 	select {
 	case client.send <- message.ToJSON():
-		log.Printf("[hub.go:sendOnlineUsersList][DEBUG] Sent online users list to user %d: %v", client.userID, onlineUsers)
+		log.Printf(
+			"[hub.go:sendOnlineUsersList][DEBUG] Sent online users list to user %d: %v",
+			client.userID,
+			onlineUsers,
+		)
 	default:
-		log.Printf("[hub.go:sendOnlineUsersList]Could not send online users list to user %d", client.userID)
+		log.Printf(
+			"[hub.go:sendOnlineUsersList] Could not send online users list to user %d",
+			client.userID,
+		)
 	}
 }
 
 // sendMessageDelivered notifies the sender that their message was delivered
 func (h *Hub) sendMessageDelivered(senderID int, messageID int) {
-	senderClient, exists := h.Users[senderID]
-	if !exists {
+	clients, exists := h.Users[senderID]
+	if !exists || len(clients) == 0 {
 		return
 	}
 
@@ -204,17 +307,24 @@ func (h *Hub) sendMessageDelivered(senderID int, messageID int) {
 		MessageID: messageID,
 	}
 
-	select {
-	case senderClient.send <- message.ToJSON():
-	default:
-		log.Printf("[hub.go:sendMessageDelivered] Could not send delivery confirmation to user %d", senderID)
+	data := message.ToJSON()
+
+	for _, client := range clients {
+		select {
+		case client.send <- data:
+			// sent successfully to this connection
+		default:
+			log.Printf(
+				"[hub.go:sendMessageDelivered] Could not send delivery confirmation to one connection of user %d",
+				senderID,
+			)
+		}
 	}
 }
-
 // sendMessageFailed notifies the sender that their message failed to deliver
 func (h *Hub) sendMessageFailed(senderID int, receiverID int) {
-	senderClient, exists := h.Users[senderID]
-	if !exists {
+	clients, exists := h.Users[senderID]
+	if !exists || len(clients) == 0 {
 		return
 	}
 
@@ -223,10 +333,18 @@ func (h *Hub) sendMessageFailed(senderID int, receiverID int) {
 		ToUserID: receiverID,
 	}
 
-	select {
-	case senderClient.send <- message.ToJSON():
-	default:
-		log.Printf("[hub.go:sendMessageFailed] Could not send failure notification to user %d", senderID)
+	data := message.ToJSON()
+
+	for _, client := range clients {
+		select {
+		case client.send <- data:
+			// sent to this connection
+		default:
+			log.Printf(
+				"[hub.go:sendMessageFailed] Could not send failure notification to one connection of user %d",
+				senderID,
+			)
+		}
 	}
 }
 

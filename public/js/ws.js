@@ -278,6 +278,14 @@ class ChatWebSocket {
 
         }
 
+        // Create conversation bar notification if chat is not open
+        if (!this.isChatOpen) {
+            console.log(`[ws.js:handlePrivateMessage] Chat is not open, creating conversation bar for user ${fromUserId}`);
+            this.createConversationBar(fromUserId, this.allUsers.find(u => u.id === fromUserId)?.nickname || 'Unknown');
+        } else {
+            console.log(`[ws.js:handlePrivateMessage] Chat is open, skipping conversation bar creation`);
+        }
+
         // Update conversations list to show new message
         console.log('[ws.js:handlePrivateMessage] [DEBUG] Loading conversations after private message');
         this.loadConversations();
@@ -944,11 +952,13 @@ class ChatWebSocket {
 
     // Create conversation bar for a user
     createConversationBar(userId, nickname) {
+        console.log(`[ws.js:createConversationBar] Creating conversation bar for user ${nickname} (ID: ${userId})`);
         const barId = `conversation-bar-${userId}`;
 
         // Remove existing bar if it exists
         const existingBar = document.getElementById(barId);
         if (existingBar) {
+            console.log(`[ws.js:createConversationBar] Removing existing conversation bar for user ${userId}`);
             existingBar.remove();
         }
 
@@ -957,6 +967,7 @@ class ChatWebSocket {
         bar.id = barId;
         bar.className = 'conversation-bar';
         bar.setAttribute('data-user-id', userId);
+        console.log(`[ws.js:createConversationBar] Created conversation bar element with ID: ${barId}`);
 
         // Create bar content
         const content = document.createElement('div');
@@ -1008,15 +1019,17 @@ class ChatWebSocket {
         // Store reference
         this.conversationBars[userId] = bar;
 
-        // Auto-hide after 5 seconds if not clicked
+        // Auto-hide after 30 seconds if not clicked (increased for debugging)
         setTimeout(() => {
             if (this.conversationBars[userId]) {
+                console.log(`[ws.js:createConversationBar] Auto-hiding conversation bar for user ${userId}`);
                 bar.classList.add('fading');
                 setTimeout(() => {
                     this.closeConversationBar(userId);
+                    console.log(`[ws.js:createConversationBar] Conversation bar removed for user ${userId}`);
                 }, 1000);
             }
-        }, 5000);
+        }, 30000); // 30 seconds instead of 5
     }
 
     // Close conversation bar
