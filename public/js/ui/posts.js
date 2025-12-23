@@ -1,11 +1,11 @@
 import { showSinglePostComponent } from './postDetail.js';
 import { fetchPosts } from '../api/fetchposts.js';
- 
- function createPostComponent(post) {
+
+function createPostComponent(post) {
     const postElement = document.createElement('div');
     postElement.classList.add('post');
     postElement.dataset.postId = post.id; // Store post ID for later use (e.g., clicking to see comments)
- 
+
     postElement.addEventListener('click', () => showSinglePostComponent(post.id));
 
     const title = document.createElement('h3');
@@ -76,34 +76,104 @@ import { fetchPosts } from '../api/fetchposts.js';
     return postElement;
 }
 
+// State management for infinite scrolling
+let allPosts = [];
+let currentChunk = 0;
+const CHUNK_SIZE = 6;
 
-
-function renderPosts(posts) {
+function renderPostsChunk(posts, from, to) {
     const postFeed = document.getElementById('post-feed');
-    if (!postFeed) return; // Element might not exist yet if view not loaded
+    if (!postFeed) return;
+    
+    for (let i = from; i <= to && i < posts.length; i++) {
+        const postElement = createPostComponent(posts[i]);
+        postFeed.appendChild(postElement);
+    }
+}
+
+function renderInitialPosts() {
+    const postFeed = document.getElementById('post-feed');
+    if (!postFeed) return;
 
     // Clear previous content
     while (postFeed.firstChild) {
         postFeed.removeChild(postFeed.firstChild);
     }
 
-    if (posts && posts.length > 0) {
-        posts.forEach(post => {
-            const postElement = createPostComponent(post);
-            postFeed.appendChild(postElement);
-        });
-    } else {
+    if (allPosts.length === 0) {
         const emptyState = document.createElement('p');
         emptyState.setAttribute('data-empty-state', '');
         emptyState.textContent = 'No posts yet. Be the first to create one!';
         postFeed.appendChild(emptyState);
+        return;
     }
+
+    // Render first chunk (posts 0-5)
+    currentChunk = 0;
+    renderPostsChunk(allPosts, 0, CHUNK_SIZE - 1);
+}
+
+function loadMorePosts() {
+    currentChunk++;
+    const startIndex = currentChunk * CHUNK_SIZE;
+    const endIndex = startIndex + CHUNK_SIZE - 1;
+    
+    // Check if we have more posts to load
+    if (startIndex >= allPosts.length) {
+        return; // No more posts to load
+    }
+    
+    renderPostsChunk(allPosts, startIndex, endIndex);
+    
+    // Hide load more button if no more posts
+    if (endIndex >= allPosts.length - 1) {
+        const loadMoreButton = document.getElementById('load-more-button');
+        if (loadMoreButton) {
+            loadMoreButton.style.display = 'none';
+        }
+    }
+}
+
+function createLoadMoreButton() {
+    const button = document.createElement('button');
+    button.id = 'load-more-button';
+    button.textContent = 'Load More Posts';
+    button.style.margin = '20px auto';
+    button.style.display = 'block';
+    button.style.padding = '10px 20px';
+    button.style.fontSize = '16px';
+    button.style.backgroundColor = '#007bff';
+    button.style.color = 'white';
+    button.style.border = 'none';
+    button.style.borderRadius = '5px';
+    button.style.cursor = 'pointer';
+    
+    button.addEventListener('click', loadMorePosts);
+    
+    return button;
 }
 
 export async function loadPosts() {
     try {
-        const posts = await fetchPosts();
-        renderPosts(posts);
+        // Load all posts once from backend
+        allPosts = await fetchPosts();
+        renderInitialPosts();
+
+        // Show Load More button if there are more posts
+        if (allPosts.length > CHUNK_SIZE) {
+            const postFeed = document.getElementById('post-feed');
+            if (postFeed) {
+                // Remove existing load more button if any
+                const existingButton = document.getElementById('load-more-button');
+                if (existingButton) {
+                    existingButton.remove();
+                }
+                
+                // Add new load more button
+                const loadMoreButton = createLoadMoreButton();
+                postFeed.parentNode.insertBefore(loadMoreButton, postFeed.nextSibling);
+            }
+        }
     } catch (error) {
         console.error('Error loading posts:', error);
         const postFeed = document.getElementById('post-feed');

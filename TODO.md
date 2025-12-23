@@ -1,11 +1,17 @@
-# Task: Add new message type "message from me" in handle message
+# TODO: Implement Infinite Scrolling with Debouncing for Posts
 
-## Completed Tasks
-- [x] Analyze the codebase to understand message handling in frontend (public/js/ws.js)
-- [x] Add new case 'message_from_me' in the handleMessage switch statement
-- [x] Implement handleMessageFromMe function to check active conversation and display message if recipient matches
+## Frontend UI Changes
+- [x] In `public/js/ui/posts.js`:
+  - [x] Add a debounce utility function.
+  - [x] Modify `loadPosts()` to load all posts once and display initial 6 posts.
+  - [x] Implement chunk-based rendering (6 posts at a time).
+  - [x] Add scroll event listener to `#post-feed` with debouncing to load next 6 posts on scroll to bottom.
+  - [x] Prevent loading if no more posts (based on total post count).
 
-## Summary
-- Added support for 'message_from_me' message type in the WebSocket handleMessage function
-- The new handler checks if there's an active conversation with the recipient and displays the user's message from another connection in that conversation
-- Function stores the message in privateMessages and updates the UI accordingly
+## Testing and Followup
+- [x] Test scrolling behavior in browser.
+- [x] Ensure no duplicates on rapid scrolls.
+- [x] Handle edge cases (no more posts, errors).
+
+## Additional Fixes
+- [x] Fixed import error in views.js (removed non-existent getCurrentUser import)
