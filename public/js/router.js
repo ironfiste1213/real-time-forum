@@ -1,6 +1,6 @@
 import { showLoginForm, showRegisterForm} from './ui/auth.js';
 import { showMainFeedView, show404View } from './ui/views.js';
-import { checkSession, getCurrentUser } from './session.js';
+import { checkSession } from './api/checksession.js';
 
 // 1. Define Routes: Map paths to view-rendering functions.
 const routes = {
@@ -10,38 +10,39 @@ const routes = {
 };
 
 const protectedRoutes = ['/'];
-
+let lastValidPath = "/"
+export function recoverfrom404() {
+    window.history.replaceState({}, "", lastValidPath)
+    handleLocation();
+}
 // 2. Core Router Logic: Handle location changes.
-export function handleLocation()  {
-    const path = window.location.pathname;
-    console.log(`[router.js:handleLocation] Router: Handling path ${path}`);
+export async function handleLocation()  {
+   const path = window.location.pathname
+   const user = await checkSession()
+   
+   if (user) {
+    if (path ==  "login" || path == "register") {
+        window.history.replaceState({}, "", "/")
+        showMainFeedView(user)
+        return
+    }
+   }
 
-    // Check if user is authenticated before routing
-    const user = getCurrentUser();
-console.log("[router.js:handleLocation] ------------------CHECK CURENT USER", user);
-
-    // --- Route Guarding Logic ---
-    // If trying to access a protected route without being logged in
-    if (protectedRoutes.includes(path) && !user) {
-        console.log("[router.js:handleLocation] Router: Access to protected route denied. Redirecting to /login.", user);
-        // Manually navigate to the login page
-        window.history.pushState({}, "", "/login");
+   if (!user) {
+    if (path == "/"){
+        window.history.replaceState({}, "", "login")
         showLoginForm();
-        return; // Stop further execution
+        return
     }
+   }
+   
+   const handler = routes[path]
+   if (!handler) {
+    show404View();
+    return 
+   }
+   handler();
 
-    // If trying to access login/register while already logged in
-    if ((path === '/login' || path === '/register') && user) {
-        console.log("[router.js:handleLocation] Router: Already logged in. Redirecting to /.");
-        window.history.pushState({}, "", "/");
-        showMainFeedView(user);
-        return; // Stop further execution
-    }
-
-    // Find the handler for the current path.
-    const handler = routes[path] || show404View; // Default to 404 view if route not found
-// calls the function retrieved from the routes object 
-    handler();
 };
 
 // 3. Handle Navigation: Intercept link clicks.
@@ -74,8 +75,7 @@ export async function initializeRouter() {
   
         console.log('[router.js:initializeRouter] DOMContentLoaded and we will check for session ');
 
-      const user = await checkSession(); // Check if user is already logged in
-      console.log('[router.js:initializeRouter] Router: Session check result:', user);
+     
 
         handleLocation();
         // Chat connection will be initialized in showMainFeedView if user is logged in

@@ -1,7 +1,4 @@
-/**
- * Checks the user's session status with the backend.
- * @returns {Promise<object|null>} The user object if authenticated, otherwise null.
- */
+
 export async function checkSession() {
     try {
         const response = await fetch('/api/auth/status');
@@ -9,7 +6,7 @@ export async function checkSession() {
         if (response.ok) {
             const data = await response.json();
             if (data.isAuthenticated) {
-        console.log('[api/checksession.js:checkSession] DEBUG: Session check successful, currentUser set:', data.user);
+               console.log('[api/checksession.js:checkSession] DEBUG: Session check successful, currentUser set:', data.user);
                 return data.user;
             }
         }

@@ -1,5 +1,4 @@
-import { handleLocation } from '../router.js';
-import { clear } from './clear.js';
+import { recoverfrom404 } from '../router.js';
 
 export function create404View() {
     const container = document.createElement('div');
@@ -17,15 +16,7 @@ export function create404View() {
     const button = document.createElement('button');
     button.textContent = 'Go back to the main page';
     button.addEventListener('click', () => {
-          let path = window.location.pathname.split('/')[0];
-          if (path == '') {
-            path = '/'
-          }
-          window.location = path
-          console.log(path)
-        clear(document.getElementById('not-found-view'));
-        window.history.pushState({}, "", "/");
-        handleLocation();
+         recoverfrom404();
     });
     paragraph2.appendChild(button);
     container.appendChild(paragraph2);

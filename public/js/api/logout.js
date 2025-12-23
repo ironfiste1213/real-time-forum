@@ -1,4 +1,3 @@
-import { clearCurrentUser } from "../session.js";
 import { showLoginForm } from "../ui/auth.js";
 import { clearUIElement } from "../ui/clear.js";
 import chatWS from "../ws.js";
@@ -18,7 +17,6 @@ export async function handleLogout() {
     } finally {
         // Always switch the view, even if the server call fails, to ensure the user is logged out on the frontend.
         // Manually clear the session state without making another API call
-        clearCurrentUser();
         // Clear all UI elements except auth
         clearAllUIElements();
         // Disconnect WebSocket before clearing

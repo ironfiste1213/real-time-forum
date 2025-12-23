@@ -1,8 +1,5 @@
 // WebSocket client for real-time chat
-import { checkSession } from './session.js';
 
-
-import { showNotification } from './ui/notification.js';
 
 class ChatWebSocket {
 

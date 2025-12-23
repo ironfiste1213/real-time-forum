@@ -1,9 +1,7 @@
 import { loadPosts } from "./posts.js";
 import { loadCategories } from "../api/categories.js";
-import { getCurrentUser } from "../session.js";
 import { handleCreatePost } from "../api/createpost.js";
 import { handleLogout } from "../api/logout.js";
-import chatWS from "../ws.js";
 import { createChatPanel, setupChatEventListeners, initializeChatConnection, createFloatingChatButton } from "./chat.js";
 import { createCreatePostComponent } from "./creatpost.js";
 import { create404View } from "./notfound.js";
@@ -208,7 +206,7 @@ function createMainFeedContent(user) {
 
 // --- View Management ---
 export function showMainFeedView(user) {
-    const currentUser = user || getCurrentUser();
+   
 
     // Clear existing content
     while (DOMElements.mainContainer.firstChild) {
@@ -216,7 +214,7 @@ export function showMainFeedView(user) {
     }
 
     // Create and append main feed content
-    const mainFeedContent = createMainFeedContent(currentUser);
+    const mainFeedContent = createMainFeedContent(user);
     DOMElements.mainContainer.appendChild(mainFeedContent);
 
     // Show main container
@@ -295,8 +293,8 @@ export function showMainFeedView(user) {
     setupChatEventListeners();
 
     // Initialize chat connection if user is logged in
-    if (currentUser) {
-        initializeChatConnection(currentUser);
+    if (user) {
+        initializeChatConnection(user);
     }
 }
 

@@ -1,5 +1,4 @@
 import { showNotification } from "../ui/notification.js";
-import { checkSession, getCurrentUser } from "../session.js";
 import { initializeChatConnection } from "../ui/chat.js";
 import { showMainFeedView } from "../ui/views.js";
 
@@ -23,14 +22,14 @@ export async function handleLogin(e) {
 
         const result = await response.json();
         if (response.ok) {
-           e =  await checkSession(); // Update the session state with the new user
+           const user = result.user
             form.reset();
             showNotification('Login successful! Welcome back.', 'success');
             // Initialize chat connection after successful login
-            initializeChatConnection(e);
+            initializeChatConnection(user);
             // Use router to navigate to the main feed
             window.history.pushState({}, "", "/");
-            showMainFeedView(getCurrentUser());
+            showMainFeedView(user);
         } else {
             // Show error notification with backend message
             showNotification(result.message || 'Login failed. Please check your credentials.');
