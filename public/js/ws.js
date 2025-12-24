@@ -105,6 +105,7 @@ class ChatWebSocket {
 
             // Attempt reconnection if not intentional disconnect
             if (event.code !== 1000) { // 1000 = normal closure
+                console.log("event cooooooooooooooooooooooooooooood")
                 this.attemptReconnection();
             }
         };

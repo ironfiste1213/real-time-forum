@@ -5,7 +5,7 @@ import { handleLogout } from "../api/logout.js";
 import { createChatPanel, setupChatEventListeners, initializeChatConnection, createFloatingChatButton } from "./chat.js";
 import { createCreatePostComponent } from "./creatpost.js";
 import { create404View } from "./notfound.js";
-
+import { clear  } from "./clear.js";
 // --- Theme / Accent color helpers ---
 const ACCENT_COLOR_STORAGE_KEY = "rtf-accent-color";
 const DEFAULT_ACCENT_COLOR = "#4e51f0"; // keep in sync with :root --accent in CSS
@@ -87,6 +87,7 @@ const DOMElements = {
     authContainer: document.getElementById('auth-container'),
     mainContainer: document.getElementById('main-container'),
     notFoundView: document.getElementById('not-found-view'),
+    singlPostView: document.getElementById('single-post-view')
 };
 
 // --- Dynamic Content Creation ---
@@ -206,12 +207,15 @@ function createMainFeedContent(user) {
 
 // --- View Management ---
 export function showMainFeedView(user) {
-   
-
-    // Clear existing content
-    while (DOMElements.mainContainer.firstChild) {
-        DOMElements.mainContainer.removeChild(DOMElements.mainContainer.firstChild);
-    }
+    console.log('*************************************************');
+    
+    let chatPanel = document.getElementById('chat-panel');
+       if (chatPanel) {
+        chatPanel.remove()
+   }
+   Object.values(DOMElements).forEach(el => {
+    if (el) clear(el);
+  });
 
     // Create and append main feed content
     const mainFeedContent = createMainFeedContent(user);
@@ -286,9 +290,17 @@ export function showMainFeedView(user) {
     loadCategories(); // Load categories for the create post form
 
     // Ensure chat panel exists and is properly set up
-    let chatPanel = document.getElementById('chat-panel');
+   
     if (!chatPanel) {
+        console.log('chatpanel will be creat value to null ! ');
+        
         createChatPanel();
+    }else {
+        chatPanel.remove()
+        createChatPanel();
+        
+        console.log('chatpanle allreadyexiste');
+        
     }
     setupChatEventListeners();
 

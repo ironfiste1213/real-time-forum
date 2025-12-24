@@ -19,10 +19,15 @@ export function recoverfrom404() {
 export async function handleLocation()  {
    const path = window.location.pathname
    const user = await checkSession()
+   console.log("__________________for user:", user, "for path", path);
+   
    
    if (user) {
-    if (path ==  "login" || path == "register") {
+    if (path ==  "/login" || path == "/register") {
         window.history.replaceState({}, "", "/")
+        lastValidPath = "/"
+        console.log("__________________we redirect hime to main page / ");
+        
         showMainFeedView(user)
         return
     }
@@ -30,7 +35,8 @@ export async function handleLocation()  {
 
    if (!user) {
     if (path == "/"){
-        window.history.replaceState({}, "", "login")
+        window.history.replaceState({}, "", "/login")
+        lastValidPath = "/login"
         showLoginForm();
         return
     }
@@ -41,7 +47,14 @@ export async function handleLocation()  {
     show404View();
     return 
    }
+   if (path == "/") {
+    handler(user)
+    lastValidPath = path
+    return 
+   }
    handler();
+   console.log("________________he goes normal to : ", path);
+   lastValidPath = path
 
 };
 

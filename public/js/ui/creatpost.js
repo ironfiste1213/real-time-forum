@@ -43,13 +43,6 @@ export function createCreatePostComponent() {
     contentGroup.appendChild(contentLabel);
     contentGroup.appendChild(contentTextarea);
     createPostForm.appendChild(contentGroup);
-                                                                                  123
-                                                                                  132
-                                                                                  213
-                                                                                  231
-                                                                                  312
-                                                                                  321
-
     // Categories
     const categoriesGroup = document.createElement('div');
     categoriesGroup.className = 'form-group';

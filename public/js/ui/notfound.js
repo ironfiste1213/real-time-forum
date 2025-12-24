@@ -1,3 +1,4 @@
+import { clear } from './clear.js';
 import { recoverfrom404 } from '../router.js';
 
 export function create404View() {
@@ -17,6 +18,7 @@ export function create404View() {
     button.textContent = 'Go back to the main page';
     button.addEventListener('click', () => {
          recoverfrom404();
+         clear(document.getElementById("not-found-view"))
     });
     paragraph2.appendChild(button);
     container.appendChild(paragraph2);

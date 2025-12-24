@@ -173,14 +173,17 @@ export function setupChatEventListeners() {
 
     }
 
-    // Window beforeunload (only add once)
-    if (!window.chatUnloadListenerAdded) {
-        window.addEventListener('beforeunload', () => {
-            chatWS.sendLeaveMessage();
-            chatWS.disconnect();
-        });
-        window.chatUnloadListenerAdded = true;
-    }
+    // // Window beforeunload (only add once)
+    // if (!window.chatUnloadListenerAdded) {
+    //     window.addEventListener('beforeunload', () => {
+    //         chatWS.sendLeaveMessage();
+    //         console.log("maybeeeeeeeeeeeeeeeeeeeeee lÇitha");
+            
+    //         chatWS.disconnect();
+        
+    //     });
+    //     window.chatUnloadListenerAdded = true;
+    // }
 }
 
 // Handle chat message submission
