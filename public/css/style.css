@@ -1418,3 +1418,58 @@ nav>div:last-child {
         max-width: none;
     }
 }
+
+/* Pagination Controls */
+.pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px !important;
+    margin-top: 24px;
+    padding-top: 16px;
+}
+
+.pagination-btn {
+    background: var(--accent);
+    color: var(--accent-foreground);
+    border: none;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    font-size: 1.2em;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+    will-change: transform;
+}
+
+.pagination-btn:hover:not(:disabled) {
+    background: white;
+    color: var(--accent);
+    transform: translateY(-1px);
+}
+
+.pagination-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    background: var(--muted);
+}
+
+.pagination-info {
+    color: var(--muted);
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+/* Comments List Transition */
+#comments-list {
+    transition: opacity 0.3s ease-in-out;
+    opacity: 1;
+}
+
+#comments-list.fade-out {
+    opacity: 0;
+}

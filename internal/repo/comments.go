@@ -28,17 +28,18 @@ func CreateComment(comment *models.Comment) (int64, error) {
 	return res.LastInsertId()
 }
 
-// GetCommentsByPostID retrieves all comments for a given post ID.
+// GetCommentsByPostID retrieves comments for a given post ID with pagination.
 // It also fetches the author's nickname for each comment.
-func GetCommentsByPostID(postID int) ([]*models.Comment, error) {
+func GetCommentsByPostID(postID, limit, offset int) ([]*models.Comment, error) {
 	query := `
 		SELECT c.id, c.post_id, c.user_id, c.content, c.created_at, u.nickname
 		FROM comments c
 		JOIN users u ON c.user_id = u.id
 		WHERE c.post_id = ?
 		ORDER BY c.created_at ASC
+		LIMIT ? OFFSET ?
 	`
-	rows, err := DB.Query(query, postID)
+	rows, err := DB.Query(query, postID, limit, offset)
 	if err != nil {
 		return nil, err
 	}
@@ -53,4 +54,15 @@ func GetCommentsByPostID(postID int) ([]*models.Comment, error) {
 		comments = append(comments, comment)
 	}
 	return comments, rows.Err()
+}
+
+// CountCommentsByPostID returns the total number of comments for a specific post.
+func CountCommentsByPostID(postID int) (int, error) {
+	query := `SELECT COUNT(*) FROM comments WHERE post_id = ?`
+	var count int
+	err := DB.QueryRow(query, postID).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
 }

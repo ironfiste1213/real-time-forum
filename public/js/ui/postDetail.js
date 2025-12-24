@@ -29,14 +29,30 @@ function showMainFeedView() {
     }
 }
 
-export function renderCommentsComponent(comments) {
+export function renderCommentsComponent(data, postId) {
     const section = document.getElementById("comments-section");
     if (!section) return;
 
     section.innerHTML = "";
 
+    const comments = data.comments || [];
+    const total = data.total || 0;
+    const page = data.page || 1;
+    const limit = data.limit || 5;
+
     if (!comments || comments.length === 0) {
         section.textContent = "No comments yet. Be the first to comment!";
+        // Reset if empty, but maybe we should show controls if page > 1?
+        // If page > 1 and no comments, it's weird, but handle it by showing "Previous" if possible.
+        if (page > 1) {
+            const controls = document.createElement("div");
+            controls.className = "pagination-controls";
+            const prevBtn = document.createElement("button");
+            prevBtn.textContent = "← Previous";
+            prevBtn.onclick = () => loadAndRenderComments(postId, page - 1);
+            controls.appendChild(prevBtn);
+            section.appendChild(controls);
+        }
         return;
     }
 
@@ -74,17 +90,65 @@ export function renderCommentsComponent(comments) {
     });
 
     section.appendChild(list);
+
+    // Pagination Controls
+    const totalPages = Math.ceil(total / limit);
+    if (totalPages > 1) {
+        const controls = document.createElement("div");
+        controls.className = "pagination-controls";
+        controls.style.display = "flex";
+        controls.style.justifyContent = "center";
+        controls.style.gap = "10px";
+        controls.style.marginTop = "10px";
+
+        const prevBtn = document.createElement("button");
+        prevBtn.textContent = "←";
+        prevBtn.className = "pagination-btn"; // Add class
+        prevBtn.disabled = page <= 1;
+        if (!prevBtn.disabled) {
+            prevBtn.onclick = () => loadAndRenderComments(postId, page - 1);
+        }
+
+        const nextBtn = document.createElement("button");
+        nextBtn.textContent = "→";
+        nextBtn.className = "pagination-btn"; // Add class
+        nextBtn.disabled = page >= totalPages;
+        if (!nextBtn.disabled) {
+            nextBtn.onclick = () => loadAndRenderComments(postId, page + 1);
+        }
+
+        controls.appendChild(prevBtn);
+        // Optional: Show page info
+        const info = document.createElement("span");
+        info.className = "pagination-info"; // Add class
+        info.textContent = ` ${page} / ${totalPages} `;
+        controls.appendChild(info);
+
+        controls.appendChild(nextBtn);
+        section.appendChild(controls);
+    }
 }
 
-export async function loadAndRenderComments(postId) {
+export async function loadAndRenderComments(postId, page = 1) {
+    const list = document.getElementById("comments-list");
     const section = document.getElementById("comments-section");
-    section.innerHTML = ""; // clear UI while loading
+
+    // If list exists, fade it out first
+    if (list) {
+        list.classList.add("fade-out");
+        // Wait for animation
+        await new Promise(resolve => setTimeout(resolve, 300));
+    } else {
+        // First load or empty, clear immediately
+        if (section) section.innerHTML = "<p>Loading comments...</p>";
+    }
 
     try {
-        const comments = await fetchComments(postId);
-        renderCommentsComponent(comments);
-    } catch {
-        section.innerHTML = `<p class="error-message">Could not load comments.</p>`;
+        const data = await fetchComments(postId, page);
+        renderCommentsComponent(data, postId);
+    } catch (e) {
+        console.error(e);
+        if (section) section.innerHTML = `<p class="error-message">Could not load comments.</p>`;
     }
 }
 
