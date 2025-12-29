@@ -119,7 +119,7 @@ class ChatWebSocket {
 
     // Disconnect WebSocket
     disconnect() {
-        // Stop periodic loadAllUsers calls
+       // Stop periodic loadAllUsers calls
         if (this.loadUsersIntervalId) {
             clearInterval(this.loadUsersIntervalId);
             this.loadUsersIntervalId = null;
@@ -399,7 +399,7 @@ class ChatWebSocket {
     // Load all users from API
     async loadAllUsers() {
         try {
-            console.log('[ws.js:loadAllUsers] [DEBUG] Loading all users from API...');
+           // console.log('[ws.js:loadAllUsers] [DEBUG] Loading all users from API...');
             const response = await fetch('/api/users', {
                 method: 'GET',
                 headers: {
@@ -408,18 +408,18 @@ class ChatWebSocket {
                 credentials: 'same-origin' // Include session cookies
             });
 
-            console.log('[ws.js:loadAllUsers] [DEBUG] Users API response status:', response.status);
+        //    console.log('[ws.js:loadAllUsers] [DEBUG] Users API response status:', response.status);
             if (response.ok) {
                 const users = await response.json();
-                console.log('[ws.js:loadAllUsers] [DEBUG] Loaded users:', users);
+               // console.log('[ws.js:loadAllUsers] [DEBUG] Loaded users:', users);
                 this.allUsers = users.filter(user => user && typeof user.id === 'number' && typeof user.nickname === 'string');
-                console.log('[ws.js:loadAllUsers] [DEBUG] allUsers now contains', this.allUsers.length, 'users');
-                console.log('[ws.js:loadAllUsers] [DEBUG] Calling updateUsersList to render users');
-              //  this.updateUsersList(); // Update the UI with online/offline status
-                console.log('[ws.js:loadAllUsers] [DEBUG] updateUsersList completed, users should be clickable now');
-            } else {
+                // console.log('[ws.js:loadAllUsers] [DEBUG] allUsers now contains', this.allUsers.length, 'users');
+            //     console.log('[ws.js:loadAllUsers] [DEBUG] Calling updateUsersList to render users');
+            //   //  this.updateUsersList(); // Update the UI with online/offline status
+            //     console.log('[ws.js:loadAllUsers] [DEBUG] updateUsersList completed, users should be clickable now');
+             } else {
                 const errorText = await response.text();
-                console.error('[ws.js:loadAllUsers] [DEBUG] Failed to load users:', response.status, errorText);
+              //  console.error('[ws.js:loadAllUsers] [DEBUG] Failed to load users:', response.status, errorText);
             }
         } catch (error) {
             console.error('[ws.js:loadAllUsers] [DEBUG] Error loading users:', error);
@@ -714,8 +714,8 @@ class ChatWebSocket {
                 if (!this.privateMessages[userId]) {
                     this.privateMessages[userId] = [];
                 }
-                this.privateMessages[userId].push(newMessage);
-                this.displayPrivateMessages(userId);
+                //this.privateMessages[userId].push(newMessage);
+                //this.displayPrivateMessages(userId);
 
                 // Also send via WebSocket for real-time delivery
                 this.send('private_message', {
@@ -785,7 +785,7 @@ class ChatWebSocket {
     // Load conversations from API
     async loadConversations() {
         try {
-            console.log('[ws.js:loadConversations] Loading conversations...');
+         //   console.log('[ws.js:loadConversations] Loading conversations...');
             const response = await fetch('/api/conversations', {
                 method: 'GET',
                 headers: {
@@ -811,7 +811,7 @@ class ChatWebSocket {
                     }
                 }
                  this.conversations = Object.values(byUser);
-                 console.log(this.conversations.length, this.conversations)
+                // console.log(this.conversations.length, this.conversations)
              //    this.renderConversations();
                 // Update unread badges in users list and chat button
                // this.updateUsersList();

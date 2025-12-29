@@ -173,36 +173,45 @@ export function setupChatEventListeners() {
 
     }
 
-    // // Window beforeunload (only add once)
-    // if (!window.chatUnloadListenerAdded) {
-    //     window.addEventListener('beforeunload', () => {
-    //         chatWS.sendLeaveMessage();
-    //         console.log("maybeeeeeeeeeeeeeeeeeeeeee lÇitha");
+    // Window beforeunload (only add once)
+    if (!window.chatUnloadListenerAdded) {
+        window.addEventListener('beforeunload', () => {
+            chatWS.sendLeaveMessage();
+            console.log("maybeeeeeeeeeeeeeeeeeeeeee lÇitha");
             
-    //         chatWS.disconnect();
+            chatWS.disconnect();
         
-    //     });
-    //     window.chatUnloadListenerAdded = true;
-    // }
+        });
+        window.chatUnloadListenerAdded = true;
+    }
 }
-
-// Handle chat message submission
 function handleChatSubmit() {
     const chatInput = document.getElementById('chat-input');
     if (!chatInput) return;
 
     const message = chatInput.value.trim();
-    if (message) {
-        // Check if we're in private chat mode
-        if (chatWS.activeConversation) {
-            chatWS.sendPrivateMessage(message);
-            // Move the conversation user to the top and update the list
-            chatWS.moveUserToTop(chatWS.activeConversation.userId, true);
-            chatWS.updateUsersList();
-        }
-        chatInput.value = ''; // Clear input
-        chatInput.focus(); // Keep focus for next message
+
+    if (message === "") {
+        showError("Message cannot be empty");
+        return;
     }
+    console.log("message.length", message.length, "---------");
+    
+    if (message.length > 500) {
+        showError("Message must be 500 characters or less");
+        return;
+    }
+
+    if (chatWS.activeConversation) {
+        chatWS.sendPrivateMessage(message);
+
+        // Move the conversation user to the top and update the list
+        chatWS.moveUserToTop(chatWS.activeConversation.userId, true);
+        chatWS.updateUsersList();
+    }
+
+    chatInput.value = ""; // Clear input
+    chatInput.focus();    // Keep focus
 }
 
 

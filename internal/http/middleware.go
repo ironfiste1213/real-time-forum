@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"time"
 
@@ -26,7 +25,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 				return
 			}
 			// Other cookie-related errors
-			log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: Error getting cookie: %v", err)
+			// log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: Error getting cookie: %v", err)
 			handler.RespondWithError(w, http.StatusBadRequest, "Bad request")
 			return
 		}
@@ -37,14 +36,14 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		session, err := auth.GetSessionByToken(sessionToken)
 		if err != nil {
 			// This covers cases where the session is not found or other DB errors
-			log.Printf("[middleware.go:AuthMiddleware] Error retrieving session: %v", err)
+			// log.Printf("[middleware.go:AuthMiddleware] Error retrieving session: %v", err)
 			auth.ClearSessionCookie(w) // Clear potentially invalid cookie
 			handler.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 			return
 		}
 		if session == nil {
 			// Session token not found in DB
-			log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: Session token not found in database: %s", sessionToken)
+			// log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: Session token not found in database: %s", sessionToken)
 			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusUnauthorized, "Invalid session")
 			return
@@ -52,7 +51,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 
 		// Check if the session has expired
 		if session.Expiry.Before(time.Now()) {
-			log.Printf("[middleware.go:AuthMiddleware] Session expired for user ID: %d, token: %s", session.UserID, sessionToken)
+			// log.Printf("[middleware.go:AuthMiddleware] Session expired for user ID: %d, token: %s", session.UserID, sessionToken)
 			_ = auth.DeleteSession(sessionToken) // Clean up expired session from DB
 			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusUnauthorized, "Session expired")
@@ -62,14 +61,14 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		// 3. Retrieve the user associated with the session
 		user, err := repo.GetUserByID(session.UserID)
 		if err != nil {
-			log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: Error retrieving user for session %s (UserID: %d): %v", sessionToken, session.UserID, err)
+			// log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: Error retrieving user for session %s (UserID: %d): %v", sessionToken, session.UserID, err)
 			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 			return
 		}
 		if user == nil {
 			// User associated with session not found (e.g., user deleted but session remains)
-			log.Printf("[middleware.go:AuthMiddleware] User (ID: %d) not found for session %s", session.UserID, sessionToken)
+			// log.Printf("[middleware.go:AuthMiddleware] User (ID: %d) not found for session %s", session.UserID, sessionToken)
 			_ = auth.DeleteSession(sessionToken) // Invalidate the session as it points to a non-existent user, and clear the client cookie
 			auth.ClearSessionCookie(w)
 			handler.RespondWithError(w, http.StatusUnauthorized, "User not found for session")
@@ -80,7 +79,7 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		ctx := context.WithValue(r.Context(), models.UserContextKey, user)
 		r = r.WithContext(ctx)
 
-		log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: User %s (ID: %d) authenticated successfully. Proceeding to handler.", user.Nickname, user.ID)
+		// log.Printf("[middleware.go:AuthMiddleware] AuthMiddleware: User %s (ID: %d) authenticated successfully. Proceeding to handler.", user.Nickname, user.ID)
 
 		// 5. Call the next handler in the chain
 		next.ServeHTTP(w, r)

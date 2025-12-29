@@ -44,17 +44,16 @@ export function createCreatePostComponent() {
     contentGroup.appendChild(contentTextarea);
     createPostForm.appendChild(contentGroup);
     // Categories
-    const categoriesGroup = document.createElement('div');
-    categoriesGroup.className = 'form-group';
-    const categoriesLabel = document.createElement('label');
-    categoriesLabel.textContent = 'Categories:';
-    categoriesGroup.appendChild(categoriesLabel);
+    const categoriesFieldset = document.createElement('fieldset');
+    const categoriesLegend = document.createElement('legend');
+    categoriesLegend.textContent = 'Categories:';
+    categoriesFieldset.appendChild(categoriesLegend);
 
     const categoriesContainer = document.createElement('div');
     categoriesContainer.id = 'categories-container';
     categoriesContainer.className = 'categories-checkboxes';
-    categoriesGroup.appendChild(categoriesContainer);
-    createPostForm.appendChild(categoriesGroup);
+    categoriesFieldset.appendChild(categoriesContainer);
+    createPostForm.appendChild(categoriesFieldset);
 
     // Submit button
     const submitButton = document.createElement('button');

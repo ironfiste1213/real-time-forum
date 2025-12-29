@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"html"
 	"log"
 	"time"
 
@@ -91,12 +92,13 @@ func (c *Client) readPump() {
 		message.Nickname = c.nickname
 
 		// Validate the message
-		if err := message.ValidateMessage(); err != nil {
+		if err := message.Validate(); err != nil {
 
 			log.Printf("[client.go:readPump] [DEBUG] Invalid message from user %d: %v", c.userID, err)
 			continue // Skip invalid messages
 		}
-
+		safeContent := html.EscapeString(message.Content)
+		message.Content = safeContent
 		// Route message to hub based on type
 		switch message.Type {
 		case PrivateMessage:

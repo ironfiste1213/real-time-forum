@@ -351,10 +351,10 @@ func (h *Hub) sendMessageFromMeToOtherConnections(senderID int, originalMessage 
 	clients, exists := h.Users[senderID]
 	log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Checking connections for user %d, exists: %v, client count: %d", senderID, exists, len(clients))
 
-	if !exists || len(clients) <= 1 {
-		log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] No other connections to send to for user %d", senderID)
-		return
-	}
+	// if !exists || len(clients) <= 1 {
+	// 	log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] No other connections to send to for user %d", senderID)
+	// 	return
+	// }
 
 	message := Message{
 		Type:       MessageFromMe,
@@ -371,10 +371,10 @@ func (h *Hub) sendMessageFromMeToOtherConnections(senderID int, originalMessage 
 	sentCount := 0
 	for _, client := range clients {
 		// Skip the sender client to avoid sending the message back to itself
-		if client == senderClient {
-			log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Skipping sender client for user %d", senderID)
-			continue
-		}
+		// if client == senderClient {
+		// 	log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Skipping sender client for user %d", senderID)
+		// 	//continue
+		// }
 
 		select {
 		case client.send <- data:

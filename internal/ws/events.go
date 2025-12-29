@@ -2,9 +2,13 @@ package ws
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log"
+	"strings"
+	"unicode/utf8"
 
+	"html"
 	//"log"
 	"time"
 )
@@ -53,12 +57,33 @@ type PrivateMessageData struct {
 }
 
 // ValidateMessage checks if a message has required fields based on its type
-func (m *Message) ValidateMessage() error {
-	switch m.Type {
-	case PrivateMessage:
-		if m.Content == "" || m.ToUserID == 0 || m.FromUserID == 0 {
-			return logError("private message missing required fields")
-		}
+func (m *Message) Validate() error {
+	// type check
+	if m.Type != PrivateMessage {
+		return errors.New("invalid message type")
+	}
+
+	// trim first
+	content := strings.TrimSpace(m.Content)
+
+	// empty
+	if content == "" {
+		return errors.New("message cannot be empty")
+	}
+
+	// length
+	if len(content) > 500 {
+		return errors.New("message too long (max 500)")
+	}
+
+	// utf-8
+	if !utf8.ValidString(content) {
+		return errors.New("invalid characters")
+	}
+
+	// receiver
+	if m.ToUserID <= 0 {
+		return errors.New("invalid receiver")
 	}
 	return nil
 }

@@ -6,7 +6,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"

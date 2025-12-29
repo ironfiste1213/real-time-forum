@@ -15,6 +15,11 @@ export function recoverfrom404() {
     window.history.replaceState({}, "", lastValidPath)
     handleLocation();
 }
+export function handlelogoutstate() {
+    window.history.pushState({}, "", "/login")
+    lastValidPath = "/login"
+    handleLocation
+}
 // 2. Core Router Logic: Handle location changes.
 export async function handleLocation()  {
    const path = window.location.pathname
