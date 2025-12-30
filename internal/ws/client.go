@@ -3,6 +3,10 @@ package ws
 import (
 	"html"
 	"log"
+	"real-time-forum/internal/models"
+	"real-time-forum/internal/repo"
+
+	
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -10,30 +14,29 @@ import (
 
 // Client represents a WebSocket connection from a user
 type Client struct {
-	// WebSocket connection
-	conn *websocket.Conn
-
-	// User information
+	conn     *websocket.Conn
 	userID   int
 	nickname string
+	send     chan []byte
+	hub      *Hub
+	idex     int
 
-	// Channels for communication with hub
-	send chan []byte // Channel for messages to send to this client
-
-	// Hub reference for cleanup
-	hub  *Hub
-	idex int
+	windowFrom time.Time
+	msgCount   int
 }
 
-// NewClient creates a new client instance
 func NewClient(hub *Hub, conn *websocket.Conn, userID int, nickname string) *Client {
 	return &Client{
 		conn:     conn,
 		userID:   userID,
 		nickname: nickname,
-		send:     make(chan []byte, 256), // Buffered channel to prevent blocking
+		send:     make(chan []byte, 256),
 		hub:      hub,
 		idex:     0,
+
+		// RATE LIMIT INIT
+		windowFrom: time.Time{},
+		msgCount:   0,
 	}
 }
 
@@ -45,6 +48,25 @@ func (c *Client) Start() {
 
 	// Start read pump in a goroutine
 	go c.readPump()
+}
+func (c *Client) IsRateLimited() bool {
+	now := time.Now()
+
+	// أول مرة ولا دازت 1 ثانية
+	if c.windowFrom.IsZero() || now.Sub(c.windowFrom) > time.Second {
+		c.windowFrom = now
+		c.msgCount = 0
+	}
+
+	// نزيدو العداد
+	c.msgCount++
+
+	// limit = 5 messages / second
+	if c.msgCount > 5 {
+		return true
+	}
+
+	return false
 }
 
 // readPump reads messages from the WebSocket connection
@@ -97,6 +119,16 @@ func (c *Client) readPump() {
 			log.Printf("[client.go:readPump] [DEBUG] Invalid message from user %d: %v", c.userID, err)
 			continue // Skip invalid messages
 		}
+		if c.IsRateLimited() {
+			log.Printf("ggggggggggggggggggggggggggggggggggggggggggggggggg")
+
+			c.conn.WriteJSON(map[string]string{
+				"type": "error",
+				"msg":  "Too many messages, slow down",
+			})
+			continue
+		}
+
 		safeContent := html.EscapeString(message.Content)
 		message.Content = safeContent
 		// Route message to hub based on type
@@ -110,6 +142,16 @@ func (c *Client) readPump() {
 				Message:      *message,
 				SenderClient: c, // Include the sender client to exclude from message_from_me
 			}
+			message := &models.PrivateMessage{
+				SenderID:   message.FromUserID,
+				ReceiverID: message.ToUserID,
+				Content:    message.Content,
+				CreatedAt:  time.Now(),
+				IsRead:     false,
+			}
+
+			repo.CreatePrivateMessage(message)
+
 		default:
 			log.Printf("[client.go:readPump][DEBUG] Unknown message type from user %d: %s", c.userID, message.Type)
 		}

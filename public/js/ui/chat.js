@@ -173,17 +173,17 @@ export function setupChatEventListeners() {
 
     }
 
-    // Window beforeunload (only add once)
-    if (!window.chatUnloadListenerAdded) {
-        window.addEventListener('beforeunload', () => {
-            chatWS.sendLeaveMessage();
-            console.log("maybeeeeeeeeeeeeeeeeeeeeee lÇitha");
+    // // Window beforeunload (only add once)
+    // if (!window.chatUnloadListenerAdded) {
+    //     window.addEventListener('beforeunload', () => {
+    //         chatWS.sendLeaveMessage();
+    //         console.log("maybeeeeeeeeeeeeeeeeeeeeee lÇitha");
             
-            chatWS.disconnect();
+    //         chatWS.disconnect();
         
-        });
-        window.chatUnloadListenerAdded = true;
-    }
+    //     });
+    //     window.chatUnloadListenerAdded = true;
+    // }
 }
 function handleChatSubmit() {
     const chatInput = document.getElementById('chat-input');
@@ -203,8 +203,8 @@ function handleChatSubmit() {
     }
 
     if (chatWS.activeConversation) {
-        chatWS.sendPrivateMessage(message);
-
+       chatWS.sendPrivateMessage(message);
+       
         // Move the conversation user to the top and update the list
         chatWS.moveUserToTop(chatWS.activeConversation.userId, true);
         chatWS.updateUsersList();

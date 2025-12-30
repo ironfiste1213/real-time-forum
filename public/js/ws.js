@@ -679,27 +679,27 @@ class ChatWebSocket {
     }
 
     // Send private message
-    async sendPrivateMessage(message) {
+     sendPrivateMessage(message) {
         if (!this.activeConversation || !message.trim()) return;
 
         const { userId } = this.activeConversation;
 
         // Allow sending messages - the backend will handle delivery when user comes online
 
-        try {
-            const response = await fetch('/api/messages/send', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'same-origin',
-                body: JSON.stringify({
-                    receiver_id: userId,
-                    content: message.trim()
-                })
-            });
+        // try {
+        //     const response = await fetch('/api/messages/send', {
+        //         method: 'POST',
+        //         headers: {
+        //             'Content-Type': 'application/json',
+        //         },
+        //         credentials: 'same-origin',
+        //         body: JSON.stringify({
+        //             receiver_id: userId,
+        //             content: message.trim()
+        //         })
+        //     });
 
-            if (response.ok) {
+        //     if (response.ok) {
                 // Add message to local state immediately for better UX
                 const newMessage = {
                     sender_id: this.currentUser.id,
@@ -714,23 +714,24 @@ class ChatWebSocket {
                 if (!this.privateMessages[userId]) {
                     this.privateMessages[userId] = [];
                 }
-                //this.privateMessages[userId].push(newMessage);
-                //this.displayPrivateMessages(userId);
-
-                // Also send via WebSocket for real-time delivery
-                this.send('private_message', {
+                chatWS.send('private_message', {
                     to_user_id: userId,
                     content: message.trim(),
                     temp_id: newMessage.temp_id
                 });
-            } else {
-                console.error('Failed to send private message:', response.status);
-                this.showErrorMessage('Failed to send message. Please try again.');
-            }
-        } catch (error) {
-            console.error('Error sending private message:', error);
-            this.showErrorMessage('Network error. Please check your connection.');
-        }
+                //this.privateMessages[userId].push(newMessage);
+                //this.displayPrivateMessages(userId);
+
+                // Also send via WebSocket for real-time delivery
+                
+        //     } else {
+        //         console.error('Failed to send private message:', response.status);
+        //         this.showErrorMessage('Failed to send message. Please try again.');
+        //     }
+        // } catch (error) {
+        //     console.error('Error sending private message:', error);
+        //     this.showErrorMessage('Network error. Please check your connection.');
+        // }
     }
 
     // Update chat mode (public/private)

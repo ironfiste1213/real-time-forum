@@ -1,4 +1,4 @@
-import { showLoginForm } from "../ui/auth.js";
+import { handlelogoutstate } from "../router.js";
 import { clearUIElement } from "../ui/clear.js";
 import chatWS from "../ws.js";
 
@@ -22,8 +22,7 @@ export async function handleLogout() {
         // Disconnect WebSocket before clearing
         chatWS.disconnect();
         // Use router to navigate to the login page
-        window.history.pushState({}, "", "/login");
-        showLoginForm();
+        handlelogoutstate();
     }
 }
 

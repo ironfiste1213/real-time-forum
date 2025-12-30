@@ -2,15 +2,24 @@ package handler
 
 import (
 	"encoding/json"
+	"html"
 	"log"
 	"net/http"
 	"strconv"
+	"sync"
 	"time"
 
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
 )
+
+// SendPrivateMessageHandler handles sending private messages
+var httpRateLimit = make(map[int]*struct {
+	WindowFrom time.Time
+	Count      int
+})
+var httpRateLimitMu sync.Mutex
 
 // SendPrivateMessageHandler handles sending private messages
 func SendPrivateMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -40,6 +49,25 @@ func SendPrivateMessageHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// HTTP rate-limit per user (max 5 DB writes per second)
+	httpRateLimitMu.Lock()
+	entry, exists := httpRateLimit[user.ID]
+	now := time.Now()
+	if !exists || now.Sub(entry.WindowFrom) > time.Second {
+		entry = &struct {
+			WindowFrom time.Time
+			Count      int
+		}{WindowFrom: now, Count: 0}
+		httpRateLimit[user.ID] = entry
+	}
+	entry.Count++
+	if entry.Count > 5 { // limit 5 DB writes/sec
+		httpRateLimitMu.Unlock()
+		RespondWithError(w, http.StatusTooManyRequests, "Too many requests, slow down")
+		return
+	}
+	httpRateLimitMu.Unlock()
+
 	// Check if receiver exists
 	_, err := repo.GetUserByID(req.ReceiverID)
 	if err != nil {
@@ -50,7 +78,7 @@ func SendPrivateMessageHandler(w http.ResponseWriter, r *http.Request) {
 	message := &models.PrivateMessage{
 		SenderID:   user.ID,
 		ReceiverID: req.ReceiverID,
-		Content:    req.Content,
+		Content:    html.EscapeString(req.Content), // sanitize
 		CreatedAt:  time.Now(),
 		IsRead:     false,
 	}
@@ -68,6 +96,7 @@ func SendPrivateMessageHandler(w http.ResponseWriter, r *http.Request) {
 		"message": "Message sent successfully",
 	})
 }
+
 func MarkMessageRead(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
