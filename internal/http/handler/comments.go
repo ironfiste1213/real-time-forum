@@ -4,11 +4,13 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"strconv"
+	"strings"
+
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
-	"strconv"
-	"strings"
+	"real-time-forum/internal/validation"
 )
 
 func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
@@ -41,10 +43,45 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	log.Printf("CreateCommentHandler: Parsed comment data: PostID=%d, Content='%s'", PostID, req.Content)
+
+	// Validate the comment content
+	validationResult := validation.ValidateComment(req.Content)
+	if validationResult.HasErrors() {
+		log.Printf("CreateCommentHandler: Validation failed: %v", validationResult.Errors)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+
+		// Combine error messages
+		var errorMessages []string
+		for _, err := range validationResult.Errors {
+			errorMessages = append(errorMessages, err.Message)
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Validation failed",
+			"errors":  errorMessages,
+		})
+		return
+	}
+
+	// Sanitize the content to prevent XSS
+	sanitizedContent := validation.SanitizeHTML(req.Content)
+
+	// Check for spam
+	if validation.IsSpam(sanitizedContent) {
+		log.Printf("CreateCommentHandler: Spam detected in comment by user ID: %d", user.ID)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Your comment appears to be spam and cannot be submitted",
+		})
+		return
+	}
+
 	comment := &models.Comment{
 		PostID:  PostID,
 		UserID:  user.ID,
-		Content: req.Content,
+		Content: sanitizedContent,
 	}
 
 	// Save the comment to the database

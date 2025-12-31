@@ -10,6 +10,7 @@ import (
 	"real-time-forum/internal/auth"
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
+	"real-time-forum/internal/validation"
 )
 
 // CreatePostHandler handles the creation of a new post.
@@ -50,6 +51,43 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 
 	// --- DEBUG: Log the parsed data ---
 	log.Printf("[posts.go:CreatePostHandler] Parsed post data: Title='%s', Content='%s', CategoryIDs=%v", post.Title, post.Content, req.CategoryIDs)
+
+	// 5. Validate the post content
+	validationResult := validation.ValidatePost(req.Title, req.Content)
+	if validationResult.HasErrors() {
+		log.Printf("[posts.go:CreatePostHandler] Validation failed: %v", validationResult.Errors)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+
+		// Combine error messages
+		var errorMessages []string
+		for _, err := range validationResult.Errors {
+			errorMessages = append(errorMessages, err.Message)
+		}
+
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Validation failed",
+			"errors":  errorMessages,
+		})
+		return
+	}
+
+	// 6. Sanitize the content to prevent XSS
+	post.Title = validation.SanitizeHTML(req.Title)
+	post.Content = validation.SanitizeHTML(req.Content)
+
+	// 7. Check for spam
+	if validation.IsSpam(post.Title) || validation.IsSpam(post.Content) {
+		log.Printf("[posts.go:CreatePostHandler] Spam detected in post by user ID: %d", user.ID)
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusBadRequest)
+		json.NewEncoder(w).Encode(map[string]interface{}{
+			"message": "Your post appears to be spam and cannot be submitted",
+		})
+		return
+	}
+
+	log.Printf("[posts.go:CreatePostHandler] Validation passed. Proceeding to save post.")
 
 	// 5. Save the post to the database
 	postID, err := repo.CreatePost(post, req.CategoryIDs)

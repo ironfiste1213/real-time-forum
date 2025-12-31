@@ -26,9 +26,7 @@ class ChatWebSocket {
 
     // Initialize WebSocket connection
     connect(e) {
-        console.log('[ws.js:connect] [DEBUG] ChatWebSocket.connect called with:', e);
         if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            console.log('[ws.js:connect] [DEBUG] Already connected, skipping');
             return; // Already connected
         }
 
@@ -37,30 +35,24 @@ class ChatWebSocket {
 
         // Get current user from parameter (already checked in session)
         this.currentUser = e;
-        console.log('[ws.js:connect] ---------------------------------[DEBUG] Current user set to:', this.currentUser);
 
         if (!this.currentUser) {
-            console.error('[ws.js:connect] [DEBUG] No user session found, aborting connection');
+            console.error('[ws.js:connect] No user session found, aborting connection');
             return;
         }
 
         // Simplified connection - use user ID from session for now
         const userId = this.getCurrentUserId(e);
-        console.log('[ws.js:connect] [DEBUG] User ID for WebSocket:', userId);
 
         const wsUrl = `ws://localhost:8083/ws?user_id=${userId}`;
-        console.log('[ws.js:connect] [DEBUG] Connecting to WebSocket URL:', wsUrl);
         this.ws = new WebSocket(wsUrl);
 
         // Load all users list when connecting
-        console.log('[ws.js:connect] [DEBUG] Calling loadAllUsers');
         this.loadAllUsers();
 
         // Load conversations when connecting
-        console.log('[ws.js:connect] [DEBUG] Calling loadConversations');
         this.loadConversations();
         this.ws.onopen = (event) => {
-            console.log('[ws.js:connect] [DEBUG] WebSocket connected successfully');
             this.isConnected = true;
             this.connectionStatus = 'connected';
             this.reconnectAttempts = 0;
@@ -68,7 +60,6 @@ class ChatWebSocket {
             this.updateConnectionStatus();
 
             // Send join message
-            console.log('[ws.js:connect] [DEBUG] Sending join message');
             this.sendJoinMessage();
 
             // Start periodic loadAllUsers calls every 10 seconds
@@ -79,21 +70,18 @@ class ChatWebSocket {
         };
 
         this.ws.onmessage = (event) => {
-            console.log('[ws.js:connect] [DEBUG] WebSocket message received:', event.data);
             try {
                 const data = JSON.parse(event.data);
-                console.log('[ws.js:connect] [DEBUG] Parsed WebSocket message:', data);
                 if (data.type == 'user_online' && !this.allUsers.includes(data.nickname)) {
                     this.loadAllUsers();
                 }
                 this.handleMessage(data);
             } catch (error) {
-                console.error('[ws.js:connect] [DEBUG] Error parsing WebSocket message:', error);
+                console.error('[ws.js:connect] Error parsing WebSocket message:', error);
             }
         };
 
         this.ws.onclose = (event) => {
-            console.log('[ws.js:connect] WebSocket disconnected:', event.code, event.reason);
             this.isConnected = false;
             this.connectionStatus = 'disconnected';
             this.updateConnectionStatus();
@@ -106,7 +94,6 @@ class ChatWebSocket {
 
             // Attempt reconnection if not intentional disconnect
             if (event.code !== 1000) { // 1000 = normal closure
-                console.log("event cooooooooooooooooooooooooooooood")
                 this.attemptReconnection();
             }
         };
@@ -158,39 +145,31 @@ class ChatWebSocket {
 
     // Handle incoming messages
     handleMessage(data) {
-        console.log('[ws.js:handleMessage] [DEBUG] Handling message:', data);
         switch (data.type) {
             case 'user_online':
-                console.log('[ws.js:handleMessage] [DEBUG] Message type: user_online');
                 this.handleUserOnline(data);
                 break;
             case 'user_offline':
-                console.log('[ws.js:handleMessage] [DEBUG] Message type: user_offline');
                 this.handleUserOffline(data.nickname);
                 break;
             case 'private_message':
-                console.log('[ws.js:handleMessage] [DEBUG] Message type: private_message');
                 this.handlePrivateMessage(data);
                 break;
             case 'message_delivered':
-                console.log('[ws.js:handleMessage] [DEBUG] Message type: message_delivered');
                 this.handleMessageDelivered(data.message_id);
                 break;
             case 'message_failed':
-                console.log('[ws.js:handleMessage] [DEBUG] Message type: message_failed');
                 this.handleMessageFailed(data.to_user_id);
                 break;
             case 'online_users':
-                console.log('[ws.js:handleMessage] [DEBUG] Message type: online_users');
                 this.handleOnlineUsers(data);
                 break;
             case 'message_from_me':
-                console.log('[ws.js:handleMessage] [DEBUG] Message type: message_from_me');
                 this.handleMessageFromMe(data);
                 break;
 
             default:
-                console.log('[ws.js:handleMessage] [DEBUG] Unknown message type:', data.type);
+                break;
         }
     }
 
@@ -198,10 +177,8 @@ class ChatWebSocket {
 
   handleUserOnline(data) {
     const nickname = data.nickname;
-    console.log('[ws.js:handleUserOnline] [DEBUG] handleUserOnline called with nickname:', nickname);
 
     if (!nickname) {
-        console.log('[ws.js:handleUserOnline] [DEBUG] Invalid nickname');
         return;
     }
 
@@ -209,12 +186,10 @@ class ChatWebSocket {
     if (this.pendingOfflineRemovals?.has(nickname)) {
         clearTimeout(this.pendingOfflineRemovals.get(nickname));
         this.pendingOfflineRemovals.delete(nickname);
-        console.log('[ws.js] Offline removal cancelled for:', nickname);
     }
 
     // --- ADD USER IF NOT ALREADY ONLINE ---
     if (!this.onlineUsers.includes(nickname)) {
-        console.log('[ws.js:handleUserOnline] [DEBUG] Adding user to online list:', nickname);
         this.onlineUsers.push(nickname);
         this.updateUsersList(); // Update the users list to reflect online status
 
@@ -222,8 +197,6 @@ class ChatWebSocket {
         if (nickname !== this.currentUser?.nickname && !this.isChatOpen) {
             this.showOnlineNotification(nickname);
         }
-    } else {
-        console.log('[ws.js:handleUserOnline] [DEBUG] User already online:', nickname);
     }
 
     // --- UPDATE CHAT MODE IF THIS USER IS IN ACTIVE CONVERSATION ---
@@ -235,10 +208,7 @@ class ChatWebSocket {
 
     // Handle user offline
    handleUserOffline(nickname) {
-    console.log('[ws.js:handleUserOffline] Offline event for:', nickname);
-
     if (!nickname) {
-        console.log('[ws.js:handleUserOffline] Invalid nickname:', nickname);
         return;
     }
 
@@ -248,8 +218,6 @@ class ChatWebSocket {
     }
 
     const timeoutId = setTimeout(() => {
-        console.log('[ws.js] Removing user after 5s timeout:', nickname);
-
         this.onlineUsers = this.onlineUsers.filter(user => user !== nickname);
         this.updateUsersList();
 
@@ -268,9 +236,7 @@ class ChatWebSocket {
 
     // Handle incoming private message
     handlePrivateMessage(data) {
-        console.log('[ws.js:handlePrivateMessage] [DEBUG] handlePrivateMessage called with data:', data);
         const fromUserId = data.from_user_id;
-        console.log('[ws.js:handlePrivateMessage] [DEBUG] From user ID:', fromUserId);
 
         // Check if this message is already in our local state to prevent duplicates
         if (this.privateMessages[fromUserId]) {
@@ -280,7 +246,6 @@ class ChatWebSocket {
                 Math.abs(new Date(msg.created_at) - new Date(data.timestamp || new Date())) < 1000 // Within 1 second
             );
             if (existingMessage) {
-                console.log('[ws.js:handlePrivateMessage] [DEBUG] Duplicate private message detected, ignoring');
                 // return;
             }
         }
@@ -299,7 +264,6 @@ class ChatWebSocket {
             this.privateMessages[fromUserId] = [];
         }
         this.privateMessages[fromUserId].push(message);
-        console.log('[ws.js:handlePrivateMessage] [DEBUG] Stored private message');
 
         // Move user to top and update unread count
         this.moveUserToTop(fromUserId);
@@ -309,7 +273,6 @@ class ChatWebSocket {
 
         // If this conversation is active, display it immediately
         if (this.activeConversation && this.activeConversation.userId === fromUserId) {
-            console.log('[ws.js:handlePrivateMessage] [DEBUG] Active conversation matches, displaying messages');
             this.displayPrivateMessages(fromUserId);
 
         }
@@ -317,54 +280,41 @@ class ChatWebSocket {
 
 
         // Update conversations list to show new message
-        console.log('[ws.js:handlePrivateMessage] [DEBUG] Loading conversations after private message');
         this.loadConversations();
     }
 
     // Handle message delivered confirmation
     handleMessageDelivered(messageId) {
-        console.log('[ws.js:handleMessageDelivered] Message delivered:', messageId);
         // Could add visual confirmation here if needed
     }
 
     // Handle message delivery failure
     handleMessageFailed(receiverId) {
-        console.error('[ws.js:handleMessageFailed] Message failed to deliver to user:', receiverId);
         // Could show error notification to user
     }
 
     // Handle online users list
     handleOnlineUsers(data) {
-        console.log('[ws.js:handleOnlineUsers] [DEBUG] handleOnlineUsers called with data:', data);
         try {
             // Parse the content as JSON array
             const onlineUsersList = JSON.parse(data.content || '[]');
-            console.log('[ws.js:handleOnlineUsers] [DEBUG] Parsed online users:', onlineUsersList);
 
             // Update the online users array
             this.onlineUsers = onlineUsersList;
-            console.log('[ws.js:handleOnlineUsers] [DEBUG] Updated onlineUsers to:', this.onlineUsers);
 
             // Update the UI to reflect the new online users
             this.updateUsersList();
         } catch (error) {
-            console.error('[ws.js:handleOnlineUsers] [DEBUG] Error parsing online users data:', error);
+            console.error('[ws.js:handleOnlineUsers] Error parsing online users data:', error);
         }
     }
 
     // Handle message from me (sent from another connection)
     handleMessageFromMe(data) {
-        console.log('[ws.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME RECEIVED =====');
-        console.log('[ws.js:handleMessageFromMe] [DEBUG] Raw data:', JSON.stringify(data, null, 2));
         const toUserId = data.to_user_id;
-        console.log('[ws.js:handleMessageFromMe] [DEBUG] To user ID:', toUserId);
-        console.log('[ws.js:handleMessageFromMe] [DEBUG] Current user ID:', this.currentUser?.id);
-        console.log('[ws.js:handleMessageFromMe] [DEBUG] Active conversation:', this.activeConversation);
 
         // Check if we are in conversation with the recipient
         if (this.activeConversation && this.activeConversation.userId === toUserId) {
-            console.log('[ws.js:handleMessageFromMe] [DEBUG] ✓ Active conversation matches, processing message');
-
             const message = {
                 sender_id: this.currentUser.id,
                 receiver_id: toUserId,
@@ -375,23 +325,14 @@ class ChatWebSocket {
                 source: 'message_from_me' // Mark the source for debugging
             };
 
-            console.log('[ws.js:handleMessageFromMe] [DEBUG] Created message object:', message);
-
             // Store the message
             if (!this.privateMessages[toUserId]) {
                 this.privateMessages[toUserId] = [];
-                console.log('[ws.js:handleMessageFromMe] [DEBUG] Created new message array for user', toUserId);
             }
             this.privateMessages[toUserId].push(message);
-            console.log('[ws.js:handleMessageFromMe] [DEBUG] Added message to privateMessages. Total messages for user', toUserId, ':', this.privateMessages[toUserId].length);
 
             // Display the message in the active conversation
-            console.log('[ws.js:handleMessageFromMe] [DEBUG] Calling displayPrivateMessages for user', toUserId);
             this.displayPrivateMessages(toUserId);
-            console.log('[ws.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME PROCESSED SUCCESSFULLY =====');
-        } else {
-            console.log('[ws.js:handleMessageFromMe] [DEBUG] ✗ No active conversation with recipient (expected user ID:', toUserId, ', active conversation user ID:', this.activeConversation?.userId, '), ignoring message');
-            console.log('[ws.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME IGNORED =====');
         }
     }
 
@@ -401,12 +342,10 @@ class ChatWebSocket {
     // Attempt reconnection with exponential backoff
     attemptReconnection() {
         if (this.reconnectAttempts >= 5) {
-            console.log('[ws.js:attemptReconnection] Max reconnection attempts reached');
             return;
         }
 
         this.reconnectAttempts++;
-        console.log(`[ws.js:attemptReconnection] Attempting reconnection ${this.reconnectAttempts}/5 in ${this.reconnectDelay}ms`);
 
         setTimeout(() => {
             this.connect();
@@ -420,8 +359,6 @@ class ChatWebSocket {
     // Get current user ID from session
     getCurrentUserId(e) {
         //   const user =  checkSession();
-        console.log('[ws.js:getCurrentUserId] e.id:', e.id);
-
         if (e && e.id) {
             return e.id;
         }
@@ -433,7 +370,6 @@ class ChatWebSocket {
     // Load all users from API
     async loadAllUsers() {
         try {
-            // console.log('[ws.js:loadAllUsers] [DEBUG] Loading all users from API...');
             const response = await fetch('/api/users', {
                 method: 'GET',
                 headers: {
@@ -442,21 +378,14 @@ class ChatWebSocket {
                 credentials: 'same-origin' // Include session cookies
             });
 
-            //    console.log('[ws.js:loadAllUsers] [DEBUG] Users API response status:', response.status);
             if (response.ok) {
                 const users = await response.json();
-                // console.log('[ws.js:loadAllUsers] [DEBUG] Loaded users:', users);
                 this.allUsers = users.filter(user => user && typeof user.id === 'number' && typeof user.nickname === 'string');
-                // console.log('[ws.js:loadAllUsers] [DEBUG] allUsers now contains', this.allUsers.length, 'users');
-                //     console.log('[ws.js:loadAllUsers] [DEBUG] Calling updateUsersList to render users');
-                //   //  this.updateUsersList(); // Update the UI with online/offline status
-                //     console.log('[ws.js:loadAllUsers] [DEBUG] updateUsersList completed, users should be clickable now');
             } else {
                 const errorText = await response.text();
-                //  console.error('[ws.js:loadAllUsers] [DEBUG] Failed to load users:', response.status, errorText);
             }
         } catch (error) {
-            console.error('[ws.js:loadAllUsers] [DEBUG] Error loading users:', error);
+            console.error('[ws.js:loadAllUsers] Error loading users:', error);
         }
     }
 
@@ -525,8 +454,6 @@ class ChatWebSocket {
 
     // Start conversation with a user
     startConversation(userId, nickname) {
-        console.log(`[ws.js:startConversation] Starting conversation with ${nickname} (ID: ${userId})`);
-
         // Allow starting conversations with any user (online or offline) for history viewing
 
         // Set active conversation
@@ -577,7 +504,6 @@ class ChatWebSocket {
         try {
             if (this.activeConversation) this.activeConversation.isLoading = true;
 
-            console.log(`[ws.js:loadConversationHistory] [DEBUG] Loading conversation history with user ${userId}, offset: ${offset}`);
             const limit = 10; // Load 10 at a time as requested
             // Add timestamp to prevent caching
             const response = await fetch(`/api/messages?user_id=${userId}&limit=${limit}&offset=${offset}&_t=${Date.now()}`, {
@@ -589,10 +515,8 @@ class ChatWebSocket {
                 cache: 'no-store' // Prevent caching
             });
 
-            console.log('[ws.js:loadConversationHistory] [DEBUG] Conversation history response status:', response.status);
             if (response.ok) {
                 const data = await response.json();
-                console.log('[ws.js:loadConversationHistory] [DEBUG] Conversation history data:', data);
                 const loadedMessages = data.messages || [];
 
                 if (loadedMessages.length < limit) {
@@ -620,10 +544,10 @@ class ChatWebSocket {
                 if (offset === 0) this.loadConversations();
             } else {
                 const errorText = await response.text();
-                console.error('[ws.js:loadConversationHistory] [DEBUG] Failed to load conversation history:', response.status, errorText);
+                console.error('[ws.js:loadConversationHistory] Failed to load conversation history:', response.status, errorText);
             }
         } catch (error) {
-            console.error('[ws.js:loadConversationHistory] [DEBUG] Error loading conversation history:', error);
+            console.error('[ws.js:loadConversationHistory] Error loading conversation history:', error);
         } finally {
             if (this.activeConversation) this.activeConversation.isLoading = false;
         }
@@ -631,7 +555,6 @@ class ChatWebSocket {
 
     // Display private messages for a conversation
     displayPrivateMessages(userId, scrollToBottom = true, newMessagesCount = 0) {
-        console.log('[ws.js:displayPrivateMessages] [DEBUG] displayPrivateMessages called for userId:', userId);
         const messages = this.privateMessages[userId] || [];
         const messagesContainer = document.getElementById('chat-messages');
         if (!messagesContainer) return;
@@ -770,7 +693,6 @@ class ChatWebSocket {
 
     // Update chat mode (public/private)
     updateChatMode(mode) {
-        console.log('[ws.js:updateChatMode] [DEBUG] updateChatMode called with mode:', mode);
         const chatPanel = document.getElementById('chat-panel');
 
         // Update chat header title
@@ -790,11 +712,9 @@ class ChatWebSocket {
                 // In private mode, show form only if the other user is online
                 const isOtherUserOnline = this.onlineUsers.includes(this.activeConversation.nickname);
                 chatForm.style.display = isOtherUserOnline ? 'flex' : 'none';
-                console.log('[ws.js:updateChatMode] [DEBUG] Set chat form display to:', isOtherUserOnline ? 'flex' : 'none', '(user online:', isOtherUserOnline, ')');
             } else {
                 // In public mode or no active conversation, hide form
                 chatForm.style.display = 'none';
-                console.log('[ws.js:updateChatMode] [DEBUG] Set chat form display to: none (public mode or no conversation)');
             }
         }
 
@@ -805,22 +725,18 @@ class ChatWebSocket {
 
         if (conversationsDiv) {
             conversationsDiv.style.display = mode === 'public' ? 'block' : 'none';
-            console.log('[ws.js:updateChatMode] [DEBUG] Set conversations display to:', mode === 'public' ? 'block' : 'none');
         }
         if (usersListDiv) {
             usersListDiv.style.display = 'block'; // Always show users list
-            console.log('[ws.js:updateChatMode] [DEBUG] Users list display set to: block');
         }
         if (messagesDiv) {
             messagesDiv.style.display = 'block'; // Always show messages
-            console.log('[ws.js:updateChatMode] [DEBUG] Messages display set to: block');
         }
     }
 
     // Load conversations from API
     async loadConversations() {
         try {
-            //   console.log('[ws.js:loadConversations] Loading conversations...');
             const response = await fetch('/api/conversations', {
                 method: 'GET',
                 headers: {
@@ -846,10 +762,7 @@ class ChatWebSocket {
                     }
                 }
                 this.conversations = Object.values(byUser);
-                // console.log(this.conversations.length, this.conversations)
-                //    this.renderConversations();
                 // Update unread badges in users list and chat button
-                // this.updateUsersList();
                 this.getSortedUserList();
                 this.updateUsersList();
                 this.updateChatUnreadUI();
@@ -963,7 +876,7 @@ class ChatWebSocket {
                 btn.title = 'Open Chat';
             }
         } catch (e) {
-            console.error('[ws.js:updateChatUnreadUI] [DEBUG] updateChatUnreadUI error:', e);
+            console.error('[ws.js:updateChatUnreadUI] updateChatUnreadUI error:', e);
         }
     }
 
@@ -1103,7 +1016,6 @@ class ChatWebSocket {
             });
 
             if (response.ok) {
-                console.log('[ws.js:markMessagesAsRead] Messages marked as read for user:', userId);
                 // Refresh conversations to update unread counts
                 this.loadConversations();
             } else {

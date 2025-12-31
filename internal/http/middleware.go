@@ -3,6 +3,8 @@ package http
 import (
 	"context"
 	"net/http"
+	"strconv"
+	"sync"
 	"time"
 
 	"real-time-forum/internal/auth"
@@ -10,6 +12,120 @@ import (
 	"real-time-forum/internal/models" // Import models for UserContextKey
 	"real-time-forum/internal/repo"
 )
+
+// Rate limiting configuration
+const (
+	RateLimitRequests = 10 // Maximum requests per time window
+	RateLimitWindow   = 60 // Time window in seconds (1 minute)
+)
+
+// RateLimitInfo stores rate limit information for a user
+type RateLimitInfo struct {
+	Count     int
+	ResetTime time.Time
+}
+
+// RateLimiter is a thread-safe rate limiter
+type RateLimiter struct {
+	mu       sync.Mutex
+	requests map[string]*RateLimitInfo
+	window   time.Duration
+	limit    int
+}
+
+// NewRateLimiter creates a new rate limiter
+func NewRateLimiter(limit int, window time.Duration) *RateLimiter {
+	return &RateLimiter{
+		requests: make(map[string]*RateLimitInfo),
+		window:   window,
+		limit:    limit,
+	}
+}
+
+// Allow checks if a request is allowed and updates the count
+func (rl *RateLimiter) Allow(key string) (bool, int) {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+
+	info, exists := rl.requests[key]
+	if !exists || now.After(info.ResetTime) {
+		// First request or window expired
+		rl.requests[key] = &RateLimitInfo{
+			Count:     1,
+			ResetTime: now.Add(rl.window),
+		}
+		return true, rl.limit - 1
+	}
+
+	if info.Count >= rl.limit {
+		return false, 0
+	}
+
+	info.Count++
+	return true, rl.limit - info.Count
+}
+
+// GetRemaining returns remaining requests for a key
+func (rl *RateLimiter) GetRemaining(key string) int {
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	now := time.Now()
+	info, exists := rl.requests[key]
+	if !exists || now.After(info.ResetTime) {
+		return rl.limit
+	}
+
+	return rl.limit - info.Count
+}
+
+// Global rate limiter instance
+var (
+	postRateLimiter    = NewRateLimiter(RateLimitRequests, time.Duration(RateLimitWindow)*time.Second)
+	commentRateLimiter = NewRateLimiter(RateLimitRequests*2, time.Duration(RateLimitWindow)*time.Second) // Allow more comments than posts
+)
+
+// RateLimitMiddleware creates a rate limiting middleware for specific endpoints
+func RateLimitMiddleware(next http.Handler, limiter *RateLimiter, endpoint string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Get user from context (set by AuthMiddleware)
+		user, ok := auth.GetUserFromContext(r.Context())
+		if !ok || user == nil {
+			// If no user, use IP address
+			clientIP := r.RemoteAddr
+			if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
+				clientIP = forwarded
+			}
+			key := clientIP + ":" + endpoint
+
+			allowed, remaining := limiter.Allow(key)
+			if !allowed {
+				w.Header().Set("Retry-After", strconv.Itoa(RateLimitWindow))
+				handler.RespondWithError(w, http.StatusTooManyRequests, "Rate limit exceeded. Please try again later.")
+				return
+			}
+
+			w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
+			next.ServeHTTP(w, r)
+			return
+		}
+
+		// Use user ID for authenticated requests
+		key := strconv.Itoa(user.ID) + ":" + endpoint
+		allowed, remaining := limiter.Allow(key)
+
+		if !allowed {
+			w.Header().Set("Retry-After", strconv.Itoa(RateLimitWindow))
+			handler.RespondWithError(w, http.StatusTooManyRequests, "Rate limit exceeded. Please try again later.")
+			return
+		}
+
+		w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
+		next.ServeHTTP(w, r)
+	})
+}
 
 // AuthMiddleware is an HTTP middleware that validates session cookies and authenticates users.
 // If a valid session is found, the authenticated user is added to the request context.

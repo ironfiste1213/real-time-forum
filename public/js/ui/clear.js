@@ -28,7 +28,6 @@ export function clearUIElement(element) {
 
 export function clear(e) {
     while(e.firstChild ) {
-        console.log("eeeeeeeeeeeeeeeeeee")
         e.removeChild(e.firstChild)
     }
     e.classList.add('hidden')

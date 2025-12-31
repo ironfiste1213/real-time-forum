@@ -24,14 +24,12 @@ export function handlelogoutstate() {
 export async function handleLocation()  {
    const user = await checkSession();
    const path = window.location.pathname
-   console.log("__________________for user:", user, "for path", path);
    
    
    if (user) {
     if (path ==  "/login" || path == "/register") {
         window.history.replaceState({}, "", "/")
         lastValidPath = "/"
-        console.log("__________________we redirect hime to main page / ");
         
         showMainFeedView(user)
         return
@@ -42,7 +40,6 @@ export async function handleLocation()  {
     if (path == "/"){
         window.history.pushState({}, "", "/login")
         lastValidPath = "/login"
-        console.log("__________________we redirect hime to login page /login ");
 
         showLoginForm();
         return
@@ -60,7 +57,6 @@ export async function handleLocation()  {
     return 
    }
    handler();
-   console.log("________________he goes normal to : ", path);
    lastValidPath = path
 
 };
@@ -93,20 +89,15 @@ export async function initializeRouter() {
 
     // On initial load, check the session first, then handle the location.
   
-        console.log('[router.js:initializeRouter] DOMContentLoaded and we will check for session ');
-
 
 
         handleLocation();
         // Chat connection will be initialized in showMainFeedView if user is logged in
         window.addEventListener("pageshow", (event) => {
             if (event.persisted) {
-                console.log("[router.js] Page restored from cache, re-initialize router");
                 handleLocation();
             }
         });
     // Handle browser back/forward button clicks.
     window.addEventListener("popstate", handleLocation);
-
-    console.log("[router.js:initializeRouter] Router initialized.");
 }

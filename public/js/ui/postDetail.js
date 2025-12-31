@@ -158,8 +158,6 @@ function renderPostDetails(post, postId) {
     const singlePostView = document.getElementById('single-post-view');
     const mainFeedView = document.getElementById('main-feed-view');
 
-    console.log('[ui/postDetail.js:renderPostDetails] Successfully fetched post data:', post);
-
     // Hide main feed and show single post view
     mainFeedView.classList.add('hidden');
     singlePostView.classList.remove('hidden');
@@ -300,6 +298,5 @@ export async function showSinglePostComponent(postId) {
         renderPostDetails(post, postId);
     } catch (error) {
         console.error('Error showing single post:', error);
-        console.error('Could not load the post. Please try again.');
     }
 }

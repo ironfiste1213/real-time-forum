@@ -207,7 +207,6 @@ function createMainFeedContent(user) {
 
 // --- View Management ---
 export function showMainFeedView(user) {
-    console.log('*************************************************');
     
     let chatPanel = document.getElementById('chat-panel');
        if (chatPanel) {
@@ -292,14 +291,11 @@ export function showMainFeedView(user) {
     // Ensure chat panel exists and is properly set up
    
     if (!chatPanel) {
-        console.log('chatpanel will be creat value to null ! ');
         
         createChatPanel();
     }else {
         chatPanel.remove()
         createChatPanel();
-        
-        console.log('chatpanle allreadyexiste');
         
     }
     setupChatEventListeners();

@@ -1,0 +1,172 @@
+package validation
+
+import (
+	"html"
+	"regexp"
+	"strings"
+	"unicode/utf8"
+)
+
+// Configuration constants for content validation
+const (
+	MaxTitleLength   = 200  // Maximum characters for post title
+	MaxContentLength = 5000 // Maximum characters for post content
+	MaxCommentLength = 1000 // Maximum characters for comment content
+
+	// Rate limiting configuration
+	RateLimitRequests = 10 // Maximum requests per time window
+	RateLimitWindow   = 60 // Time window in seconds (1 minute)
+
+	// Spam detection thresholds
+	MaxCapsPercentage = 0.7 // Maximum percentage of capital letters (70%)
+	MinSpamLength     = 10  // Minimum text length to check for spam patterns
+)
+
+// Spam patterns to detect
+var spamPatterns = []*regexp.Regexp{
+	regexp.MustCompile(`(?i)(buy now|click here|free money|make money fast|work from home|limited time offer|act now)`),
+	regexp.MustCompile(`(?i)https?://[^\s]+`),
+	regexp.MustCompile(`(?i)www\.[^\s]+`),
+	regexp.MustCompile(`(?i)\$\d+|\d+\s*dollars`),
+	regexp.MustCompile(`(?i)(winner|congratulations|you have won)`),
+}
+
+// Forbidden characters - control characters that should not be allowed
+var controlCharPattern = regexp.MustCompile(`[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]`)
+
+// ValidationError represents a validation error with a specific field and message
+type ValidationError struct {
+	Field   string `json:"field"`
+	Message string `json:"message"`
+}
+
+// ValidationResult holds the result of validation
+type ValidationResult struct {
+	Valid  bool              `json:"valid"`
+	Errors []ValidationError `json:"errors,omitempty"`
+}
+
+// NewValidationResult creates a new validation result
+func NewValidationResult() *ValidationResult {
+	return &ValidationResult{
+		Valid:  true,
+		Errors: []ValidationError{},
+	}
+}
+
+// AddError adds an error to the validation result
+func (v *ValidationResult) AddError(field, message string) {
+	v.Valid = false
+	v.Errors = append(v.Errors, ValidationError{
+		Field:   field,
+		Message: message,
+	})
+}
+
+// HasErrors returns true if there are validation errors
+func (v *ValidationResult) HasErrors() bool {
+	return !v.Valid
+}
+
+// ValidateContent is a generic validator for text content
+func ValidateContent(text string, maxLength int, fieldName string) *ValidationResult {
+	result := NewValidationResult()
+
+	// Check if empty or whitespace only
+	trimmed := strings.TrimSpace(text)
+	if trimmed == "" {
+		result.AddError(fieldName, fieldName+" cannot be empty")
+		return result
+	}
+
+	// Check max length
+	if utf8.RuneCountInString(text) > maxLength {
+		result.AddError(fieldName, fieldName+" exceeds maximum length of "+itoa(maxLength)+" characters")
+		return result
+	}
+
+	// Check for forbidden characters (control characters)
+	if controlCharPattern.MatchString(text) {
+		result.AddError(fieldName, fieldName+" contains invalid characters")
+		return result
+	}
+
+	return result
+}
+
+// ValidatePost validates a post's title and content
+func ValidatePost(title string, content string) *ValidationResult {
+	result := NewValidationResult()
+
+	// Validate title
+	titleResult := ValidateContent(title, MaxTitleLength, "Title")
+	if titleResult.HasErrors() {
+		result.Errors = append(result.Errors, titleResult.Errors...)
+	}
+
+	// Validate content
+	contentResult := ValidateContent(content, MaxContentLength, "Content")
+	if contentResult.HasErrors() {
+		result.Errors = append(result.Errors, contentResult.Errors...)
+	}
+
+	return result
+}
+
+// ValidateComment validates a comment's content
+func ValidateComment(content string) *ValidationResult {
+	return ValidateContent(content, MaxCommentLength, "Comment")
+}
+
+// SanitizeHTML escapes HTML characters to prevent XSS attacks
+func SanitizeHTML(text string) string {
+	// First, escape HTML special characters
+	sanitized := html.EscapeString(text)
+
+	// Remove any potential JavaScript event handlers
+	sanitized = regexp.MustCompile(`(?i)javascript:`).ReplaceAllString(sanitized, "")
+	sanitized = regexp.MustCompile(`(?i)on\w+\s*=`).ReplaceAllString(sanitized, "")
+
+	// Remove potential data: URLs that could be used for XSS
+	sanitized = regexp.MustCompile(`(?i)data:`).ReplaceAllString(sanitized, "datablocked:")
+
+	return sanitized
+}
+
+// IsSpam checks if the text appears to be spam
+func IsSpam(text string) bool {
+	// Skip very short texts
+	if utf8.RuneCountInString(text) < MinSpamLength {
+		return false
+	}
+
+	// Check for spam patterns
+	for _, pattern := range spamPatterns {
+		if pattern.MatchString(text) {
+			return true
+		}
+	}
+
+	// Check for excessive capital letters
+	capsCount := 0
+	for _, r := range text {
+		if r >= 'A' && r <= 'Z' {
+			capsCount++
+		}
+	}
+
+	totalLetters := utf8.RuneCountInString(text)
+	if totalLetters > 0 {
+		capsPercentage := float64(capsCount) / float64(totalLetters)
+		if capsPercentage > MaxCapsPercentage {
+			return true
+		}
+	}
+
+	return false
+}
+
+// itoa converts int to string (helper function)
+func itoa(n int) string {
+	return string(rune('0'+n/1000%10)) + string(rune('0'+n/100%10)) + string(rune('0'+n/10%10)) + string(rune('0'+n%10))
+}
