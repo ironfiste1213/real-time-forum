@@ -179,17 +179,39 @@ export function setupChatEventListeners() {
 
     }
 
-    // // Window beforeunload (only add once)
-    // if (!window.chatUnloadListenerAdded) {
-    //     window.addEventListener('beforeunload', () => {
-    //         chatWS.sendLeaveMessage();
-    //         console.log("maybeeeeeeeeeeeeeeeeeeeeee lÇitha");
-            
-    //         chatWS.disconnect();
-        
-    //     });
-    //     window.chatUnloadListenerAdded = true;
-    // }
+    // Window beforeunload (only add once)
+    if (!window.chatUnloadListenerAdded) {
+        window.addEventListener('beforeunload', () => {
+            chatWS.sendLeaveMessage();
+            console.log("maybeeeeeeeeeeeeeeeeeeeeee lÇitha");
+
+            chatWS.disconnect();
+
+        });
+        window.chatUnloadListenerAdded = true;
+    }
+
+    // Handle page visibility changes (fixes refresh/reconnect issues)
+    // When page becomes visible again, reconnect if needed
+    if (!window.chatVisibilityListenerAdded) {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'visible') {
+                // Page is now visible - check if we need to reconnect
+                console.log('[chat.js:setupChatEventListeners] Page became visible, checking WebSocket connection');
+                if (chatWS.ws && (chatWS.ws.readyState === WebSocket.CLOSED || chatWS.ws.readyState === WebSocket.CLOSING)) {
+                    console.log('[chat.js:setupChatEventListeners] Stale WebSocket detected, reconnecting...');
+                    chatWS.disconnect();
+                    if (chatWS.currentUser) {
+                        chatWS.connect(chatWS.currentUser);
+                    }
+                } else if (!chatWS.ws && chatWS.currentUser) {
+                    console.log('[chat.js:setupChatEventListeners] No WebSocket, reconnecting...');
+                    chatWS.connect(chatWS.currentUser);
+                }
+            }
+        });
+        window.chatVisibilityListenerAdded = true;
+    }
 }
 function handleChatSubmit() {
     const chatInput = document.getElementById('chat-input');
@@ -223,8 +245,10 @@ function handleChatSubmit() {
 
 // Initialize chat connection (called from auth.js on login success)
 export function initializeChatConnection(e) {
-    if (chatWS.isConnected || chatWS.ws) {
-        return;
+    // Always disconnect existing connection first to avoid stale connections
+    if (chatWS.ws && chatWS.ws.readyState !== WebSocket.CLOSED) {
+        console.log('[chat.js:initializeChatConnection] Closing existing connection before initializing');
+        chatWS.disconnect();
     }
     chatWS.connect(e);
 }

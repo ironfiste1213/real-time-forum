@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"real-time-forum/internal/repo"
 )
@@ -45,6 +46,7 @@ func GetAllUsersHandler(w http.ResponseWriter, r *http.Request) {
 			IsOnline: onlineUsers[user.ID],
 		})
 	}
+	fmt.Print("-----------------------------------------")
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)

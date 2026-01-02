@@ -2,6 +2,7 @@ package ws
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
 	"sync"
 	"time"
@@ -147,9 +148,11 @@ func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.Register:
+			log.Printf("[hub.go:Run] Processing register request for user %d", client.userID)
 			h.registerClient(client)
 
 		case client := <-h.Unregister:
+			log.Printf("[hub.go:Run] Processing unregister request for user %d", client.userID)
 			h.unregisterClient(client)
 
 		case message := <-h.Broadcast:
@@ -169,6 +172,7 @@ func (h *Hub) Run() {
 // Registers the client, updates user mappings, broadcasts online status, and sends online users list
 // registerClient registers the client, updates user mappings, broadcasts online status, and sends online users list
 func (h *Hub) registerClient(client *Client) {
+	fmt.Println("here here hrere")
 	log.Printf(
 		"[hub.go:registerClient] Registering client for user %d (%s)",
 		client.userID,
@@ -177,11 +181,15 @@ func (h *Hub) registerClient(client *Client) {
 
 	// Add client to the global clients set
 	h.clients[client] = true
+	log.Printf("[hub.go:registerClient] Client added to global clients set, total clients: %d", len(h.clients))
 
 	// Add client to the user's connections slice (thread-safe)
 	h.Mu.Lock()
 	h.Users[client.userID] = append(h.Users[client.userID], client)
+	userConnectionCount := len(h.Users[client.userID])
 	h.Mu.Unlock()
+	log.Printf("[hub.go:registerClient] Client added to user connections, user %d has %d connections",
+		client.userID, userConnectionCount)
 
 	// Broadcast user online status to all connected clients
 	log.Printf(
@@ -197,6 +205,8 @@ func (h *Hub) registerClient(client *Client) {
 		client.userID,
 	)
 	h.sendOnlineUsersList(client)
+
+	log.Printf("[hub.go:registerClient] Registration complete for user %d (%s)", client.userID, client.nickname)
 }
 
 // unregisterClient removes a client from the hub
@@ -207,15 +217,17 @@ func (h *Hub) unregisterClient(client *Client) {
 		client.nickname,
 	)
 
+	// Remove from global clients set first (before acquiring lock for broadcast)
+	hadClient := false
 	h.Mu.Lock()
-	defer h.Mu.Unlock()
-
-	// Remove from global clients set
 	if _, ok := h.clients[client]; ok {
+		hadClient = true
 		delete(h.clients, client)
 	}
+	h.Mu.Unlock()
 
 	// Remove this client from the user's slice
+	h.Mu.Lock()
 	clients := h.Users[client.userID]
 	for i, c := range clients {
 		if c == client {
@@ -223,6 +235,8 @@ func (h *Hub) unregisterClient(client *Client) {
 			break
 		}
 	}
+	userHasMoreConnections := len(h.Users[client.userID]) > 0
+	h.Mu.Unlock()
 
 	// Clean up any typing sessions involving this user
 	h.cleanupTypingSessionsForUser(client.userID)
@@ -230,15 +244,23 @@ func (h *Hub) unregisterClient(client *Client) {
 	// Close the client's send channel
 	close(client.send)
 
-	// If user has no more active connections, remove user and broadcast offline
-	if len(h.Users[client.userID]) == 0 {
-		delete(h.Users, client.userID)
+	// Broadcast offline ONLY if this was the user's last connection
+	// Use non-blocking send to Broadcast channel to avoid blocking the hub
+	if hadClient && !userHasMoreConnections {
 		log.Printf(
-			"[hub.go:unregisterClient] [DEBUG] Broadcasting user offline: %d (%s)",
+			"[hub.go:unregisterClient] [DEBUG] User %d has no more connections, broadcasting offline",
 			client.userID,
-			client.nickname,
 		)
-		h.broadcastUserOffline(client.userID, client.nickname)
+		message := NewMessage(UserOffline, client.userID, 0, "")
+		message.Nickname = client.nickname
+
+		// Non-blocking send to avoid deadlock
+		select {
+		case h.Broadcast <- message.ToJSON():
+			log.Printf("[hub.go:unregisterClient] Broadcast queued for user %d offline", client.userID)
+		default:
+			log.Printf("[hub.go:unregisterClient] Broadcast channel full, skipping offline broadcast for user %d", client.userID)
+		}
 	}
 }
 
@@ -426,14 +448,28 @@ func (h *Hub) handleTypingEvent(data TypingData) {
 func (h *Hub) broadcastUserOnline(userID int, nickname string) {
 	message := NewMessage(UserOnline, userID, 0, "")
 	message.Nickname = nickname
-	h.broadcastMessage(message.ToJSON())
+
+	// Non-blocking send to avoid blocking the hub
+	select {
+	case h.Broadcast <- message.ToJSON():
+		log.Printf("[hub.go:broadcastUserOnline] Online broadcast queued for user %d", userID)
+	default:
+		log.Printf("[hub.go:broadcastUserOnline] Broadcast channel full, skipping online broadcast for user %d", userID)
+	}
 }
 
 // broadcastUserOffline notifies all clients that a user went offline
 func (h *Hub) broadcastUserOffline(userID int, nickname string) {
 	message := NewMessage(UserOffline, userID, 0, "")
 	message.Nickname = nickname
-	h.broadcastMessage(message.ToJSON())
+
+	// Non-blocking send to avoid blocking the hub
+	select {
+	case h.Broadcast <- message.ToJSON():
+		log.Printf("[hub.go:broadcastUserOffline] Offline broadcast queued for user %d", userID)
+	default:
+		log.Printf("[hub.go:broadcastUserOffline] Broadcast channel full, skipping offline broadcast for user %d", userID)
+	}
 
 	// Clean up any typing sessions involving this user
 	h.Mu.Lock()

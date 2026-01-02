@@ -3,10 +3,10 @@ package ws
 import (
 	"html"
 	"log"
+	"time"
+
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
-
-	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -25,6 +25,8 @@ type Client struct {
 }
 
 func NewClient(hub *Hub, conn *websocket.Conn, userID int, nickname string) *Client {
+	log.Printf("[client.go:NewClient] Creating new client for user %d (%s)", userID, nickname)
+
 	return &Client{
 		conn:     conn,
 		userID:   userID,
@@ -48,6 +50,7 @@ func (c *Client) Start() {
 	// Start read pump in a goroutine
 	go c.readPump()
 }
+
 func (c *Client) IsRateLimited() bool {
 	now := time.Now()
 
@@ -74,8 +77,25 @@ func (c *Client) readPump() {
 	defer func() {
 		// Cleanup when read pump exits
 		log.Printf("[client.go:readPump] Client: ReadPump exiting for user %d (%s)", c.userID, c.nickname)
-		c.hub.Unregister <- c // Tell hub we're leaving
-		c.conn.Close()        // Close WebSocket connection
+
+		// Use non-blocking send to avoid deadlock if hub is not responding
+		if c.hub != nil {
+			select {
+			case c.hub.Unregister <- c:
+				log.Printf("[client.go:readPump] Client: Unregistered from hub for user %d", c.userID)
+			default:
+				log.Printf("[client.go:readPump] Client: Could not unregister (hub busy), continuing cleanup for user %d", c.userID)
+			}
+		}
+
+		// Close WebSocket connection
+		if c.conn != nil {
+			if err := c.conn.Close(); err != nil {
+				log.Printf("[client.go:readPump] Client: Error closing connection for user %d: %v", c.userID, err)
+			} else {
+				log.Printf("[client.go:readPump] Client: Connection closed for user %d", c.userID)
+			}
+		}
 	}()
 
 	// Set read deadline and pong handler for keepalive

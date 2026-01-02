@@ -31,8 +31,14 @@ class ChatWebSocket {
 
     // Initialize WebSocket connection
     connect(e) {
-        if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-            return; // Already connected
+        // IMPORTANT: Always disconnect any existing connection first
+        // This handles page refresh scenarios where the old connection is stale
+        if (this.ws) {
+            console.log('[ws.js:connect] Disconnecting existing WebSocket connection before creating new one');
+            this.ws.close(1000, 'Creating new connection');
+            this.ws = null;
+            this.isConnected = false;
+            this.connectionStatus = 'disconnected';
         }
 
         this.connectionStatus = 'connecting';
@@ -123,6 +129,7 @@ class ChatWebSocket {
 
         // Clear all typing indicators
         this.clearAllTypingIndicators();
+        
 
         if (this.ws) {
             this.ws.close(1000, 'User disconnected');
@@ -654,7 +661,7 @@ class ChatWebSocket {
     // Start conversation with a user
     startConversation(userId, nickname) {
         // Send stopped typing for previous conversation
-        this.sendStoppedTyping();
+      //  this.sendStoppedTyping();
 
         // Allow starting conversations with any user (online or offline) for history viewing
 
