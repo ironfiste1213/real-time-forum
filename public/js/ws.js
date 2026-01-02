@@ -21,7 +21,12 @@ class ChatWebSocket {
         this.pendingOfflineRemovals = new Map();
 
         this.loadUsersIntervalId = null; // Interval ID for periodic loadAllUsers calls
-        this.SortedUserslist = null
+        this.SortedUserslist = null;
+
+        // Typing indicator state - NEW: Simplified approach
+        this.typingUsers = new Map(); // userId -> { nickname, lastTypingTime }
+        this.typingCooldown = false; // Prevent typing spam
+        this.typingCooldownMs = 1000; // 1 second cooldown between sending typing events
     }
 
     // Initialize WebSocket connection
@@ -92,6 +97,9 @@ class ChatWebSocket {
                 this.loadUsersIntervalId = null;
             }
 
+            // Clear all typing indicators on disconnect
+            this.clearAllTypingIndicators();
+
             // Attempt reconnection if not intentional disconnect
             if (event.code !== 1000) { // 1000 = normal closure
                 this.attemptReconnection();
@@ -112,6 +120,9 @@ class ChatWebSocket {
             clearInterval(this.loadUsersIntervalId);
             this.loadUsersIntervalId = null;
         }
+
+        // Clear all typing indicators
+        this.clearAllTypingIndicators();
 
         if (this.ws) {
             this.ws.close(1000, 'User disconnected');
@@ -167,11 +178,189 @@ class ChatWebSocket {
             case 'message_from_me':
                 this.handleMessageFromMe(data);
                 break;
+            case 'user_typing':
+                this.handleUserTyping(data);
+                break;
+            case 'user_stopped_typing':
+                this.handleUserStoppedTyping(data);
+                break;
 
             default:
                 break;
         }
     }
+
+    // ==================== Typing Indicator Methods (NEW APPROACH) ====================
+
+    // Send typing event to the target user (with cooldown to prevent spam)
+    sendTyping() {
+        if (!this.activeConversation || !this.currentUser) return;
+
+        // Check cooldown to prevent spam
+        if (this.typingCooldown) return;
+
+        const toUserId = this.activeConversation.userId;
+        if (!toUserId) return;
+
+        this.send('user_typing', {
+            to_user_id: toUserId,
+            nickname: this.currentUser.nickname
+        });
+
+        // Set cooldown to prevent sending too many typing events
+        this.typingCooldown = true;
+        setTimeout(() => {
+            this.typingCooldown = false;
+        }, this.typingCooldownMs);
+    }
+
+    // Send stopped typing event immediately (called when user submits message or types away)
+    sendStoppedTyping() {
+        if (!this.activeConversation || !this.currentUser) return;
+
+        const toUserId = this.activeConversation.userId;
+        if (!toUserId) return;
+
+        this.send('user_stopped_typing', {
+            to_user_id: toUserId,
+            nickname: this.currentUser.nickname
+        });
+    }
+
+    // Handle incoming typing event from another user
+    handleUserTyping(data) {
+        const fromUserId = data.from_user_id;
+        const nickname = data.nickname;
+
+        if (!fromUserId || !nickname) return;
+
+        // Update typing timestamp - backend will handle timeout detection
+        this.typingUsers.set(fromUserId, { 
+            nickname, 
+            lastTypingTime: Date.now() 
+        });
+
+        // Update UI based on active conversation
+        if (this.activeConversation && this.activeConversation.userId === fromUserId) {
+            // User is the active conversation - show animation in chat area
+            this.showTypingIndicatorInChat(nickname);
+        } else {
+            // User is not active - show indicator in users list
+            this.showTypingIndicatorInUsersList(fromUserId, nickname);
+        }
+
+        this.updateUsersList();
+    }
+
+    // Handle stopped typing event from another user (sent by backend when timeout expires)
+    handleUserStoppedTyping(data) {
+        const fromUserId = data.from_user_id;
+
+        if (!fromUserId) return;
+
+        // Remove from typing users
+        this.typingUsers.delete(fromUserId);
+
+        // Update UI based on active conversation
+        if (this.activeConversation && this.activeConversation.userId === fromUserId) {
+            // User is the active conversation - hide animation in chat area
+            this.hideTypingIndicatorInChat();
+        } else {
+            // User is not active - hide indicator in users list
+            this.hideTypingIndicatorInUsersList(fromUserId);
+        }
+
+        this.updateUsersList();
+    }
+
+    // Show typing indicator in the chat messages area
+    showTypingIndicatorInChat(nickname) {
+        const messagesContainer = document.getElementById('chat-messages');
+        if (!messagesContainer) return;
+
+        // Remove existing typing indicator
+        this.hideTypingIndicatorInChat();
+
+        // Create typing indicator element
+        const typingIndicator = document.createElement('div');
+        typingIndicator.id = 'typing-indicator';
+        typingIndicator.className = 'typing-indicator';
+        typingIndicator.innerHTML = '<span class="typing-name">' + nickname + '</span><span class="typing-dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></span>';
+
+        messagesContainer.appendChild(typingIndicator);
+        //this.scrollToBottom();
+    }
+
+    // Hide typing indicator in the chat messages area
+    hideTypingIndicatorInChat() {
+        const existingIndicator = document.getElementById('typing-indicator');
+        if (existingIndicator) {
+            existingIndicator.remove();
+        }
+    }
+
+    // Show typing indicator in the users list
+    showTypingIndicatorInUsersList(userId, nickname) {
+        const userElement = document.querySelector('.chat-user[data-user-id="' + userId + '"]');
+        if (!userElement) return;
+
+        // Remove existing indicator
+        this.hideTypingIndicatorInUsersList(userId);
+
+        // Add typing class
+        userElement.classList.add('typing');
+
+        // Add typing indicator icon
+        const indicator = document.createElement('span');
+        indicator.className = 'user-typing-indicator';
+        indicator.innerHTML = '•';
+        indicator.title = nickname + ' is typing...';
+        userElement.appendChild(indicator);
+    }
+
+    // Hide typing indicator in the users list
+    hideTypingIndicatorInUsersList(userId) {
+        const userElement = document.querySelector('.chat-user[data-user-id="' + userId + '"]');
+        if (!userElement) return;
+
+        userElement.classList.remove('typing');
+
+        const indicator = userElement.querySelector('.user-typing-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    // Clear all typing indicators (on disconnect, conversation change, etc.)
+    clearAllTypingIndicators() {
+        // Clear typing users map
+        this.typingUsers.clear();
+
+        // Hide typing indicator in chat
+        this.hideTypingIndicatorInChat();
+
+        // Hide all typing indicators in users list
+        document.querySelectorAll('.chat-user.typing').forEach(el => {
+            el.classList.remove('typing');
+            const indicator = el.querySelector('.user-typing-indicator');
+            if (indicator) indicator.remove();
+        });
+    }
+
+    // Handle local input typing - called on each key event
+    handleLocalTyping() {
+        if (!this.activeConversation) return;
+        // Immediately send typing event (cooldown handled internally)
+        this.sendTyping();
+    }
+
+    // Handle local input - called when user sends message or types away
+    handleLocalInput() {
+        // Immediately send stopped typing event
+        this.sendStoppedTyping();
+    }
+
+    // ==================== End Typing Indicator Methods ====================
 
 
 
@@ -274,10 +463,10 @@ class ChatWebSocket {
         // If this conversation is active, display it immediately
         if (this.activeConversation && this.activeConversation.userId === fromUserId) {
             this.displayPrivateMessages(fromUserId);
-
         }
 
-
+        // Hide typing indicator when receiving a message
+        this.handleUserStoppedTyping({ from_user_id: fromUserId });
 
         // Update conversations list to show new message
         this.loadConversations();
@@ -423,14 +612,16 @@ class ChatWebSocket {
             if (user.id === this.currentUser.id) return;
 
             const userElement = document.createElement('div');
-            userElement.className = 'chat-user' + (this.onlineUsers.includes(user.nickname) ? ' online' : '');
+            const isTyping = this.typingUsers.has(user.id);
+
+            userElement.className = 'chat-user' + (this.onlineUsers.includes(user.nickname) ? ' online' : '') + (isTyping ? ' typing' : '');
             userElement.setAttribute('data-user-id', user.id);
 
             const nicknameSpan = document.createElement('span');
             nicknameSpan.className = 'user-nickname';
             nicknameSpan.textContent = '👤 ' + user.nickname;
 
-            if (user.unread_count > 0) {
+            if (user.unread_count > 0 && !isTyping) {
                 const userUnread = document.createElement('span');
                 userUnread.className = 'user-unread-badge';
                 userUnread.textContent = user.unread_count;
@@ -438,6 +629,14 @@ class ChatWebSocket {
             }
 
             userElement.appendChild(nicknameSpan);
+
+            if (isTyping) {
+                const typingIndicator = document.createElement('span');
+                typingIndicator.className = 'user-typing-indicator';
+                typingIndicator.innerHTML = '•';
+                typingIndicator.title = user.nickname + ' is typing...';
+                userElement.appendChild(typingIndicator);
+            }
 
             const statusSpan = document.createElement('span');
             statusSpan.className = 'user-status ' + (this.onlineUsers.includes(user.nickname) ? 'online' : 'offline');
@@ -454,6 +653,9 @@ class ChatWebSocket {
 
     // Start conversation with a user
     startConversation(userId, nickname) {
+        // Send stopped typing for previous conversation
+        this.sendStoppedTyping();
+
         // Allow starting conversations with any user (online or offline) for history viewing
 
         // Set active conversation
@@ -639,6 +841,9 @@ class ChatWebSocket {
     sendPrivateMessage(message) {
         if (!this.activeConversation || !message.trim()) return;
 
+        // Clear typing indicator when sending
+        this.handleLocalInput();
+
         const { userId } = this.activeConversation;
 
         // Allow sending messages - the backend will handle delivery when user comes online
@@ -747,6 +952,8 @@ class ChatWebSocket {
 
             if (response.ok) {
                 const data = await response.json();
+                console.log(data);
+                
                 const list = data.conversations || [];
                 // Deduplicate by user_id (backend may return multiple rows per partner)
                 const byUser = {};
@@ -849,6 +1056,8 @@ class ChatWebSocket {
 
     // Update the floating chat button unread badge and title
     updateChatUnreadUI() {
+        console.log("[updateChatUnreadUI() has been caled! ]");
+        
         try {
             const totalUnread = Array.isArray(this.conversations)
                 ? this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)

@@ -771,6 +771,8 @@ nav>div:last-child {
     border-radius: 10px;
     padding: 12px;
     margin-bottom: 12px;
+    /* Allow flex children to shrink below content size */
+    min-width: 0;
 }
 
 .comment-meta {
@@ -784,6 +786,12 @@ nav>div:last-child {
     color: var(--text);
     font-size: 1em;
     line-height: 1.4;
+    /* Force word breaking for long words, URLs, or continuous strings */
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    white-space: normal;
+    max-width: 100%;
 }
 
 /* Add comment */
@@ -1288,6 +1296,76 @@ nav>div:last-child {
     text-align: center;
     color: var(--muted);
     padding: 12px;
+}
+
+/* Typing indicator in users list */
+.chat-user.typing {
+    background: rgba(70, 110, 242, 0.15);
+}
+
+.user-typing-indicator {
+    color: var(--accent);
+    font-size: 1.2em;
+    margin-left: 4px;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+}
+
+/* Typing indicator in chat messages area */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(70, 110, 242, 0.1);
+    border-radius: 12px;
+    margin: 8px 0;
+    max-width: 200px;
+    align-self: flex-start;
+}
+
+.typing-name {
+    font-size: 0.85em;
+    color: var(--muted);
+    font-weight: 500;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.typing-dots .dot {
+    width: 6px;
+    height: 6px;
+    background: var(--accent);
+    border-radius: 50%;
+    animation: typingBounce 1.4s ease-in-out infinite;
+}
+
+.typing-dots .dot:nth-child(1) {
+    animation-delay: 0s;
+}
+
+.typing-dots .dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.typing-dots .dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+@keyframes typingBounce {
+    0%, 60%, 100% {
+        transform: translateY(0);
+    }
+    30% {
+        transform: translateY(-4px);
+    }
 }
 
 /* Chat form */

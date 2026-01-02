@@ -285,7 +285,7 @@ function renderPostDetails(post, postId) {
     singlePostView.appendChild(postDetailContainer);
 
     document.getElementById('back-to-feed').addEventListener('click', showMainFeedView);
-
+    
     document.getElementById('create-comment-form').addEventListener('submit', (e) => handleCreateComment(e, postId));
 
     // After rendering the post, fetch and render its comments

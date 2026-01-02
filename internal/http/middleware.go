@@ -95,6 +95,7 @@ func RateLimitMiddleware(next http.Handler, limiter *RateLimiter, endpoint strin
 		if !ok || user == nil {
 			// If no user, use IP address
 			clientIP := r.RemoteAddr
+			//X-Forwarded-For is a header added by proxies to forward the original client IP
 			if forwarded := r.Header.Get("X-Forwarded-For"); forwarded != "" {
 				clientIP = forwarded
 			}

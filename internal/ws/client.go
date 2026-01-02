@@ -6,7 +6,6 @@ import (
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
 
-	
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -113,7 +112,26 @@ func (c *Client) readPump() {
 		message.FromUserID = c.userID
 		message.Nickname = c.nickname
 
-		// Validate the message
+		// Handle typing events separately (no rate limiting, no content validation)
+		if message.Type == UserTyping || message.Type == UserStoppedTyping {
+			// Validate typing event
+			if err := message.ValidateTypingEvent(); err != nil {
+				log.Printf("[client.go:readPump] [DEBUG] Invalid typing event from user %d: %v", c.userID, err)
+				continue
+			}
+
+			// Route typing event to hub
+			log.Printf("[client.go:readPump][DEBUG] Routing typing event from %d to %d", message.FromUserID, message.ToUserID)
+			c.hub.TypingEvent <- TypingData{
+				ToUserID:     message.ToUserID,
+				Data:         message.ToJSON(),
+				FromUserID:   message.FromUserID,
+				FromNickname: message.Nickname,
+			}
+			continue
+		}
+
+		// Validate the message (for private messages)
 		if err := message.Validate(); err != nil {
 
 			log.Printf("[client.go:readPump] [DEBUG] Invalid message from user %d: %v", c.userID, err)

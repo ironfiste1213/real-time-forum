@@ -170,6 +170,13 @@ export function setupChatEventListeners() {
             }
         });
 
+        // Send typing indicator when user is typing
+        newChatInput.addEventListener('input', () => {
+            if (chatWS.activeConversation) {
+                chatWS.handleLocalTyping();
+            }
+        });
+
     }
 
     // // Window beforeunload (only add once)
