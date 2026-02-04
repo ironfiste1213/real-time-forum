@@ -45,7 +45,9 @@ class ChatWebSocket {
         this.updateConnectionStatus();
 
         // Get current user from parameter (already checked in session)
-        this.currentUser = e;
+        if (e) {
+            this.currentUser = e;
+        }
 
         if (!this.currentUser) {
             console.error('[ws.js:connect] No user session found, aborting connection');
@@ -83,7 +85,8 @@ class ChatWebSocket {
         this.ws.onmessage = (event) => {
             try {
                 const data = JSON.parse(event.data);
-                if (data.type == 'user_online' && !this.allUsers.includes(data.nickname)) {
+                // Fix: Use .some() to correctly check if user exists in the array of objects
+                if (data.type == 'user_online' && !this.allUsers.some(u => u.nickname === data.nickname)) {
                     this.loadAllUsers();
                 }
                 this.handleMessage(data);
@@ -129,7 +132,7 @@ class ChatWebSocket {
 
         // Clear all typing indicators
         this.clearAllTypingIndicators();
-        
+
 
         if (this.ws) {
             this.ws.close(1000, 'User disconnected');
@@ -242,9 +245,9 @@ class ChatWebSocket {
         if (!fromUserId || !nickname) return;
 
         // Update typing timestamp - backend will handle timeout detection
-        this.typingUsers.set(fromUserId, { 
-            nickname, 
-            lastTypingTime: Date.now() 
+        this.typingUsers.set(fromUserId, {
+            nickname,
+            lastTypingTime: Date.now()
         });
 
         // Update UI based on active conversation
@@ -371,63 +374,63 @@ class ChatWebSocket {
 
 
 
-  handleUserOnline(data) {
-    const nickname = data.nickname;
+    handleUserOnline(data) {
+        const nickname = data.nickname;
 
-    if (!nickname) {
-        return;
-    }
+        if (!nickname) {
+            return;
+        }
 
-    // --- CANCEL PENDING OFFLINE REMOVAL ---
-    if (this.pendingOfflineRemovals?.has(nickname)) {
-        clearTimeout(this.pendingOfflineRemovals.get(nickname));
-        this.pendingOfflineRemovals.delete(nickname);
-    }
+        // --- CANCEL PENDING OFFLINE REMOVAL ---
+        if (this.pendingOfflineRemovals?.has(nickname)) {
+            clearTimeout(this.pendingOfflineRemovals.get(nickname));
+            this.pendingOfflineRemovals.delete(nickname);
+        }
 
-    // --- ADD USER IF NOT ALREADY ONLINE ---
-    if (!this.onlineUsers.includes(nickname)) {
-        this.onlineUsers.push(nickname);
-        this.updateUsersList(); // Update the users list to reflect online status
+        // --- ADD USER IF NOT ALREADY ONLINE ---
+        if (!this.onlineUsers.includes(nickname)) {
+            this.onlineUsers.push(nickname);
+            this.updateUsersList(); // Update the users list to reflect online status
 
-        // Show notification if chat not open and it's not the current user
-        if (nickname !== this.currentUser?.nickname && !this.isChatOpen) {
-            this.showOnlineNotification(nickname);
+            // Show notification if chat not open and it's not the current user
+            if (nickname !== this.currentUser?.nickname && !this.isChatOpen) {
+                this.showOnlineNotification(nickname);
+            }
+        }
+
+        // --- UPDATE CHAT MODE IF THIS USER IS IN ACTIVE CONVERSATION ---
+        if (this.activeConversation && nickname === this.activeConversation.nickname) {
+            this.updateChatMode('private');
         }
     }
-
-    // --- UPDATE CHAT MODE IF THIS USER IS IN ACTIVE CONVERSATION ---
-    if (this.activeConversation && nickname === this.activeConversation.nickname) {
-        this.updateChatMode('private');
-    }
-}
 
 
     // Handle user offline
-   handleUserOffline(nickname) {
-    if (!nickname) {
-        return;
-    }
-
-    // If already waiting for removal, do nothing
-    if (this.pendingOfflineRemovals.has(nickname)) {
-        return;
-    }
-
-    const timeoutId = setTimeout(() => {
-        this.onlineUsers = this.onlineUsers.filter(user => user !== nickname);
-        this.updateUsersList();
-
-        if ( this.activeConversation && nickname === this.activeConversation.nickname ) {
-            this.updateChatMode('private');
+    handleUserOffline(nickname) {
+        if (!nickname) {
+            return;
         }
 
-        // Cleanup
-        this.pendingOfflineRemovals.delete(nickname);
-    }, 5000);
+        // If already waiting for removal, do nothing
+        if (this.pendingOfflineRemovals.has(nickname)) {
+            return;
+        }
 
-    // Store timeout so we can cancel it if user reconnects
-    this.pendingOfflineRemovals.set(nickname, timeoutId);
-}
+        const timeoutId = setTimeout(() => {
+            this.onlineUsers = this.onlineUsers.filter(user => user !== nickname);
+            this.updateUsersList();
+
+            if (this.activeConversation && nickname === this.activeConversation.nickname) {
+                this.updateChatMode('private');
+            }
+
+            // Cleanup
+            this.pendingOfflineRemovals.delete(nickname);
+        }, 5000);
+
+        // Store timeout so we can cancel it if user reconnects
+        this.pendingOfflineRemovals.set(nickname, timeoutId);
+    }
 
 
     // Handle incoming private message
@@ -577,6 +580,19 @@ class ChatWebSocket {
             if (response.ok) {
                 const users = await response.json();
                 this.allUsers = users.filter(user => user && typeof user.id === 'number' && typeof user.nickname === 'string');
+
+                // Sync online users from the fresh API data
+                const onlineFromApi = users.filter(u => u.is_online).map(u => u.nickname);
+
+                // Ensure anyone the API says is online is in our list
+                onlineFromApi.forEach(nickname => {
+                    if (!this.onlineUsers.includes(nickname)) {
+                        this.onlineUsers.push(nickname);
+                    }
+                });
+
+                this.getSortedUserList();
+                this.updateUsersList();
             } else {
                 const errorText = await response.text();
             }
@@ -602,6 +618,9 @@ class ChatWebSocket {
     updateUsersList() {
         const usersListElement = document.getElementById('chat-users-list');
         if (!usersListElement) return;
+
+        // Safety check
+        if (!this.currentUser) return;
 
         // Clear existing list
         usersListElement.innerHTML = '';
@@ -661,7 +680,7 @@ class ChatWebSocket {
     // Start conversation with a user
     startConversation(userId, nickname) {
         // Send stopped typing for previous conversation
-      //  this.sendStoppedTyping();
+        //  this.sendStoppedTyping();
 
         // Allow starting conversations with any user (online or offline) for history viewing
 
@@ -847,6 +866,10 @@ class ChatWebSocket {
     // Send private message
     sendPrivateMessage(message) {
         if (!this.activeConversation || !message.trim()) return;
+        if (!this.currentUser) {
+            console.error('[ws.js:sendPrivateMessage] Current user not set');
+            return;
+        }
 
         // Clear typing indicator when sending
         this.handleLocalInput();
@@ -960,7 +983,7 @@ class ChatWebSocket {
             if (response.ok) {
                 const data = await response.json();
                 console.log(data);
-                
+
                 const list = data.conversations || [];
                 // Deduplicate by user_id (backend may return multiple rows per partner)
                 const byUser = {};
@@ -1064,7 +1087,7 @@ class ChatWebSocket {
     // Update the floating chat button unread badge and title
     updateChatUnreadUI() {
         console.log("[updateChatUnreadUI() has been caled! ]");
-        
+
         try {
             const totalUnread = Array.isArray(this.conversations)
                 ? this.conversations.reduce((sum, c) => sum + (c.unread_count || 0), 0)
