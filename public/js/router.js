@@ -1,103 +1,107 @@
-import { showLoginForm, showRegisterForm} from './ui/auth.js';
-import { showMainFeedView, show404View } from './ui/views.js';
-import { checkSession } from './api/checksession.js';
+import { checkSession } from './api/auth/checkSession.js';
+import { loginView, mainview, registerView, singlePostView, show404View } from './view.js';
+import { parsePostIdFromPath } from './tools/path/postId.js';
+import { pathState} from './viewState.js';
+console.log("router.js loaded");
 
-// 1. Define Routes: Map paths to view-rendering functions.
 const routes = {
-    '/': showMainFeedView,
-    '/login': showLoginForm,
-    '/register': showRegisterForm,
-};
 
-const protectedRoutes = ['/'];
-let lastValidPath = "/"
-export function recoverfrom404() {
-    window.history.replaceState({}, "", lastValidPath)
-    handleLocation();
-}
-export function handlelogoutstate() {
-    window.history.pushState({}, "", "/login")
-    lastValidPath = "/login"
-    handleLocation();
-}
-// 2. Core Router Logic: Handle location changes.
-export async function handleLocation()  {
-   const user = await checkSession();
-   const path = window.location.pathname
-   
-   
-   if (user) {
-    if (path ==  "/login" || path == "/register") {
-        window.history.replaceState({}, "", "/")
-        lastValidPath = "/"
-        
-        showMainFeedView(user)
-        return
-    }
-   }
-
-   if (!user) {
-    if (path == "/"){
-        window.history.pushState({}, "", "/login")
-        lastValidPath = "/login"
-
-        showLoginForm();
-        return
-    }
-   }
-   
-   const handler = routes[path]
-   if (!handler) {
-    show404View();
-    return 
-   }
-   if (path == "/") {
-    handler(user)
-    lastValidPath = path
-    return 
-   }
-   handler();
-   lastValidPath = path
+    '/': mainview,
+    '/login': loginView,
+    '/register': registerView,
 
 };
 
-// 3. Handle Navigation: Intercept link clicks.
-export function navigate(e) {
-    // Check if the click was on an anchor tag.
-    const link = e.target.closest('a');
-    if (!link) {
-        return;
-    }
-
-    // Get the destination path from the link's href.
-    const href = link.getAttribute('href');
-
-    // Only handle internal links (starting with '/').
-    if (href && href.startsWith('/')) {
-        e.preventDefault(); // Prevent full page reload.
-        // Update the URL without reloading the page.
-        window.history.pushState({}, "", href);
-        // Handle the new location to render the correct view.
-        handleLocation();
-    }
-};
-
-// 4. Listen for Browser Events.
-export async function initializeRouter() {
-    // Listen for clicks on the whole document to handle navigation.
-    document.addEventListener("click", navigate);
-
-    // On initial load, check the session first, then handle the location.
+console.log("routes defined:", routes);
   
 
 
-        handleLocation();
-        // Chat connection will be initialized in showMainFeedView if user is logged in
-        window.addEventListener("pageshow", (event) => {
-            if (event.persisted) {
-                handleLocation();
-            }
-        });
-    // Handle browser back/forward button clicks.
-    window.addEventListener("popstate", handleLocation);
+export function router({ ispush = false, path = "/", user = null, distination = null }) {
+    const handler = routes[path];
+
+    if (!handler) { 
+        show404View();
+        return;
+    }
+
+    if (ispush) window.history.pushState({}, "", path);
+    else window.history.replaceState({}, "", path);
+
+    // Pass user if exists, otherwise pass distination
+    handler(user ?? distination);
+    pathState.lastvalidpath = path
 }
+
+export async function openPost(postId) {
+    const path = `/post/${postId}`;
+    history.pushState({}, '', path); // update URL
+    
+    // Fetch user session to pass to singlePostView
+    const user = await checkSession();
+    singlePostView(postId, user);    // render post details with user
+}
+
+
+export async function handleLocation() {
+    console.log("handleLocation called");
+    const user = await checkSession();
+    console.log("checkSession result:", user);
+    const path = window.location.pathname;
+    console.log("current path:", path);
+
+    console.log("__________________for user:", user, "for path", path);
+
+    // Check if it's a post details route
+    const postId = parsePostIdFromPath(path);
+   console.log(postId, user);
+   if (postId && user) console.log("fffffffffff");
+   
+    switch (true) {
+        
+        case !!postId && !!user: 
+             console.log("eeeee");
+             pathState.lastvalidpath = path
+            singlePostView(postId, user)
+            return;
+
+        case postId && !user:
+            router({ispush:false, path:"/login", distination:`/post/${postId}`})
+            return;
+
+        //  Logged user trying to access auth pages
+        case !!user && (path === "/login" || path === "/register"):
+            console.log("case: logged user on auth page, redirecting to /");
+            router({ispush:false, path:"/", user:user});
+            console.log("router called for redirect");
+            return;
+
+        //  Not logged user trying to access home
+        case !user && path === "/":
+            console.log("case: not logged user on home, redirecting to /login");
+            router({ispush:false, path:"/login", distination:"/"})
+            console.log("router called for login redirect");
+            return;
+
+        //  Route not found
+        case !routes[path]:
+            console.log("case: route not found for path:", path);
+            show404View();
+            console.log("show404View called");
+            return;
+
+        //  Home page
+        case path === "/":
+            console.log("case: home page, calling routes[path] with user", user);
+            routes[path](user);
+            console.log("routes[path] executed for home");
+            return;
+
+        //  Normal routing
+        default:
+            console.log("case: normal routing for path:", path);
+            routes[path]();
+            console.log("routes[path] executed for normal");
+            console.log("________________he goes normal to:", path);
+    }
+}
+

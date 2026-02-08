@@ -1,41 +1,15 @@
 <!DOCTYPE html>
-<html>
-
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Real-Time Forum</title>
-  <link rel="stylesheet" href="/css/style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Momo+Trust+Display&display=swap" rel="stylesheet">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Real-Time Forum</title>
+    <link rel="stylesheet" href="/css/styles.css">
 </head>
-
 <body>
-  <!-- Authentication container (visible by default) -->
-  <div id="auth-container">
-    <!-- Auth forms will be dynamically generated here -->
-  </div>
-
-  <!-- Main application container (hidden by default) -->
-  <div id="main-container" class="hidden">
-    <!-- Main feed content will be dynamically generated here -->
-  </div>
-
-  <!-- This div will be used to show a single post's details -->
-  <div id="single-post-view" class="hidden">
-    <!-- Single post content will be injected here by postDetail.js -->
-  </div>
-
-  <!-- 404 Not Found page -->
-  <div id="not-found-view" class="hidden">
-    
-  </div>
-  </div>
-
-  <script type="module" src="/js/app.js"></script>
-  <script type="module" src="/js/ui/views.js"></script>
-
-
+    <div id="app"></div>
+    <script type="module" src="/js/app.js"></script>
 </body>
-
 </html>
+

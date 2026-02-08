@@ -1,0 +1,46 @@
+/* ============================================
+   POST-FEED SECTION STYLES
+   ============================================ */
+
+/* Main post-feed section - centered with max-width */
+#post-feed-section {
+    margin: 30px auto;
+    padding: 25px;
+    max-width: min(80vw, 97%);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Feed heading style */
+#post-feed-section h2 {
+    font-size: 60px;
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 700;
+    color: #0C2C55;
+    margin: 0 0 24px 0;
+    text-align: center;
+}
+
+/* Post feed grid layout - 2 columns on desktop */
+#post-feed {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 48px;
+    align-items: start;
+}
+
+/* Responsive: 1 column on small screens */
+@media (max-width: 768px) {
+    #post-feed {
+        grid-template-columns: 1fr;
+    }
+    
+    #post-feed-section {
+        padding: 20px 15px;
+    }
+    
+    #post-feed-section h2 {
+        font-size: 24px;
+    }
+}
+

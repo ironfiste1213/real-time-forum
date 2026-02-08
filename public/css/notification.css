@@ -1,0 +1,134 @@
+/* ============================================
+   NOTIFICATION COMPONENT
+   ============================================ */
+
+/* Container for all notifications (fixed position) */
+.notifications-container {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 380px;
+    pointer-events: none;
+}
+
+/* Main notification container */
+.notification {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background-color: #fff;
+    border-radius: 10px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.12);
+    opacity: 0;
+    transform: translateX(100%);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: auto;
+    border-left: 4px solid transparent;
+}
+
+.notification-visible {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+.notification-hiding {
+    opacity: 0;
+    transform: translateX(100%);
+}
+
+/* Notification message */
+.notification-message {
+    flex: 1;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+    word-wrap: break-word;
+}
+
+/* Close button */
+.notification-close {
+    width: 24px;
+    height: 24px;
+    border: none;
+    background: transparent;
+    color: #999;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.notification-close:hover {
+    background-color: rgba(0, 0, 0, 0.08);
+    color: #666;
+}
+
+.notification-close:active {
+    background-color: rgba(0, 0, 0, 0.12);
+}
+
+/* Type-specific styles */
+.notification-success {
+    border-left-color: #31a24c;
+}
+
+.notification-error {
+    border-left-color: #dc3545;
+}
+
+.notification-warning {
+    border-left-color: #ff9800;
+}
+
+.notification-info {
+    border-left-color: #0078d4;
+}
+
+/* Hover effect */
+.notification:hover {
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.16);
+}
+
+/* Animation for new notifications entering */
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateX(100%);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.notification:not(.notification-visible) {
+    animation: slideIn 0.3s ease forwards;
+}
+
+/* Responsive adjustments */
+@media (max-width: 480px) {
+    .notifications-container {
+        top: 10px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .notification {
+        padding: 12px 14px;
+    }
+
+    .notification-message {
+        font-size: 13px;
+    }
+}
+

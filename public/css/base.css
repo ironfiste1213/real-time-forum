@@ -1,0 +1,24 @@
+/* Base styles for the Real-Time Forum */
+/* New Color Palette:
+   #0C2C55 - Deep Navy (Primary Dark)
+   #296374 - Teal Blue (Secondary)
+   #629FAD - Light Teal (Accent)
+   #EDEDCE - Cream/Beige (Light Backgrounds)
+*/
+
+/* Global Reset */
+* {
+    box-sizing: border-box;
+}
+
+/* Main app container - takes full width */
+#app {
+    width: 100%;
+    min-height: 100vh;
+}
+
+body {
+    margin: 0;
+    background-color: #EDEDCE;
+}
+

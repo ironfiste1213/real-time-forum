@@ -1,0 +1,88 @@
+/* Authentication Forms Styles */
+
+/* Login and Register Forms */
+.login-form,
+.register-form {
+    width: 600px;
+    margin: 0 auto;
+    padding: 60px;
+    background-color: #296374;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(12, 44, 85, 0.2);
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-label {
+    display: block;
+    padding: 10px;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #0C2C55;
+}
+
+.form-input,
+.form-select {
+    width: 100%;
+    padding: 15px;
+    border: 1px none #ccc;
+    border-radius: 10px;
+    font-size: 16px;
+    box-sizing: border-box;
+    background-color: #296374;
+    color: #EDEDCE;
+}
+
+.form-input:focus,
+.form-select:focus {
+    outline: none;
+    border-color: #629FAD;
+    box-shadow: 0 0 0 2px rgba(98, 159, 173, 0.25);
+}
+
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    text-decoration: none;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    background-color: #629FAD;
+    color: #0C2C55;
+    transition: background-color 0.3s ease;
+}
+
+.btn:hover {
+    background-color: #296374;
+    color: #EDEDCE;
+}
+
+.btn-primary {
+    background-color: #0C2C55;
+    color: #EDEDCE;
+}
+
+.btn-primary:hover {
+    background-color: #296374;
+}
+
+/* Navigation link styles */
+.form-nav-link {
+    display: block;
+    margin-top: 15px;
+    text-align: center;
+    color: #0C2C55;
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+.form-nav-link:hover {
+    text-decoration: underline;
+}
+

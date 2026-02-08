@@ -49,8 +49,8 @@ func main() {
 	// TODO: Add WebSocket endpoint /ws
 	pc, file, line, _ := runtime.Caller(0)
 	fn := runtime.FuncForPC(pc).Name()
-	log.Printf("[%s:%s:%d] Starting server on http://localhost:8083", filepath.Base(file), fn, line)
-	if err := http.ListenAndServe(":8083", mux); err != nil {
+	log.Printf("[%s:%s:%d] Starting server on http://localhost:8087", filepath.Base(file), fn, line)
+	if err := http.ListenAndServe(":8087", mux); err != nil {
 		pc, file, line, _ := runtime.Caller(0)
 		fn := runtime.FuncForPC(pc).Name()
 		log.Fatalf("[%s:%s:%d] Could not start server: %s\n", filepath.Base(file), fn, line, err)

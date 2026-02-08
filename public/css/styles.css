@@ -1,0 +1,39 @@
+/* Main styles.css - Imports all component-specific CSS files */
+/* This file serves as the entry point for all styles */
+
+/* Import base/global styles */
+@import 'base.css';
+
+/* Import authentication styles */
+@import 'auth.css';
+
+/* Import navigation styles */
+@import 'navbar.css';
+
+/* Import create post component styles */
+@import 'createPost.css';
+
+/* Import chat button styles */
+@import 'chatButton.css';
+
+/* Import post feed styles */
+@import 'postFeed.css';
+
+/* Import post card component styles */
+@import 'postCard.css';
+
+/* Import chat panel styles */
+@import 'chatPanel.css';
+
+/* Import post details component styles */
+@import 'postDetails.css';
+
+/* Import comments and pagination styles */
+@import 'comments.css';
+
+/* Import notification component styles */
+@import 'notification.css';
+
+/* Import conversation component styles */
+@import 'conversation.css';
+

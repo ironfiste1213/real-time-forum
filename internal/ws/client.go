@@ -3,10 +3,10 @@ package ws
 import (
 	"html"
 	"log"
-	"time"
-
 	"real-time-forum/internal/models"
 	"real-time-forum/internal/repo"
+
+	"time"
 
 	"github.com/gorilla/websocket"
 )
@@ -25,8 +25,6 @@ type Client struct {
 }
 
 func NewClient(hub *Hub, conn *websocket.Conn, userID int, nickname string) *Client {
-	log.Printf("[client.go:NewClient] Creating new client for user %d (%s)", userID, nickname)
-
 	return &Client{
 		conn:     conn,
 		userID:   userID,
@@ -50,7 +48,6 @@ func (c *Client) Start() {
 	// Start read pump in a goroutine
 	go c.readPump()
 }
-
 func (c *Client) IsRateLimited() bool {
 	now := time.Now()
 
@@ -77,25 +74,8 @@ func (c *Client) readPump() {
 	defer func() {
 		// Cleanup when read pump exits
 		log.Printf("[client.go:readPump] Client: ReadPump exiting for user %d (%s)", c.userID, c.nickname)
-
-		// Use non-blocking send to avoid deadlock if hub is not responding
-		if c.hub != nil {
-			select {
-			case c.hub.Unregister <- c:
-				log.Printf("[client.go:readPump] Client: Unregistered from hub for user %d", c.userID)
-			default:
-				log.Printf("[client.go:readPump] Client: Could not unregister (hub busy), continuing cleanup for user %d", c.userID)
-			}
-		}
-
-		// Close WebSocket connection
-		if c.conn != nil {
-			if err := c.conn.Close(); err != nil {
-				log.Printf("[client.go:readPump] Client: Error closing connection for user %d: %v", c.userID, err)
-			} else {
-				log.Printf("[client.go:readPump] Client: Connection closed for user %d", c.userID)
-			}
-		}
+		c.hub.Unregister <- c // Tell hub we're leaving
+		c.conn.Close()        // Close WebSocket connection
 	}()
 
 	// Set read deadline and pong handler for keepalive
@@ -133,23 +113,23 @@ func (c *Client) readPump() {
 		message.Nickname = c.nickname
 
 		// Handle typing events separately (no rate limiting, no content validation)
-		if message.Type == UserTyping || message.Type == UserStoppedTyping {
-			// Validate typing event
-			if err := message.ValidateTypingEvent(); err != nil {
-				log.Printf("[client.go:readPump] [DEBUG] Invalid typing event from user %d: %v", c.userID, err)
-				continue
-			}
+		// if message.Type == UserTyping || message.Type == UserStoppedTyping {
+		// 	// Validate typing event
+		// 	if err := message.ValidateTypingEvent(); err != nil {
+		// 		log.Printf("[client.go:readPump] [DEBUG] Invalid typing event from user %d: %v", c.userID, err)
+		// 		continue
+		// 	}
 
-			// Route typing event to hub
-			log.Printf("[client.go:readPump][DEBUG] Routing typing event from %d to %d", message.FromUserID, message.ToUserID)
-			c.hub.TypingEvent <- TypingData{
-				ToUserID:     message.ToUserID,
-				Data:         message.ToJSON(),
-				FromUserID:   message.FromUserID,
-				FromNickname: message.Nickname,
-			}
-			continue
-		}
+		// 	// Route typing event to hub
+		// 	log.Printf("[client.go:readPump][DEBUG] Routing typing event from %d to %d", message.FromUserID, message.ToUserID)
+		// 	c.hub.TypingEvent <- TypingData{
+		// 		ToUserID:     message.ToUserID,
+		// 		Data:         message.ToJSON(),
+		// 		FromUserID:   message.FromUserID,
+		// 		FromNickname: message.Nickname,
+		// 	}
+		// 	continue
+		// }
 
 		// Validate the message (for private messages)
 		if err := message.Validate(); err != nil {

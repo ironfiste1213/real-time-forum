@@ -13,59 +13,82 @@ import (
 
 // RegisterHandler handles user registration.
 func RegisterHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("--- REGISTER HANDLER: Request received ---")
+
 	// Handle GET request - serve the SPA page
 	if r.Method == http.MethodGet {
+		log.Println("REGISTER HANDLER: Serving SPA page for GET request")
 		http.ServeFile(w, r, "./public/index.html")
 		return
 	}
 
 	// check if the request method is POST
 	if r.Method != http.MethodPost {
+		log.Printf("[auth.go:RegisterHandler] ERROR: Method not allowed: %s", r.Method)
 		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
 		return
 	}
+	log.Println("REGISTER HANDLER: POST request confirmed")
 
 	// Parse the JSON request body
 	var req models.RegisterRequest
+
+	// Read the body and then create a new reader for decoding, so we can log the raw body
+	bodyBytes, _ := io.ReadAll(r.Body)
+	r.Body = io.NopCloser(bytes.NewBuffer(bodyBytes)) // Restore the body
+	log.Printf("REGISTER HANDLER: Raw request body: %s", string(bodyBytes))
+
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		log.Printf("[auth.go:RegisterHandler] ERROR decoding JSON: %v", err)
 		RespondWithError(w, http.StatusBadRequest, "Invalid request payload")
 		return
 	}
+	log.Printf("REGISTER HANDLER: Decoded request: Nickname=[%s], Email=[%s]", req.Nickname, req.Email)
 
 	// Step 3: Validate the input data using our new helper
 	if err := auth.ValidateRegisterRequest(&req); err != nil {
+		log.Printf("[auth.go:RegisterHandler] ERROR validation failed: %v", err)
 		RespondWithError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	log.Println("REGISTER HANDLER: Validation passed")
 
 	// Step 4: Check for duplicate email or nickname before proceeding
 	existingUser, err := repo.GetUserByEmail(req.Email)
 	if err != nil {
+		log.Printf("[auth.go:RegisterHandler] ERROR during email lookup: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 	if existingUser != nil {
+		log.Printf("[auth.go:RegisterHandler] Email already in use: %s", req.Email)
 		RespondWithError(w, http.StatusConflict, "Email is already in use")
 		return
 	}
+	log.Printf("REGISTER HANDLER: Email %s is available", req.Email)
 
 	existingUser, err = repo.GetUserByNickname(req.Nickname)
 	if err != nil {
+		log.Printf("[auth.go:RegisterHandler] ERROR during nickname lookup: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 	if existingUser != nil {
+		log.Printf("[auth.go:RegisterHandler] Nickname already in use: %s", req.Nickname)
 		RespondWithError(w, http.StatusConflict, "Nickname is already in use")
 		return
 	}
+	log.Printf("REGISTER HANDLER: Nickname %s is available", req.Nickname)
 
 	// Step 5: Hash the password using our new helper
 	hashedPassword, err := auth.HashPassword(req.Password)
 	if err != nil {
+		log.Printf("[auth.go:RegisterHandler] ERROR hashing password: %v", err)
 		RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
+	log.Println("REGISTER HANDLER: Password hashed successfully")
 
 	// Step 6: Create a user model and save it to the database
 	user := &models.User{
@@ -81,17 +104,21 @@ func RegisterHandler(w http.ResponseWriter, r *http.Request) {
 	err = repo.CreateUser(user)
 	if err != nil {
 		if err == repo.ErrDuplicateEntry {
+			log.Printf("[auth.go:RegisterHandler] ERROR duplicate entry for user: %s", req.Nickname)
 			RespondWithError(w, http.StatusConflict, "Email or nickname is already in use")
 		} else {
+			log.Printf("[auth.go:RegisterHandler] ERROR creating user: %v", err)
 			RespondWithError(w, http.StatusInternalServerError, "Internal server error")
 		}
 		return
 	}
+	log.Printf("REGISTER HANDLER: User created successfully with ID: %d, Nickname: %s", user.ID, user.Nickname)
 
 	// Set the content type to application/json
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
 	json.NewEncoder(w).Encode(map[string]string{"message": "Registration successful!"})
+	log.Printf("REGISTER HANDLER: Registration completed successfully for user: %s", user.Nickname)
 }
 
 // LoginHandler handles user login.
@@ -182,6 +209,11 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("--- LOGOUT HANDLER: Request received ---")
+	if r.Method != http.MethodPost {
+		log.Printf("[auth.go:RegisterHandler] ERROR: Method not allowed: %s", r.Method)
+		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")
+		return
+	}
 	// 1. Get the session cookie from the request
 	cookie, err := r.Cookie("session_token")
 	if err != nil {
@@ -215,3 +247,4 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message": "Logout successful"}`))
 	log.Printf("LOGOUT HANDLER: Successfully processed logout for session token: %s", sessionToken)
 }
+

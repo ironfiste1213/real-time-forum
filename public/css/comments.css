@@ -1,0 +1,251 @@
+/* ============================================
+   POST DETAILS COMMENTS SECTION
+   ============================================ */
+
+/* Comments section container within post details */
+.post-details-comments-section {
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(12, 44, 85, 0.2);
+}
+
+/* Scrollable comments container */
+.post-details-comments {
+    max-height: 400px;
+    overflow-y: auto;
+    padding-right: 8px;
+    margin-bottom: 16px;
+}
+
+/* Scrollbar styling for comments */
+.post-details-comments::-webkit-scrollbar {
+    width: 6px;
+}
+
+.post-details-comments::-webkit-scrollbar-track {
+    background: rgba(12, 44, 85, 0.1);
+    border-radius: 3px;
+}
+
+.post-details-comments::-webkit-scrollbar-thumb {
+    background: #296374;
+    border-radius: 3px;
+}
+
+.post-details-comments::-webkit-scrollbar-thumb:hover {
+    background: #0C2C55;
+}
+
+/* Comments header title */
+.comments-section-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #0C2C55;
+    margin: 0 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(12, 44, 85, 0.2);
+}
+
+/* Individual comment styling - smaller and lighter than main post */
+.post-details .comment {
+    background-color: rgba(237, 237, 206, 0.6);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    transition: background-color 0.2s ease;
+}
+
+.post-details .comment:hover {
+    background-color: rgba(237, 237, 206, 0.8);
+}
+
+/* Comment header */
+.post-details .comment-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+/* Comment author */
+.post-details .comment-author {
+    font-weight: 600;
+    font-size: 14px;
+    color: #0C2C55;
+}
+
+/* Comment timestamp */
+.post-details .comment-timestamp {
+    font-size: 12px;
+    color: #296374;
+}
+
+/* Comment content */
+.post-details .comment-content {
+    font-size: 14px;
+    color: #0C2C55;
+    line-height: 1.5;
+    padding-left: 4px;
+
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+
+    max-height: 150px;  /* control height before scrolling */
+    overflow-y: auto;   /* vertical scrollbar if content too long */
+    overflow-x: hidden; /* hide horizontal scroll */
+}
+
+/* No comments message */
+.no-comments-message {
+    text-align: center;
+    padding: 32px 16px;
+    color: #296374;
+    font-style: italic;
+    background-color: rgba(237, 237, 206, 0.5);
+    border-radius: 8px;
+}
+
+.no-comments-text {
+    margin: 0;
+    font-size: 14px;
+}
+
+/* ============================================
+   COMMENT INPUT SECTION
+   ============================================ */
+
+.comment-input-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(12, 44, 85, 0.2);
+}
+
+.comment-input-section label {
+    display: block;
+    font-weight: 600;
+    font-size: 14px;
+    color: #0C2C55;
+    margin-bottom: 8px;
+}
+
+.comment-textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #296374;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    min-height: 80px;
+    box-sizing: border-box;
+    background-color: #EDEDCE;
+    color: #0C2C55;
+}
+
+.comment-textarea:focus {
+    outline: none;
+    border-color: #0C2C55;
+    box-shadow: 0 0 0 2px rgba(12, 44, 85, 0.2);
+}
+
+.submit-comment-btn {
+    margin-top: 8px;
+    padding: 10px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    background-color: #0C2C55;
+    color: #EDEDCE;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.submit-comment-btn:hover {
+    background-color: #296374;
+}
+
+/* ============================================
+   COMMENTS PAGINATION
+   ============================================ */
+
+/* Pagination controls container */
+.comments-pagination-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(12, 44, 85, 0.2);
+    flex-wrap: wrap;
+}
+
+/* Pagination buttons */
+.pagination-btn {
+    padding: 8px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    background-color: #0C2C55;
+    color: #EDEDCE;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    min-width: 80px;
+}
+
+.pagination-btn:hover {
+    background-color: #296374;
+    transform: translateY(-1px);
+}
+
+.pagination-btn:active {
+    transform: translateY(0);
+    background-color: #629FAD;
+}
+
+/* Previous button specific */
+.pagination-prev {
+    background-color: #296374;
+}
+
+.pagination-prev:hover {
+    background-color: #0C2C55;
+}
+
+/* Next button specific */
+.pagination-next {
+    background-color: #629FAD;
+}
+
+.pagination-next:hover {
+    background-color: #296374;
+}
+
+/* Page indicator */
+.pagination-indicator {
+    font-size: 13px;
+    font-weight: 500;
+    color: #0C2C55;
+    padding: 8px 12px;
+    background-color: rgba(237, 237, 206, 0.6);
+    border-radius: 4px;
+}
+
+/* Legacy pagination styles (for compatibility) */
+.comments-pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 16px;
+    margin-top: 16px;
+    padding-top: 12px;
+    border-top: 1px solid rgba(12, 44, 85, 0.2);
+}
+
+.page-info {
+    font-size: 13px;
+    color: #296374;
+}
+

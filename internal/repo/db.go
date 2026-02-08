@@ -97,6 +97,14 @@ func InitDB(dataSourceName string) error {
 		return err
 	}
 
+	// Seed default categories if they don't exist
+	categories := []string{"General", "Technology", "Sports", "Entertainment", "Science", "Gaming", "Music", "Movies", "Books", "Travel"}
+	for _, cat := range categories {
+		_, err := DB.Exec("INSERT OR IGNORE INTO categories (name) VALUES (?)", cat)
+		if err != nil {
+			log.Printf("[db.go:InitDB] Warning: Failed to insert category '%s': %v", cat, err)
+		}
+	}
 	log.Println("[db.go:InitDB] Database connected successfully!")
 	return nil
 }

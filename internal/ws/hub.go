@@ -5,23 +5,20 @@ import (
 	"fmt"
 	"log"
 	"sync"
-	"time"
-
-	"real-time-forum/internal/models"
 )
 
 // TypingPair represents a unique typing session between two users
-type TypingPair struct {
-	FromUserID int
-	ToUserID   int
-}
+// type TypingPair struct {
+// 	FromUserID int
+// 	ToUserID   int
+// }
 
 // TypingInfo stores information about a typing event
-type TypingInfo struct {
-	FromNickname string
-	ToUserID     int
-	LastActivity time.Time
-}
+// type TypingInfo struct {
+// 	FromNickname string
+// 	ToUserID     int
+// 	LastActivity time.Time
+// }
 
 // Hub manages WebSocket connections and routes messages between clients
 type Hub struct {
@@ -34,15 +31,15 @@ type Hub struct {
 	Unregister     chan *Client            // Unregister requests from clients
 	Broadcast      chan []byte             // Broadcast messages to all clients
 	PrivateMessage chan PrivateMessageData // Private messages between specific users
-	TypingEvent    chan TypingData         // Typing events between specific users
+	// TypingEvent    chan TypingData         // Typing events between specific users
 	// User tracking
 	Users map[int][]*Client // userID -> array of clients mapping
 
 	// Typing timeout tracking - tracks per user-target pair
-	typingLastActivity map[TypingPair]time.Time  // typing pair -> last typing timestamp
-	typingUsers        map[TypingPair]TypingInfo // typing pair -> typing info (nickname, target)
-	typingCheckTicker  *time.Ticker              // Ticker to check for typing timeouts
-	typingTimeout      time.Duration             // Timeout duration (2 seconds)
+	// typingLastActivity map[TypingPair]time.Time  // typing pair -> last typing timestamp
+	// typingUsers        map[TypingPair]TypingInfo // typing pair -> typing info (nickname, target)
+	// typingCheckTicker  *time.Ticker              // Ticker to check for typing timeouts
+	// typingTimeout      time.Duration             // Timeout duration (2 seconds)
 }
 
 // NewHub creates a new hub instance with initialized channels and data structures
@@ -51,108 +48,108 @@ type Hub struct {
 // private messaging, and history loading operations
 func NewHub() *Hub {
 	hub := &Hub{
-		clients:            make(map[*Client]bool),                 // Map to track registered clients (client -> true)
-		Register:           make(chan *Client),                     // Channel for client registration requests
-		Unregister:         make(chan *Client),                     // Channel for client unregistration requests
-		Broadcast:          make(chan []byte),                      // Channel for broadcasting messages to all clients
-		PrivateMessage:     make(chan PrivateMessageData),          // Channel for routing private messages between users
-		TypingEvent:        make(chan TypingData),                  // Channel for routing typing events between users
-		Users:              make(map[int][]*Client),                // Map for userID -> slice of client connections
-		typingLastActivity: make(map[TypingPair]time.Time),         // Track last typing activity per pair
-		typingUsers:        make(map[TypingPair]TypingInfo),        // Track typing info per pair
-		typingCheckTicker:  time.NewTicker(500 * time.Millisecond), // Check every 500ms
-		typingTimeout:      2000 * time.Millisecond,                // 2 second timeout
+		clients:        make(map[*Client]bool),        // Map to track registered clients (client -> true)
+		Register:       make(chan *Client),            // Channel for client registration requests
+		Unregister:     make(chan *Client),            // Channel for client unregistration requests
+		Broadcast:      make(chan []byte),             // Channel for broadcasting messages to all clients
+		PrivateMessage: make(chan PrivateMessageData), // Channel for routing private messages between users
+		// TypingEvent:        make(chan TypingData),                  // Channel for routing typing events between users
+		Users: make(map[int][]*Client), // Map for userID -> slice of client connections
+		// typingLastActivity: make(map[TypingPair]time.Time),         // Track last typing activity per pair
+		// typingUsers:        make(map[TypingPair]TypingInfo),        // Track typing info per pair
+		// typingCheckTicker:  time.NewTicker(500 * time.Millisecond), // Check every 500ms
+		// typingTimeout:      2000 * time.Millisecond,                // 2 second timeout
 	}
 
 	// Start typing timeout checker goroutine
-	go hub.checkTypingTimeouts()
+	// go hub.checkTypingTimeouts()
 
 	return hub
 }
 
 // checkTypingTimeouts periodically checks for users who stopped typing
-func (h *Hub) checkTypingTimeouts() {
-	for range h.typingCheckTicker.C {
-		now := time.Now()
-		h.Mu.Lock()
+// func (h *Hub) checkTypingTimeouts() {
+// 	for range h.typingCheckTicker.C {
+// 		//fmt.Println("checkTypingTimeouts:   ------------")
 
-		// Check each typing pair
-		for pair, lastActivity := range h.typingLastActivity {
-			// If typing session has exceeded the timeout, notify recipient
-			if now.Sub(lastActivity) > h.typingTimeout {
-				// Get typing info
-				typingInfo, exists := h.typingUsers[pair]
-				if !exists {
-					log.Printf("[hub.go:checkTypingTimeouts] Typing info not found for pair %d->%d", pair.FromUserID, pair.ToUserID)
-					delete(h.typingLastActivity, pair)
-					h.Mu.Unlock()
-					continue
-				}
+// 		now := time.Now()
+// 		h.Mu.Lock()
 
-				log.Printf("[hub.go:checkTypingTimeouts] User %d (%s) stopped typing to user %d (timeout)",
-					pair.FromUserID, typingInfo.FromNickname, pair.ToUserID)
+// 		// Check each typing pair
+// 		for pair, lastActivity := range h.typingLastActivity {
+// 			// If typing session has exceeded the timeout, notify recipient
+// 			if now.Sub(lastActivity) > h.typingTimeout {
+// 				// Get typing info
+// 				typingInfo, exists := h.typingUsers[pair]
+// 				if !exists {
+// 					log.Printf("[hub.go:checkTypingTimeouts] Typing info not found for pair %d->%d", pair.FromUserID, pair.ToUserID)
+// 					delete(h.typingLastActivity, pair)
+// 					h.Mu.Unlock()
+// 					continue
+// 				}
 
-				// Send stopped typing notification to the recipient
-				h.sendStoppedTypingNotification(pair.FromUserID, pair.ToUserID, typingInfo.FromNickname)
+// 				log.Printf("[hub.go:checkTypingTimeouts] User %d (%s) stopped typing to user %d (timeout)",
+// 					pair.FromUserID, typingInfo.FromNickname, pair.ToUserID)
 
-				// Clean up typing tracking for this pair
-				delete(h.typingLastActivity, pair)
-				delete(h.typingUsers, pair)
-			}
-		}
+// 				// Send stopped typing notification to the recipient
+// 				h.sendStoppedTypingNotification(pair.FromUserID, pair.ToUserID, typingInfo.FromNickname)
 
-		h.Mu.Unlock()
-	}
-}
+// 				// Clean up typing tracking for this pair
+// 				delete(h.typingLastActivity, pair)
+// 				delete(h.typingUsers, pair)
+// 			}
+// 		}
+
+// 		h.Mu.Unlock()
+// 	}
+// }
 
 // sendStoppedTypingNotification sends a stopped typing event to the target user
-func (h *Hub) sendStoppedTypingNotification(fromUserID int, toUserID int, fromNickname string) {
-	clients, exists := h.Users[toUserID]
-	if !exists || len(clients) == 0 {
-		log.Printf(
-			"[hub.go:sendStoppedTypingNotification][DEBUG] Target user %d is offline, stopped typing notification ignored",
-			toUserID,
-		)
-		return
-	}
+// func (h *Hub) sendStoppedTypingNotification(fromUserID int, toUserID int, fromNickname string) {
+// 	clients, exists := h.Users[toUserID]
+// 	if !exists || len(clients) == 0 {
+// 		log.Printf(
+// 			"[hub.go:sendStoppedTypingNotification][DEBUG] Target user %d is offline, stopped typing notification ignored",
+// 			toUserID,
+// 		)
+// 		return
+// 	}
 
-	// Create stopped typing message
-	message := Message{
-		Type:       UserStoppedTyping,
-		FromUserID: fromUserID,
-		ToUserID:   toUserID,
-		Nickname:   fromNickname,
-		Timestamp:  time.Now().Format(time.RFC3339),
-	}
-	data := message.ToJSON()
+// 	// Create stopped typing message
+// 	message := Message{
+// 		Type:       UserStoppedTyping,
+// 		FromUserID: fromUserID,
+// 		ToUserID:   toUserID,
+// 		Nickname:   fromNickname,
+// 		Timestamp:  time.Now().Format(time.RFC3339),
+// 	}
+// 	data := message.ToJSON()
 
-	// Send to all active connections of the target user
-	for _, client := range clients {
-		select {
-		case client.send <- data:
-			log.Printf(
-				"[hub.go:sendStoppedTypingNotification][DEBUG] Stopped typing sent to user %d for user %d",
-				toUserID, fromUserID,
-			)
-		default:
-			log.Printf(
-				"[hub.go:sendStoppedTypingNotification][DEBUG] Client channel full for user %d, skipping one connection",
-				toUserID,
-			)
-		}
-	}
-}
+// 	// Send to all active connections of the target user
+// 	for _, client := range clients {
+// 		select {
+// 		case client.send <- data:
+// 			log.Printf(
+// 				"[hub.go:sendStoppedTypingNotification][DEBUG] Stopped typing sent to user %d for user %d",
+// 				toUserID, fromUserID,
+// 			)
+// 		default:
+// 			log.Printf(
+// 				"[hub.go:sendStoppedTypingNotification][DEBUG] Client channel full for user %d, skipping one connection",
+// 				toUserID,
+// 			)
+// 		}
+// 	}
+// }
 
 // Run starts the hub and handles all WebSocket operations
 func (h *Hub) Run() {
 	for {
 		select {
 		case client := <-h.Register:
-			log.Printf("[hub.go:Run] Processing register request for user %d", client.userID)
 			h.registerClient(client)
 
 		case client := <-h.Unregister:
-			log.Printf("[hub.go:Run] Processing unregister request for user %d", client.userID)
 			h.unregisterClient(client)
 
 		case message := <-h.Broadcast:
@@ -161,8 +158,8 @@ func (h *Hub) Run() {
 		case privateMsg := <-h.PrivateMessage:
 			h.handlePrivateMessage(privateMsg)
 
-		case typingEvent := <-h.TypingEvent:
-			h.handleTypingEvent(typingEvent)
+			// case typingEvent := <-h.TypingEvent:
+			// 	h.handleTypingEvent(typingEvent)
 		}
 	}
 }
@@ -172,24 +169,22 @@ func (h *Hub) Run() {
 // Registers the client, updates user mappings, broadcasts online status, and sends online users list
 // registerClient registers the client, updates user mappings, broadcasts online status, and sends online users list
 func (h *Hub) registerClient(client *Client) {
-	fmt.Println("here here hrere")
 	log.Printf(
 		"[hub.go:registerClient] Registering client for user %d (%s)",
 		client.userID,
 		client.nickname,
 	)
 
+	// Clean up any stale connections for this user before registering the new one
+	//h.cleanupStaleConnection(client)
+
 	// Add client to the global clients set
 	h.clients[client] = true
-	log.Printf("[hub.go:registerClient] Client added to global clients set, total clients: %d", len(h.clients))
 
 	// Add client to the user's connections slice (thread-safe)
 	h.Mu.Lock()
 	h.Users[client.userID] = append(h.Users[client.userID], client)
-	userConnectionCount := len(h.Users[client.userID])
 	h.Mu.Unlock()
-	log.Printf("[hub.go:registerClient] Client added to user connections, user %d has %d connections",
-		client.userID, userConnectionCount)
 
 	// Broadcast user online status to all connected clients
 	log.Printf(
@@ -205,8 +200,6 @@ func (h *Hub) registerClient(client *Client) {
 		client.userID,
 	)
 	h.sendOnlineUsersList(client)
-
-	log.Printf("[hub.go:registerClient] Registration complete for user %d (%s)", client.userID, client.nickname)
 }
 
 // unregisterClient removes a client from the hub
@@ -217,17 +210,14 @@ func (h *Hub) unregisterClient(client *Client) {
 		client.nickname,
 	)
 
-	// Remove from global clients set first (before acquiring lock for broadcast)
-	hadClient := false
-	h.Mu.Lock()
-	if _, ok := h.clients[client]; ok {
-		hadClient = true
-		delete(h.clients, client)
-	}
-	h.Mu.Unlock()
+	// h.Mu.Lock()
+	// defer h.Mu.Unlock()
+
+	// Remove from global clients set
+
+	delete(h.clients, client)
 
 	// Remove this client from the user's slice
-	h.Mu.Lock()
 	clients := h.Users[client.userID]
 	for i, c := range clients {
 		if c == client {
@@ -235,47 +225,98 @@ func (h *Hub) unregisterClient(client *Client) {
 			break
 		}
 	}
-	userHasMoreConnections := len(h.Users[client.userID]) > 0
-	h.Mu.Unlock()
 
 	// Clean up any typing sessions involving this user
-	h.cleanupTypingSessionsForUser(client.userID)
+	// h.cleanupTypingSessionsForUser(client.userID)
 
 	// Close the client's send channel
 	close(client.send)
 
-	// Broadcast offline ONLY if this was the user's last connection
-	// Use non-blocking send to Broadcast channel to avoid blocking the hub
-	if hadClient && !userHasMoreConnections {
+	// If user has no more active connections, remove user and broadcast offline
+	if len(h.Users[client.userID]) == 0 {
+		delete(h.Users, client.userID)
 		log.Printf(
-			"[hub.go:unregisterClient] [DEBUG] User %d has no more connections, broadcasting offline",
+			"[hub.go:unregisterClient] [DEBUG] Broadcasting user offline: %d (%s)",
 			client.userID,
+			client.nickname,
 		)
-		message := NewMessage(UserOffline, client.userID, 0, "")
-		message.Nickname = client.nickname
-
-		// Non-blocking send to avoid deadlock
-		select {
-		case h.Broadcast <- message.ToJSON():
-			log.Printf("[hub.go:unregisterClient] Broadcast queued for user %d offline", client.userID)
-		default:
-			log.Printf("[hub.go:unregisterClient] Broadcast channel full, skipping offline broadcast for user %d", client.userID)
-		}
+		h.broadcastUserOffline(client.userID, client.nickname)
 	}
 }
 
 // cleanupTypingSessionsForUser removes all typing sessions involving a user
-func (h *Hub) cleanupTypingSessionsForUser(userID int) {
-	for pair := range h.typingLastActivity {
-		if pair.FromUserID == userID || pair.ToUserID == userID {
-			log.Printf(
-				"[hub.go:cleanupTypingSessionsForUser] Cleaning up typing session %d->%d for disconnected user %d",
-				pair.FromUserID, pair.ToUserID, userID,
-			)
-			delete(h.typingLastActivity, pair)
-			delete(h.typingUsers, pair)
-		}
+// func (h *Hub) cleanupTypingSessionsForUser(userID int) {
+// 	for pair := range h.typingLastActivity {
+// 		if pair.FromUserID == userID || pair.ToUserID == userID {
+// 			log.Printf(
+// 				"[hub.go:cleanupTypingSessionsForUser] Cleaning up typing session %d->%d for disconnected user %d",
+// 				pair.FromUserID, pair.ToUserID, userID,
+// 			)
+// 			delete(h.typingLastActivity, pair)
+// 			delete(h.typingUsers, pair)
+// 		}
+// 	}
+// }
+
+// cleanupStaleConnection checks for and removes stale/zombie connections from the same browser
+// When a new connection is established, we close ALL existing connections for the same user
+// except the new one. This handles browser refresh cases where beforeunload may not fire.
+// The old connections will detect their socket was closed and properly unregister.
+func (h *Hub) cleanupStaleConnection(newClient *Client) {
+	h.Mu.Lock()
+	defer h.Mu.Unlock()
+
+	userID := newClient.userID
+	clients := h.Users[userID]
+
+	if len(clients) == 0 {
+		// No existing connections, nothing to clean up
+		return
 	}
+
+	log.Printf(
+		"[hub.go:cleanupStaleConnection] User %d has %d existing connections, new connection from %p",
+		userID,
+		len(clients),
+		newClient,
+	)
+
+	// When a new connection comes in, close ALL existing connections for this user
+	// The old connections will detect socket closure in their readPump and properly unregister
+	// This handles browser refresh where beforeunload doesn't fire in time
+	staleCount := 0
+	for _, client := range clients {
+		if client == newClient {
+			// Skip the new client we're about to register
+			continue
+		}
+
+		// Close the old connection
+		if client.conn != nil {
+			log.Printf(
+				"[hub.go:cleanupStaleConnection] Closing stale connection %p for user %d (new connection from %p)",
+				client,
+				userID,
+				newClient,
+			)
+			// This will trigger the readPump to exit and unregister the client
+			client.conn.Close()
+		}
+
+		// Remove from clients map
+		delete(h.clients, client)
+		staleCount++
+		// h.cleanupTypingSessionsForUser(userID)
+	}
+
+	// Clear the users slice - new client will add itself after this function returns
+	h.Users[userID] = []*Client{newClient}
+
+	log.Printf(
+		"[hub.go:cleanupStaleConnection] Cleaned up %d stale connections for user %d",
+		staleCount,
+		userID,
+	)
 }
 
 // broadcastMessage sends a message to all connected clients
@@ -287,7 +328,21 @@ func (h *Hub) broadcastMessage(message []byte) {
 		len(h.clients),
 	)
 
+	// Collect all clients first to avoid holding lock during sends
+	h.Mu.RLock()
+	allClients := make([]*Client, 0, len(h.clients))
+	fmt.Print("hhhhhhhhhhhhhhhhh--------********")
+
 	for client := range h.clients {
+		allClients = append(allClients, client)
+	}
+	h.Mu.RUnlock()
+
+	// Collect clients that need to be removed (channels full)
+	var clientsToRemove []*Client
+
+	// Now iterate and send without holding the lock
+	for _, client := range allClients {
 		select {
 		case client.send <- message:
 			log.Printf(
@@ -298,36 +353,43 @@ func (h *Hub) broadcastMessage(message []byte) {
 		default:
 			// This specific connection is dead / blocked
 			log.Printf(
-				"[hub.go:broadcastMessage] [DEBUG] Client channel full, removing ONE connection of user %d",
+				"[hub.go:broadcastMessage] [DEBUG] Client channel full, marking for removal: user %d",
 				client.userID,
 			)
+			clientsToRemove = append(clientsToRemove, client)
+		}
+	}
 
-			// Remove from global clients set
-			close(client.send)
-			delete(h.clients, client)
+	// Now remove the clients that need removal, acquiring lock only when necessary
+	if len(clientsToRemove) > 0 {
+		h.Mu.Lock()
+		for _, client := range clientsToRemove {
+			if _, ok := h.clients[client]; ok {
+				close(client.send)
+				delete(h.clients, client)
 
-			// Remove ONLY this client from h.Users[userID]
-			h.Mu.Lock()
-			clients := h.Users[client.userID]
+				// Remove ONLY this client from h.Users[userID]
+				clients := h.Users[client.userID]
+				for i, c := range clients {
+					if c == client {
+						// remove client from slice
+						h.Users[client.userID] = append(clients[:i], clients[i+1:]...)
+						break
+					}
+				}
 
-			for i, c := range clients {
-				if c == client {
-					// remove client from slice
-					h.Users[client.userID] = append(clients[:i], clients[i+1:]...)
-					break
+				// If user has no more active connections → remove user
+				if len(h.Users[client.userID]) == 0 {
+					delete(h.Users, client.userID)
 				}
 			}
-
-			// If user has no more active connections → remove user
-			if len(h.Users[client.userID]) == 0 {
-				delete(h.Users, client.userID)
-			}
-
-			// Clean up typing sessions for this client
-			h.cleanupTypingSessionsForUser(client.userID)
-
-			h.Mu.Unlock()
 		}
+		h.Mu.Unlock()
+
+		// Clean up typing sessions for removed clients
+		// for _, client := range clientsToRemove {
+		// 	h.cleanupTypingSessionsForUser(client.userID)
+		// }
 	}
 }
 
@@ -379,7 +441,7 @@ func (h *Hub) handlePrivateMessage(data PrivateMessageData) {
 		h.sendMessageFromMeToOtherConnections(data.Message.FromUserID, data.Message, data.SenderClient)
 
 		// When message is sent, also notify recipient that sender stopped typing
-		h.sendStoppedTypingNotification(data.Message.FromUserID, data.Message.ToUserID, data.Message.Nickname)
+		// h.sendStoppedTypingNotification(data.Message.FromUserID, data.Message.ToUserID, data.Message.Nickname)
 	} else {
 		// No connection could receive the message
 		log.Printf(
@@ -391,90 +453,76 @@ func (h *Hub) handlePrivateMessage(data PrivateMessageData) {
 }
 
 // handleTypingEvent routes a typing event to the target user and tracks typing state
-func (h *Hub) handleTypingEvent(data TypingData) {
-	log.Printf(
-		"[hub.go:handleTypingEvent] [DEBUG] Handling typing event from %d (%s) to %d",
-		data.FromUserID,
-		data.FromNickname,
-		data.ToUserID,
-	)
+// func (h *Hub) handleTypingEvent(data TypingData) {
+// 	log.Printf(
+// 		"[hub.go:handleTypingEvent] [DEBUG] Handling typing event from %d (%s) to %d",
+// 		data.FromUserID,
+// 		data.FromNickname,
+// 		data.ToUserID,
+// 	)
 
-	clients, exists := h.Users[data.ToUserID]
-	if !exists || len(clients) == 0 {
-		// Target user is offline, still track typing for timeout detection when they come back
-		log.Printf(
-			"[hub.go:handleTypingEvent][DEBUG] Target user %d is offline, but tracking typing anyway",
-			data.ToUserID,
-		)
-	}
+// 	clients, exists := h.Users[data.ToUserID]
+// 	if !exists || len(clients) == 0 {
+// 		// Target user is offline, still track typing for timeout detection when they come back
+// 		log.Printf(
+// 			"[hub.go:handleTypingEvent][DEBUG] Target user %d is offline, but tracking typing anyway",
+// 			data.ToUserID,
+// 		)
+// 	}
 
-	// Create typing pair for tracking
-	pair := TypingPair{
-		FromUserID: data.FromUserID,
-		ToUserID:   data.ToUserID,
-	}
+// 	// Create typing pair for tracking
+// 	pair := TypingPair{
+// 		FromUserID: data.FromUserID,
+// 		ToUserID:   data.ToUserID,
+// 	}
 
-	// Update typing tracking - record last activity and typing info
-	h.Mu.Lock()
-	h.typingLastActivity[pair] = time.Now()
-	h.typingUsers[pair] = TypingInfo{
-		FromNickname: data.FromNickname,
-		ToUserID:     data.ToUserID,
-		LastActivity: time.Now(),
-	}
-	h.Mu.Unlock()
+// 	// Update typing tracking - record last activity and typing info
+// 	h.Mu.Lock()
+// 	h.typingLastActivity[pair] = time.Now()
+// 	h.typingUsers[pair] = TypingInfo{
+// 		FromNickname: data.FromNickname,
+// 		ToUserID:     data.ToUserID,
+// 		LastActivity: time.Now(),
+// 	}
+// 	h.Mu.Unlock()
 
-	// Send typing event to ALL active connections of the target user (only if online)
-	if exists && len(clients) > 0 {
-		for _, client := range clients {
-			select {
-			case client.send <- data.Data:
-				log.Printf(
-					"[hub.go:handleTypingEvent][DEBUG] Typing event sent to user %d",
-					data.ToUserID,
-				)
-			default:
-				// This specific connection is busy/full, skip it
-				log.Printf(
-					"[hub.go:handleTypingEvent][DEBUG] Client channel full for user %d, skipping one connection",
-					data.ToUserID,
-				)
-			}
-		}
-	}
-}
+// 	// Send typing event to ALL active connections of the target user (only if online)
+// 	if exists && len(clients) > 0 {
+// 		for _, client := range clients {
+// 			select {
+// 			case client.send <- data.Data:
+// 				log.Printf(
+// 					"[hub.go:handleTypingEvent][DEBUG] Typing event sent to user %d",
+// 					data.ToUserID,
+// 				)
+// 			default:
+// 				// This specific connection is busy/full, skip it
+// 				log.Printf(
+// 					"[hub.go:handleTypingEvent][DEBUG] Client channel full for user %d, skipping one connection",
+// 					data.ToUserID,
+// 				)
+// 			}
+// 		}
+// 	}
+// }
 
 // broadcastUserOnline notifies all clients that a user came online
 func (h *Hub) broadcastUserOnline(userID int, nickname string) {
 	message := NewMessage(UserOnline, userID, 0, "")
 	message.Nickname = nickname
-
-	// Non-blocking send to avoid blocking the hub
-	select {
-	case h.Broadcast <- message.ToJSON():
-		log.Printf("[hub.go:broadcastUserOnline] Online broadcast queued for user %d", userID)
-	default:
-		log.Printf("[hub.go:broadcastUserOnline] Broadcast channel full, skipping online broadcast for user %d", userID)
-	}
+	h.broadcastMessage(message.ToJSON())
 }
 
 // broadcastUserOffline notifies all clients that a user went offline
 func (h *Hub) broadcastUserOffline(userID int, nickname string) {
 	message := NewMessage(UserOffline, userID, 0, "")
 	message.Nickname = nickname
-
-	// Non-blocking send to avoid blocking the hub
-	select {
-	case h.Broadcast <- message.ToJSON():
-		log.Printf("[hub.go:broadcastUserOffline] Offline broadcast queued for user %d", userID)
-	default:
-		log.Printf("[hub.go:broadcastUserOffline] Broadcast channel full, skipping offline broadcast for user %d", userID)
-	}
+	h.broadcastMessage(message.ToJSON())
 
 	// Clean up any typing sessions involving this user
-	h.Mu.Lock()
-	h.cleanupTypingSessionsForUser(userID)
-	h.Mu.Unlock()
+	// h.Mu.Lock()
+	// h.cleanupTypingSessionsForUser(userID)
+	// h.Mu.Unlock()
 }
 
 // sendOnlineUsersList sends the current list of online users to a specific client
@@ -616,18 +664,4 @@ func (h *Hub) sendMessageFromMeToOtherConnections(senderID int, originalMessage 
 		}
 	}
 	log.Printf("[hub.go:sendMessageFromMeToOtherConnections] [DEBUG] Sent message_from_me to %d connections for user %d", sentCount, senderID)
-}
-
-// messageRepoFunc stores the injected repository function
-var messageRepoFunc func(int, int, int, int) ([]models.PrivateMessage, error)
-
-// SetMessageRepo sets the message repository for database operations
-// This allows dependency injection to avoid circular imports
-func SetMessageRepo(repoFunc func(int, int, int, int) ([]models.PrivateMessage, error)) {
-	messageRepoFunc = repoFunc
-}
-
-// GetMessageRepoFunc returns the injected repository function
-func GetMessageRepoFunc() func(int, int, int, int) ([]models.PrivateMessage, error) {
-	return messageRepoFunc
 }

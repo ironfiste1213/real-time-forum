@@ -1,0 +1,70 @@
+/* Navigation Bar Styles */
+
+/* Navigation bar styles */
+nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    padding: 15px 30px;
+    box-sizing: border-box;
+    background-color: #0C2C55;
+    border-radius: 0 0 8px 8px;
+}
+
+nav .nav-left,
+nav .nav-center,
+nav .nav-right {
+    flex: 1;
+}
+
+nav .nav-center {
+    text-align: center;
+}
+
+nav .nav-right {
+    text-align: right;
+}
+
+#welcome-message {
+    font-weight: bold;
+    font-size: 18px;
+    font-family: 'Lucida Sans', 'Lucida Sans Regular', 'Lucida Grande', 'Lucida Sans Unicode', Geneva, Verdana, sans-serif;
+    color: #0C2C55;
+    background-color: #EDEDCE;
+    border-radius: 5px;
+    padding: 3px;
+}
+
+.create-post-toggle-btn {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #296374;
+    color: #EDEDCE;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+.create-post-toggle-btn:hover {
+    background-color: #0C2C55;
+}
+
+#logout-button {
+    padding: 10px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    background-color: #296374;
+    color: #EDEDCE;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+}
+
+#logout-button:hover {
+    background-color: #0C2C55;
+}
+

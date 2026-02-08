@@ -100,6 +100,7 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+
 func GetCommentsByPostIDHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed")

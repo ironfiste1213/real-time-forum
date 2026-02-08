@@ -1,11 +1,23 @@
-import { initializeRouter } from './router.js';
+import { handleLocation } from './router.js';
 
-function initializeApp() {
-    
-    // Initialize the client-side router
-    initializeRouter();
+console.log('app.js: Application starting...');
 
-    // Event handlers will be attached dynamically when views are created
-}
+// Example usage for testing views
+// Uncomment the line below to test login view
+document.addEventListener('DOMContentLoaded', () => {
+    handleLocation();
+        // Chat connection will be initialized in showMainFeedView if user is logged in
+        window.addEventListener("pageshow", (event) => {
+            if (event.persisted) {
+                console.log("[router.js] Page restored from cache, re-initialize router");
+                handleLocation();
+            }
+        });
+    // Handle browser back/forward button clicks.
+    window.addEventListener("popstate", handleLocation);
 
-document.addEventListener('DOMContentLoaded', initializeApp);
+});
+
+// Uncomment the line below to test register view
+// registerView();
+

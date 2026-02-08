@@ -26,12 +26,13 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("/js/", fileServer)
 
 	// API and page routes
-	mux.HandleFunc("/register", handler.RegisterHandler)
-	mux.HandleFunc("/login", handler.LoginHandler)
-	mux.HandleFunc("/logout", handler.LogoutHandler)
-
+	mux.HandleFunc("/api/register", handler.RegisterHandler)
+	mux.HandleFunc("/api/login", handler.LoginHandler)
+	mux.HandleFunc("/api/logout", handler.LogoutHandler)
+	mux.HandleFunc("/register", handler.IndexHandler)
+	mux.HandleFunc("/login", handler.IndexHandler)
 	// Add a new route to check authentication status
-	mux.HandleFunc("/api/auth/status", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/status", func(w http.ResponseWriter, r *http.Request) {
 		// This handler is wrapped by the AuthMiddleware.
 		// If the middleware passes, it means the user is authenticated.
 		statusHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -59,7 +60,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 			log.Printf("[routes.go:RegisterRoutes] Path is for comments. Routing by method: %s", r.Method)
 			switch r.Method {
 			case http.MethodGet:
-				handler.GetCommentsByPostIDHandler(w, r)
+				AuthMiddleware(http.HandlerFunc(handler.GetCommentsByPostIDHandler)).ServeHTTP(w, r)
 			case http.MethodPost:
 				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.CreateCommentHandler), commentRateLimiter, "create_comment")).ServeHTTP(w, r)
 			default:
@@ -74,25 +75,25 @@ func RegisterRoutes(mux *http.ServeMux) {
 			log.Printf("[routes.go:RegisterRoutes] Router: Path is for list/create. Routing by method: %s", r.Method)
 			switch r.Method {
 			case http.MethodGet:
-				handler.GetAllPostsHandler(w, r)
+				AuthMiddleware(http.HandlerFunc(handler.GetAllPostsHandler)).ServeHTTP(w, r)
 			case http.MethodPost:
 				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.CreatePostHandler), postRateLimiter, "create_post")).ServeHTTP(w, r)
 			}
 		} else if r.Method == http.MethodGet { // If there's an ID and method is GET, fetch the specific post.
 			log.Printf("[routes.go:RegisterRoutes] Router: Path is for a specific resource (ID: %s).", path)
-			handler.GetPostByIDHandler(w, r)
+			AuthMiddleware(http.HandlerFunc(handler.GetPostByIDHandler)).ServeHTTP(w, r)
 		}
 	})
-	// mux.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
-	// 	AuthMiddleware(http.HandlerFunc(handler.GetAllCategoriesHandler)).ServeHTTP(w, r)
-	// })
-	mux.HandleFunc("/api/categories", handler.GetAllCategoriesHandler)
+	mux.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
+ 	AuthMiddleware(http.HandlerFunc(handler.GetAllCategoriesHandler)).ServeHTTP(w, r)
+	 })
+	//mux.HandleFunc("/api/categories", handler.GetAllCategoriesHandler)
 
 	// Users API route - temporarily no auth for testing
-	mux.HandleFunc("/api/users", handler.GetAllUsersHandler)
-	// mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
-	// 	AuthMiddleware(http.HandlerFunc(handler.GetAllUsersHandler)).ServeHTTP(w, r)
-	// })
+	//mux.HandleFunc("/api/users", handler.GetAllUsersHandler)
+	 mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+	 	AuthMiddleware(http.HandlerFunc(handler.GetAllUsersHandler)).ServeHTTP(w, r)
+	 })
 	// Private messaging routes
 
 	mux.HandleFunc("/api/messages", func(w http.ResponseWriter, r *http.Request) {
@@ -109,10 +110,10 @@ func RegisterRoutes(mux *http.ServeMux) {
 	})
 
 	// WebSocket route
-	// mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
-	// 	AuthMiddleware(http.HandlerFunc(handler.WebSocketHandler)).ServeHTTP(w, r)
-	// })
-	mux.HandleFunc("/ws", handler.WebSocketHandler)
+	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		AuthMiddleware(http.HandlerFunc(handler.WebSocketHandler)).ServeHTTP(w, r)
+	})
+	// mux.HandleFunc("/ws", handler.WebSocketHandler)
 
 	// Catch-all handler for unmatched routes (must be last)
 	// This will handle any route not matched above, including invalid API endpoints

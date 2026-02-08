@@ -25,8 +25,8 @@ const (
 	PrivateMessage MessageType = "private_message" // Private message between users
 
 	// Typing indicators
-	UserTyping        MessageType = "user_typing"         // User is typing
-	UserStoppedTyping MessageType = "user_stopped_typing" // User stopped typing
+	// UserTyping        MessageType = "user_typing"         // User is typing
+	// UserStoppedTyping MessageType = "user_stopped_typing" // User stopped typing
 
 	// Status notifications
 	UserOnline  MessageType = "user_online"  // User came online
@@ -60,12 +60,12 @@ type PrivateMessageData struct {
 }
 
 // TypingData is used internally for routing typing events through channels
-type TypingData struct {
-	ToUserID     int    // Target user ID for typing indicator
-	Data         []byte // JSON-encoded typing event data
-	FromUserID   int    // User who is typing
-	FromNickname string // Nickname of user who is typing
-}
+// type TypingData struct {
+// 	ToUserID     int    // Target user ID for typing indicator
+// 	Data         []byte // JSON-encoded typing event data
+// 	FromUserID   int    // User who is typing
+// 	FromNickname string // Nickname of user who is typing
+// }
 
 // ValidateMessage checks if a message has required fields based on its type
 func (m *Message) Validate() error {
@@ -100,25 +100,25 @@ func (m *Message) Validate() error {
 }
 
 // ValidateTypingEvent validates a typing event message
-func (m *Message) ValidateTypingEvent() error {
-	
-	// Validate sender
-	if m.FromUserID <= 0 {
-		return errors.New("invalid sender")
-	}
+// func (m *Message) ValidateTypingEvent() error {
 
-	// Validate receiver
-	if m.ToUserID <= 0 {
-		return errors.New("invalid receiver")
-	}
+// 	// Validate sender
+// 	if m.FromUserID <= 0 {
+// 		return errors.New("invalid sender")
+// 	}
 
-	// Nickname is required for typing events
-	if strings.TrimSpace(m.Nickname) == "" {
-		return errors.New("nickname is required for typing events")
-	}
+// 	// Validate receiver
+// 	if m.ToUserID <= 0 {
+// 		return errors.New("invalid receiver")
+// 	}
 
-	return nil
-}
+// 	// Nickname is required for typing events
+// 	if strings.TrimSpace(m.Nickname) == "" {
+// 		return errors.New("nickname is required for typing events")
+// 	}
+
+// 	return nil
+// }
 
 // NewMessage creates a new message with current timestamp
 func NewMessage(msgType MessageType, fromUserID, toUserID int, content string) *Message {
@@ -132,15 +132,15 @@ func NewMessage(msgType MessageType, fromUserID, toUserID int, content string) *
 }
 
 // NewTypingEvent creates a new typing event message
-func NewTypingEvent(msgType MessageType, fromUserID, toUserID int, nickname string) *Message {
-	return &Message{
-		Type:       msgType,
-		FromUserID: fromUserID,
-		ToUserID:   toUserID,
-		Nickname:   nickname,
-		Timestamp:  time.Now().Format(time.RFC3339),
-	}
-}
+// func NewTypingEvent(msgType MessageType, fromUserID, toUserID int, nickname string) *Message {
+// 	return &Message{
+// 		Type:       msgType,
+// 		FromUserID: fromUserID,
+// 		ToUserID:   toUserID,
+// 		Nickname:   nickname,
+// 		Timestamp:  time.Now().Format(time.RFC3339),
+// 	}
+// }
 
 // ToJSON converts message to JSON bytes
 func (m *Message) ToJSON() []byte {
