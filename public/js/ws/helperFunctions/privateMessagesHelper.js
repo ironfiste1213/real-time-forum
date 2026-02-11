@@ -1,28 +1,12 @@
-/**
- * Current Conversation Helper Functions
- * Shared utility functions for displaying and managing messages in the CURRENT conversation.
- * Used by messageFromMe.js, privateMessage.js, and conversationView.js.
- * 
- * NOTE: This module stores ONLY the active conversation messages in chatState.currentMessages.
- * When a user switches conversations or goes back, messages are cleared.
- * 
- * Message format (normalized):
- * - from_user_id: sender's user ID
- * - to_user_id: recipient's user ID  
- * - content: message text
- * - createdAt: timestamp (normalized from created_at or timestamp)
- * - id: database message ID
- * - is_own: true if sent by current user
- */
+
 
 import { chatState } from '../state.js';
+import { formatDate } from '../../tools/time/formatdate.js';
 
 /**
  * Normalize message object to consistent format
  * Handles both WebSocket (snake_case) and HTTP API (camelCase) responses
  * 
- * @param {Object} rawMessage - Raw message from API or WebSocket
- * @returns {Object} Normalized message object
  */
 export function normalizeMessage(rawMessage) {
     return {
@@ -114,8 +98,6 @@ export function displayCurrentMessages(append = false) {
  * Create a single message element
  * Uses normalized message format with from_user_id field
  * 
- * @param {Object} message - Message object (should be normalized)
- * @returns {HTMLElement} The message element
  */
 export function createMessageElement(message) {
     const messageEl = document.createElement('div');
@@ -139,12 +121,7 @@ export function createMessageElement(message) {
     // Message time
     const messageTime = document.createElement('div');
     messageTime.className = 'message-time';
-    if (normalized.createdAt) {
-        const date = new Date(normalized.createdAt);
-        messageTime.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-        messageTime.textContent = '';
-    }
+    messageTime.textContent = formatDate(normalized.createdAt);
     messageEl.appendChild(messageTime);
 
     return messageEl;
@@ -155,8 +132,6 @@ export function createMessageElement(message) {
  * Clears any existing messages first, then adds the new message
  * Used when opening a conversation or receiving a new message
  * 
- * @param {Object} message - The message object to store (raw format)
- * @returns {Object} The normalized message object
  */
 export function storeCurrentMessage(message) {
     // Normalize the message first
@@ -173,8 +148,6 @@ export function storeCurrentMessage(message) {
  * Store multiple messages (conversation history) in currentMessages
  * Replaces any existing messages
  * 
- * @param {Array} messages - Array of message objects (raw format)
- * @returns {Array} Array of normalized message objects
  */
 export function storeConversationHistory(messages) {
     // Clear existing messages first

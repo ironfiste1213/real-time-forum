@@ -3,18 +3,6 @@ import { handleNotification } from "./notificationHandler.js";
 import { updateUserOnlineStatus } from "../../views/usersListView.js";
 import { disableConversationInput } from "../../hanlders/chat/conversationInputHandler.js";
 
-/**
- * Handles incoming "user_offline" WebSocket messages.
- * 
- * Logic:
- * 1. When a user goes offline, wait 3 seconds
- * 2. If the user comes back online within 3s, cancel the notification
- * 3. If user is still offline after 3s, show notification
- * 
- * @param {Object} data - The user_offline message data from WebSocket
- * @param {number} data.from_user_id - The user ID who went offline
- * @param {string} [data.nickname] - The nickname of the user who went offline
- */
 export function handleUserOffline(data) {
     console.log('[userOffline.js:handleUserOffline] Handling user_offline event:', data);
 

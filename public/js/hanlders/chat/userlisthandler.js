@@ -1,21 +1,10 @@
-/**
- * User List Handler
- * Handles fetching and storing all users for the chat feature.
- * Also sets up event delegation for opening conversations.
- */
-
 import { fetchUsers } from '../../api/fetchUsers.js';
 import { loadConversations } from '../../api/messages/loadConversations.js';
 import { chatState } from '../../ws/state.js';
 import { openConversation } from './conversationHandler.js';
 import { organizeUsersByActivity } from '../../tools/sort/users.js';
 
-/**
- * Sets up event delegation for clicking on users in the users list container.
- * Uses event delegation - a single listener on the container that finds the
- * nearest .chat-user-item when clicked.
- * 
- */
+
 export function setupUsersListHandler(container) {
     // console.log('userlisthandler.js: setupUsersListHandler() called');
     
@@ -23,13 +12,11 @@ export function setupUsersListHandler(container) {
         console.error('userlisthandler.js: Container is null or undefined');
         return;
     }
-    
     // Mark container for cleanup tracking
     container.setAttribute('data-has-users-listener', 'true');
     
     // Add single click event listener using event delegation
     container.addEventListener('click', (event) => {
-         console.log('************userlisthandler.js: Click event detected on container**********');
         
         // Find the nearest user item element using closest()
         const userItem = event.target.closest('.chat-user-item');
@@ -55,13 +42,7 @@ export function setupUsersListHandler(container) {
 
 
 
-/**
- * Fetches all users and stores them in chatState.allUsers
- * Also populates chatState.onlineUsers with nicknames of online users
- * Organizes users like Discord: active conversations first (sorted by last message),
- * followed by new users without messages (sorted alphabetically)
- * 
- */
+
 export async function fileallusers() {
     // console.log('userlisthandler.js: fileallusers() called');
     

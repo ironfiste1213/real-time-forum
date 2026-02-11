@@ -6,6 +6,8 @@ nav {
     justify-content: space-between;
     align-items: center;
     width: 100%;
+    max-width: min(80vw, 97%);
+    margin: 0 auto;
     padding: 15px 30px;
     box-sizing: border-box;
     background-color: #0C2C55;

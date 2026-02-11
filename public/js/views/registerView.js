@@ -2,11 +2,7 @@ import { RegisterComponent } from '../components/authComponents/registerComponen
 import { registerHandler } from '../hanlders/authHandlers/registerLogic.js';
 import { transitionTo } from '../viewState.js';
 
-/**
- * Register View
- * Renders the register form inside the main app container
- * Includes form submit handling and navigation to login
- */
+
 export function registerView() {
     transitionTo('registerView', () => {
         console.log('view.js: registerView() called');

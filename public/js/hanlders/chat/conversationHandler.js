@@ -1,11 +1,7 @@
 import { conversationView } from "../../views/conversationView.js";
 import { transitionTo } from "../../viewState.js";
 
-/**
- * Opens a conversation with a specific user.
- * Uses transitionTo to handle cleanup of users list listeners before showing conversation.
- * 
- */
+
 export async function openConversation({ userId }) {
     console.log('conversationHandler.js: openConversation() called with userId:', userId);
     

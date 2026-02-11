@@ -4,14 +4,7 @@ import { chatState } from '../ws/state.js';
 import { fileallusers } from '../hanlders/chat/userlisthandler.js';
 import { setupUsersListHandler } from '../hanlders/chat/userlisthandler.js';
 
-/**
- * Sets up and renders the users list view.
- * Fetches all users if not already loaded, merges with online status,
- * and renders using UsersListComponent.
- * 
- * @param {HTMLElement|string} containerOrSelector - Container element or CSS selector
- * @returns {Promise<HTMLElement>} The users list container element
- */
+
 export async function usersListView(containerOrSelector) {
     // console.log('usersListView.js: usersListView() called');
     
@@ -32,11 +25,7 @@ export async function usersListView(containerOrSelector) {
     // Clear existing content
     container.innerHTML = '';
 
-    // // Fetch all users if not already loaded
-    // if (!chatState.allUsers || chatState.allUsers.length === 0) {
-    //     console.log('usersListView.js: No users in state, fetching...');
-    //     await fileallusers();
-    // }
+   
     await fileallusers();
     // console.log('usersListView.js: chatState.allUsers has', chatState.allUsers.length, 'users');
     
@@ -55,10 +44,6 @@ export async function usersListView(containerOrSelector) {
     const filteredUsers = usersWithStatus.filter(user => 
         user.nickname !== currentUserNickname && user.id !== currentUserId
     );
-   // setupSearch(container);
-    // console.log('usersListView.js: Users with status prepared:', filteredUsers.length, '(excluded current user)');
-    
-    // Store original users for filtering (keep full list for search)
     chatState.usersWithStatus = usersWithStatus;
     // console.log("filteredUsers ::",filteredUsers)
     // Create the users list component with filtered users (excluding current user)
@@ -72,17 +57,13 @@ export async function usersListView(containerOrSelector) {
     // Store reference to container for updates
     chatState.usersListContainer = container;
     
-    // IMPORTANT: Remove any existing click listener before setting up a new one
-    // This prevents duplicate listeners when navigating back from conversation
-    // Use deep clone to preserve the user list content
+ 
     const newContainer = container.cloneNode(true);
     if (container.parentNode) {
         container.parentNode.replaceChild(newContainer, container);
         chatState.usersListContainer = newContainer;
     }
     
-    // Set up event delegation handler for opening conversations
-    // This uses a single listener on the container instead of one per user item
     setupUsersListHandler(chatState.usersListContainer);
     
     return container;
@@ -90,12 +71,6 @@ export async function usersListView(containerOrSelector) {
 
 
 
-/**
- * Updates the users list view with current online status.
- * Call this function when online users change (e.g., on WebSocket events).
- * 
- * @returns {Promise<void>}
- */
 export async function updateUsersListView() {
     // console.log('usersListView.js: updateUsersListView() called');
     
@@ -109,13 +84,6 @@ export async function updateUsersListView() {
     await usersListView(chatState.usersListContainer);
 }
 
-/**
- * Updates a single user's online status in the view.
- * More efficient than full re-render when only one user changes status.
- * 
- * @param {number} userId - The user ID whose status changed
- * @param {boolean} isOnline - The new online status
- */
 export function updateUserOnlineStatus(userId, isOnline) {
     // console.log('usersListView.js: updateUserOnlineStatus() called for userId', userId, '- online:', isOnline);
     

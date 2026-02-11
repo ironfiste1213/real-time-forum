@@ -1,30 +1,10 @@
-/**
- * Handle message from me (sent from another connection)
- * 
- * This handler processes "message_from_me" WebSocket messages which are sent when
- * the user sends a message from another browser tab/device. It stores the message
- * locally in currentMessages and updates the conversation view if visible.
- * 
- * Flow:
- * 1. Log incoming message data for debugging
- * 2. Validate required fields (to_user_id, content)
- * 3. Check if we have an active conversation with the recipient
- * 4. Create a message object with proper structure
- * 5. Store in chatState.currentMessages
- * 6. Update the conversation view if visible
- */
 
 import { chatState } from '../state.js';
 import { displayCurrentMessages, storeCurrentMessage } from '../helperFunctions/privateMessagesHelper.js';
+import { updateUsersListView } from '../../view.js';
 
 /**
  * Handle incoming "message_from_me" WebSocket messages
- * 
- * @param {Object} data - The message_from_me event data from WebSocket
- * @param {number} data.to_user_id - The ID of the recipient user
- * @param {string} data.content - The message content
- * @param {string} data.timestamp - ISO timestamp when message was sent
- * @param {number} data.id - The database ID of the message
  */
 export function handleMessageFromMe(data) {
     console.log('[messageFromMe.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME RECEIVED =====');
@@ -66,6 +46,7 @@ export function handleMessageFromMe(data) {
 
         console.log('[messageFromMe.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME PROCESSED SUCCESSFULLY =====');
     } else {
+        updateUsersListView();
         console.log('[messageFromMe.js:handleMessageFromMe] [DEBUG] ✗ No active conversation with recipient (expected user ID:', toUserId, ', active conversation user ID:', chatState.activeConversation, '), ignoring message');
         console.log('[messageFromMe.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME IGNORED =====');
     }

@@ -21,15 +21,29 @@
     text-align: center;
 }
 
-/* Post feed grid layout - 2 columns on desktop */
+/* Post feed grid layout - flexible columns based on screen width */
 #post-feed {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 48px;
+    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+    gap: 24px;
     align-items: start;
 }
 
-/* Responsive: 1 column on small screens */
+/* Large screens - 3 columns if space allows */
+@media (min-width: 1200px) {
+    #post-feed {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Medium-large screens - 2 columns */
+@media (max-width: 1199px) {
+    #post-feed {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Small screens - 1 column */
 @media (max-width: 768px) {
     #post-feed {
         grid-template-columns: 1fr;
@@ -37,6 +51,7 @@
     
     #post-feed-section {
         padding: 20px 15px;
+        max-width: 100%;
     }
     
     #post-feed-section h2 {

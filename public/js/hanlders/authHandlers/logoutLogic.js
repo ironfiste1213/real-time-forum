@@ -23,7 +23,10 @@ export async function logoutHandler(rootContainer) {
             
             // Clear chat event listeners and remove chat panel
             clearChatEventListeners();
-            
+             const chatPanel = document.querySelector('#chat-panel');
+             const chatButton = document.querySelector('#floating-chat-btn')
+            if (chatPanel) chatPanel.remove()
+             if(chatButton) chatButton.remove()
             // Redirect to login view
             router({ispush:false, path:"/login"})
             console.log('logoutLogic.js: Redirect initiated');
@@ -42,3 +45,33 @@ export async function logoutHandler(rootContainer) {
     });
 }
 
+
+export async function logout(container) {
+    const result = await logoutApi();
+        console.log('logoutLogic.js: API result received, success:', result.success);
+
+        if (result.success) {
+            console.log('Logout successful');
+            
+            // Clear chat event listeners and remove chat panel
+            clearChatEventListeners();
+             const chatPanel = document.querySelector('#chat-panel');
+             const chatButton = document.querySelector('#floating-chat-btn')
+            if (chatPanel) chatPanel.remove()
+             if(chatButton) chatButton.remove()
+            // Redirect to login view
+            router({ispush:false, path:"/login"})
+            console.log('logoutLogic.js: Redirect initiated');
+            
+            // Close WebSocket connection properly
+            closeConnection();
+            
+            // Reset chat state (including clearing debounce timeouts)
+            resetChatState();
+        } else {
+            console.error('Logout failed:', result.error);
+            // Show error message to user
+            showError(Container, result.error);
+            console.log('logoutLogic.js: Error displayed to user');
+        }
+}

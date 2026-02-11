@@ -1,11 +1,4 @@
-/**
- * Time Utilities
- * Shared date and time formatting functions
- */
 
-/**
- * Formats a date string into a human-readable format
- */
 export function formatDate(dateString) {
     if (!dateString) {
         return 'Unknown date';

@@ -1,12 +1,4 @@
-/**
- * Conversation View
- * Displays a conversation with a specific user.
- * Loads conversation history and renders messages in the conversation component.
- * 
- * IMPORTANT: This view now uses a dedicated #conversation-container at the same
- * level as #users-list-container in the chat panel. This ensures clean separation
- * between the users list and conversation views.
- */
+
 import { setupBackButton } from '../hanlders/chat/backbuttonHandler.js';
 import { conversationComponent } from '../components/chat/conversationComponent.js';
 import { loadConversationHistory } from '../api/messages/conversationHistory.js';
@@ -17,12 +9,7 @@ import { setupConversationScrollListener, initConversationPagination } from '../
 import { transitionTo } from '../viewState.js';
 import { updateTotalUnreadUI } from '../ws/helperFunctions/updateUnreadCounts.js';
 
-/**
- * Conversation View - Displays a conversation with a specific user
- * 
- * Uses the dedicated #conversation-container (same level as #users-list-container)
- * for clean separation between views.
- */
+
 export async function conversationView(containerOrSelector, userId) {
     // console.log('conversationView.js: conversationView() called with userId:', userId);
     

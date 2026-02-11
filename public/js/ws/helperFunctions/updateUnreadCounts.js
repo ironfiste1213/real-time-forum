@@ -9,7 +9,6 @@ import { chatState } from '../state.js';
  * Increment unread count for a specific conversation/user
  * Called when receiving a new private message from a user
  * 
- * @param {number} senderId - The user ID who sent the message
  */
 export function incrementUnreadCount(senderId) {
     console.log('updateUnreadCounts.js: incrementUnreadCount() called for user:', senderId);
@@ -105,9 +104,7 @@ export function updateTotalUnreadUI() {
 /**
  * Updates the chat UI with total unread count from conversations.
  * Adds/updates a badge on the floating chat button showing unread messages.
- * 
- * @param {Array} conversations - The result from loadConversations() 
- */
+ *  */
 export function updateUnreadCounts(conversations) {
     try {
         console.log('updateUnreadCounts.js: updateUnreadCounts() called');
@@ -160,12 +157,7 @@ export function updateUnreadCounts(conversations) {
     }
 }
 
-/**
- * Convenience function that loads conversations and updates the unread UI.
- * Combines loadConversations() and updateUnreadCounts() in one call.
- * 
- * @returns {Promise<Array>} The loaded conversations array
- */
+
 export async function loadConversationsAndUpdateUnread() {
     try {
         console.log('updateUnreadCounts.js: loadConversationsAndUpdateUnread() called');

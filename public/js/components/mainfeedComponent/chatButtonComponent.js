@@ -33,14 +33,14 @@ export function initChatButton() {
     let floatingChatButton = document.querySelector('#floating-chat-btn');
     
     if (floatingChatButton) {
-        //console.log('chatButtonComponent.js: Chat button already exists, returning existing element');
+        console.log('&&&&&chatButtonComponent.js: Chat button already exists, returning existing element');
         return floatingChatButton;
     }
     
     // Create and append to body
     floatingChatButton = createFloatingChatButton();
     document.body.appendChild(floatingChatButton);
-    //console.log('chatButtonComponent.js: Chat button created and appended to body');
+    console.log('chatButtonComponent.js: Chat button created and appended to body');
     
     return floatingChatButton;
 }

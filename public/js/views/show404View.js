@@ -1,9 +1,6 @@
 import { transitionTo } from '../viewState.js';
 
-/**
- * Show 404 View
- * Renders a 404 error page for unknown routes
- */
+
 export function show404View() {
     transitionTo('show404View', () => {
         console.log('view.js: show404View() called');

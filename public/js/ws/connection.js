@@ -1,39 +1,16 @@
-/**
- * WebSocket Connection Manager
- * Manages the WebSocket connection for real-time chat functionality.
- * 
- * This module handles:
- * - Opening and maintaining WebSocket connections
- * - Connection state management (connected/disconnected)
- * - Automatic reconnection with exponential backoff
- * - Error handling and message routing
- * 
- * Usage:
- * - Import: import { initWebSocket } from './chat/connection.js';
- * - Initialize: initWebSocket('ws://your-server/ws');
- */
+
 import { loadConversationsAndUpdateUnread } from './helperFunctions/updateUnreadCounts.js';
 import { chatState } from './state.js';
 import { handleMessage } from './messageTypeHandlers/messagehandling.js';
 import { router } from '../router.js';
 import { transitionTo } from '../viewState.js';
 
-/**
- * WebSocket connection instance
- * @type {WebSocket|null}
- */
+
 let ws = null;
 
-/**
- * Timeout ID for reconnect attempts
- * @type {number|null}
- */
 let reconnectTimeout = null;
 
-/**
- * Initialize a WebSocket connection to the given URL
- * @param {string} url - The WebSocket server URL
- */
+
 export function initWebSocket(url) {
     // If we already have a valid connection, don't reinitialize
     if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {

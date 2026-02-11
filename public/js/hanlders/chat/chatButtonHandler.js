@@ -244,7 +244,7 @@ let chatButtonListenerAttached = false;
 export function attachChatButtonListener() {
     // Prevent duplicate listener attachment
     if (chatButtonListenerAttached) {
-        //console.log('chatButtonHandler.js: Chat button listener already attached, skipping');
+        console.log('chatButtonHandler.js: Chat button listener already attached, skipping');
         return;
     }
     
@@ -280,11 +280,12 @@ export function clearChatEventListeners() {
 
     // Also remove the chat panel from DOM if it exists
     const chatPanel = document.querySelector('#chat-panel');
+    const chatButton = document.querySelector('#floating-chat-btn')
     if (chatPanel && chatPanel.parentNode) {
         chatPanel.parentNode.removeChild(chatPanel);
         console.log('[ChatHandler] Chat panel removed from DOM');
     }
-
+    resetChatButtonListenerFlag()
     // Reset chat state
     chatState.isChatOpen = false;
 
