@@ -249,6 +249,22 @@
     transform: none;
 }
 
+/* Disabled input state */
+.conversation-input-area.input-disabled {
+    background-color: #f5f5f5;
+    opacity: 0.7;
+}
+
+.conversation-input-area.input-disabled .conversation-input {
+    background-color: #e8e8e8;
+    cursor: not-allowed;
+}
+
+.conversation-input-area.input-disabled .conversation-send-btn {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
 /* ============================================
    RESPONSIVE ADJUSTMENTS
    ============================================ */

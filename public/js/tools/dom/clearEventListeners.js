@@ -5,9 +5,6 @@
  * 1. Finds all elements marked with the specified dataAttribute
  * 2. Clones each element (cloneNode(true)) which removes all event listeners
  * 3. Replaces original with clone
- *
- * @param {Element} container - Container to search for elements (default: document)
- * @param {string} dataAttribute - The data attribute to look for (default: 'data-has-listener')
  */
 export function clearEventListeners(container = document, dataAttribute = 'data-has-listener') {
     console.log(`[clearEventListeners] Clearing event listeners for ${dataAttribute}...`);

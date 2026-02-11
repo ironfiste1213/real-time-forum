@@ -11,12 +11,104 @@
  */
 
 import { chatState } from '../../ws/state.js';
+import { markMessagesAsRead } from '../../api/messages/markMessagesAsRead.js';
+
+/**
+ * Gets the conversation container - tries provided container first, then falls back to chatState
+ */
+function getConversationContainer() {
+    // First try to find the container with the conversation
+    let container = chatState.conversationContainer;
+    
+    // If not found, try to find it in the DOM
+    if (!container) {
+        container = document.querySelector('#conversation-container');
+    }
+    
+    return container;
+}
+
+/**
+ * Disables the conversation input area.
+ * Call this when the recipient user goes offline.
+ */
+export function disableConversationInput() {
+    console.log('[conversationInputHandler.js:disableConversationInput] Disabling conversation input');
+    
+    const container = getConversationContainer();
+    console.log('[conversationInputHandler.js:disableConversationInput] Container found:', !!container);
+    
+    if (!container) {
+        console.log('[conversationInputHandler.js:disableConversationInput] No conversation container found');
+        return;
+    }
+    
+    const inputArea = container.querySelector('#conversation-input-area');
+    const messageInput = container.querySelector('#conversation-input');
+    const sendButton = container.querySelector('.conversation-send-btn');
+    
+    console.log('[conversationInputHandler.js:disableConversationInput] Elements found:', {
+        inputArea: !!inputArea,
+        messageInput: !!messageInput,
+        sendButton: !!sendButton
+    });
+    
+    if (inputArea) {
+        inputArea.classList.add('input-disabled');
+    }
+    
+    if (messageInput) {
+        messageInput.disabled = true;
+        messageInput.placeholder = 'User is offline - cannot send messages';
+    }
+    
+    if (sendButton) {
+        sendButton.disabled = true;
+    }
+}
+
+/**
+ * Enables the conversation input area.
+ * Call this when the recipient user comes online.
+ */
+export function enableConversationInput() {
+    console.log('[conversationInputHandler.js:enableConversationInput] Enabling conversation input');
+    
+    const container = getConversationContainer();
+    console.log('[conversationInputHandler.js:enableConversationInput] Container found:', !!container);
+    
+    if (!container) {
+        console.log('[conversationInputHandler.js:enableConversationInput] No conversation container found');
+        return;
+    }
+    
+    const inputArea = container.querySelector('#conversation-input-area');
+    const messageInput = container.querySelector('#conversation-input');
+    const sendButton = container.querySelector('.conversation-send-btn');
+    
+    console.log('[conversationInputHandler.js:enableConversationInput] Elements found:', {
+        inputArea: !!inputArea,
+        messageInput: !!messageInput,
+        sendButton: !!sendButton
+    });
+    
+    if (inputArea) {
+        inputArea.classList.remove('input-disabled');
+    }
+    
+    if (messageInput) {
+        messageInput.disabled = false;
+        messageInput.placeholder = 'Type a message...';
+    }
+    
+    if (sendButton) {
+        sendButton.disabled = false;
+    }
+}
 
 /**
  * Send a message to the active conversation user via WebSocket
  * 
- * @param {string} messageContent - The message text to send
- * @returns {boolean} True if message was sent, false otherwise
  */
 function sendMessage(messageContent) {
     const toUserId = chatState.activeConversation;
@@ -103,6 +195,27 @@ export function setupConversationInputListener(conversationEl) {
             console.log('[conversationInputHandler.js:setupConversationInputListener] Enter key pressed');
             event.preventDefault();
             handleSendAction();
+        }
+    });
+    
+    // Mark messages as read when user clicks/focuses on the input field
+    messageInput.addEventListener('click', async () => {
+        console.log('[conversationInputHandler.js:setupConversationInputListener] Input clicked - marking messages as read');
+        const userId = chatState.activeConversation;
+        if (userId) {
+            await markMessagesAsRead(userId);
+            // Clear unread count in local state
+            const conversation = chatState.conversations.find(c => c.partner_id === userId || c.user_id === userId);
+            if (conversation) {
+                conversation.unread_count = 0;
+            }
+            const userInAllUsers = chatState.allUsers.find(u => u.id === userId);
+            if (userInAllUsers) {
+                userInAllUsers.unread_count = 0;
+            }
+            // Update total unread UI
+            const { updateTotalUnreadUI } = await import('../../ws/helperFunctions/updateUnreadCounts.js');
+            updateTotalUnreadUI();
         }
     });
     

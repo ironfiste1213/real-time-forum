@@ -1,12 +1,12 @@
 import { formatDate } from '../../tools/time/formatdate.js';
 
 export function PostComponent(post) {
-    console.log('postComponent.js: PostComponent() called with post ID:', post.id);
+    //console.log('postComponent.js: PostComponent() called with post ID:', post.id);
     
     const postElement = document.createElement('div');
     postElement.classList.add('post');
     postElement.dataset.postId = post.id;
-    console.log('postComponent.js: Post element created with ID:', post.id);
+    //console.log('postComponent.js: Post element created with ID:', post.id);
 
     // Post Header - Avatar, Username, Date
     const postHeader = document.createElement('div');
@@ -24,7 +24,7 @@ export function PostComponent(post) {
     const username = document.createElement('span');
     username.classList.add('username');
     username.textContent = post.author ? post.author.nickname : 'Unknown';
-    console.log('postComponent.js: Author:', post.author ? post.author.nickname : 'Unknown');
+    //console.log('postComponent.js: Author:', post.author ? post.author.nickname : 'Unknown');
     userInfo.appendChild(username);
 
     // Date
@@ -47,13 +47,13 @@ export function PostComponent(post) {
     contentSnippet.classList.add('post-content-snippet');
     const snippet = post.content.substring(0, 100);
     contentSnippet.textContent = snippet + (post.content.length > 100 ? '...' : '');
-    console.log('postComponent.js: Content snippet created, length:', snippet.length);
+    //console.log('postComponent.js: Content snippet created, length:', snippet.length);
     postElement.appendChild(contentSnippet);
 
     // Categories
     const categories = document.createElement('div');
     categories.classList.add('categories');
-    console.log('postComponent.js: Categories found:', post.categories ? post.categories.length : 0);
+    //console.log('postComponent.js: Categories found:', post.categories ? post.categories.length : 0);
     if (post.categories && post.categories.length > 0) {
         post.categories.forEach(cat => {
             const categorySpan = document.createElement('span');
@@ -81,7 +81,7 @@ export function PostComponent(post) {
 
     postElement.appendChild(actions);
 
-    console.log('postComponent.js: Post component created successfully');
+    //console.log('postComponent.js: Post component created successfully');
     return postElement;
 }
 

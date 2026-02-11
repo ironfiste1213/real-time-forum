@@ -1,12 +1,9 @@
 /**
  * Users List Component for Chat Panel
- * Creates user items with avatar, name, and online status for the small chat panel.
+ * Creates user items with avatar, name, online status, and unread message badge for the small chat panel.
  */
 
-import { conversationView } from '../../views/conversationView.js';
-import { transitionTo } from '../../viewState.js';
-
-export function UsersListComponent(users) {
+export function UsersListComponent({ users }) {
     console.log('userslistcomponent.js: UsersListComponent() called with', users ? users.length : 0, 'users');
     
     // Create container div for the users list
@@ -27,7 +24,7 @@ export function UsersListComponent(users) {
 
     // Create a div for each user
     users.forEach((user, index) => {
-        console.log('userslistcomponent.js: Processing user:', user.name, '- Online:', user.online);
+        console.log('userslistcomponent.js: Processing user:', user.name, '- Online:', user.online, '- Unread:', user.unread_count);
         
         const userItem = document.createElement('div');
         userItem.classList.add('chat-user-item');
@@ -46,11 +43,31 @@ export function UsersListComponent(users) {
         const userInfo = document.createElement('div');
         userInfo.classList.add('chat-user-info');
         
+        // User name row with unread badge
+        const nameRow = document.createElement('div');
+        nameRow.classList.add('chat-user-name-row');
+        
         // User name
         const userName = document.createElement('div');
         userName.classList.add('chat-user-name');
         userName.textContent = user.name || 'Unknown User';
-        userInfo.appendChild(userName);
+        nameRow.appendChild(userName);
+        
+        // Unread badge - red dot/count next to username
+        if (user.unread_count > 0) {
+            const unreadBadge = document.createElement('span');
+            unreadBadge.classList.add('chat-unread-badge-user');
+            
+            if (user.unread_count > 99) {
+                unreadBadge.textContent = '99+';
+            } else {
+                unreadBadge.textContent = user.unread_count;
+            }
+            nameRow.appendChild(unreadBadge);
+            console.log('userslistcomponent.js: Added unread badge for user', user.name, '- count:', user.unread_count);
+        }
+        
+        userInfo.appendChild(nameRow);
         
         // User status
         const userStatus = document.createElement('div');
@@ -74,35 +91,5 @@ export function UsersListComponent(users) {
 
     console.log('userslistcomponent.js: Users list component created successfully with', users.length, 'users');
     return container;
-}
-
-/**
- * Open conversation with a specific user
- * Uses transitionTo to clear users list listeners before showing conversation
- * @param {number} userId - The user ID to open conversation with
- */
-export async function openConversation(userId) {
-    console.log('userslistcomponent.js: openConversation() called with userId:', userId);
-    
-    // Find the chat panel users container
-    const usersContainer = document.querySelector('#users-list-container');
-    if (!usersContainer) {
-        console.error('userslistcomponent.js: Users container not found');
-        return;
-    }
-    
-    console.log('userslistcomponent.js: Users container found, opening conversation...');
-    
-    // Use transitionTo to handle cleanup of users list listeners before showing conversation
-    // Pass usersContainer and userId as args to avoid variable shadowing
-    // The callback receives the passed args: container and recipientId
-    await transitionTo('conversation', (container, recipientId) => {
-        conversationView(container, recipientId);
-    }, {
-        container: usersContainer,
-        dataAttribute: 'data-has-users-listener'
-    }, usersContainer, userId);
-    
-    console.log('userslistcomponent.js: Conversation opened for userId:', userId);
 }
 

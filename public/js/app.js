@@ -1,10 +1,14 @@
 import { handleLocation } from './router.js';
+import { initChatButton } from './components/mainfeedComponent/chatButtonComponent.js';
+import { attachChatButtonListener } from './hanlders/chat/chatButtonHandler.js';
 
 console.log('app.js: Application starting...');
 
 // Example usage for testing views
 // Uncomment the line below to test login view
 document.addEventListener('DOMContentLoaded', () => {
+    
+    
     handleLocation();
         // Chat connection will be initialized in showMainFeedView if user is logged in
         window.addEventListener("pageshow", (event) => {

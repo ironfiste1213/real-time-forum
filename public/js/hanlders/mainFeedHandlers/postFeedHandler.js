@@ -4,10 +4,7 @@ import { fetchPosts } from "../../api/posts/fetchposts.js"
 import { creatPostFeedSectionContent } from "../../components/mainfeedComponent/mainFeedContainer.js";
 import { postsPaginationState } from "../../viewState.js";
 
-
 export const CHUNK_SIZE = 6;
-
-
 export async function postsHandler() {
     console.log('postFeedHandler.js: postsHandler() called');
     const postFeedSection = document.querySelector("#post-feed-section");
@@ -38,17 +35,11 @@ export async function postsHandler() {
             if (lastRenderedIndex < allPosts.length - 1) {
                 // Not all posts are loaded yet, show Load More button
                 loadMoreHandler(postFeed, allPosts, CHUNK_SIZE);
-            } else {
-                // All posts are already loaded (from tracked state), hide button
-                console.log('postFeedHandler.js: All posts already loaded from tracked state');
-            }
-            console.log('postFeedHandler.js: Posts rendered successfully');
+            } 
         } else {
-            console.log('postFeedHandler.js: No posts to display');
             renderEmptyState(postFeed);
         }
     } catch (error) {
-        console.error('postFeedHandler.js: Error fetching posts:', error.message);
         renderError(postFeed, error.message);
     }
 }
@@ -56,24 +47,19 @@ export async function postsHandler() {
 
 function renderInitialPosts(postFeed, allPosts) {
     if (!postFeed) return;
-
     // Clear previous content
     while (postFeed.firstChild) {
         postFeed.removeChild(postFeed.firstChild);
     }
-
     if (allPosts.length === 0) {
         renderEmptyState(postFeed);
         return;
     }
-
     // Get the tracked chunk from viewState (if any)
     const trackedChunk = postsPaginationState.getChunk();
-    
     // Always start by rendering the first chunk (posts 0-5)
     const firstChunkEnd = CHUNK_SIZE - 1;
     renderPostsChunk(postFeed, allPosts, 0, firstChunkEnd);
-    
     // If we have a tracked chunk (user previously clicked Load More),
     // render all chunks up to the tracked chunk
     if (trackedChunk > 0) {
@@ -83,37 +69,26 @@ function renderInitialPosts(postFeed, allPosts) {
 
 /**
  * Render posts from chunk 1 up to the target chunk
- * @param {HTMLElement} postFeed - The post feed container
- * @param {Array} allPosts - All posts array
- * @param {number} targetChunk - The chunk index to render up to (inclusive)
+ * 
  */
 function renderPostsUpToChunk(postFeed, allPosts, targetChunk) {
     // Start from chunk 1 (posts 6-11) and render up to targetChunk
     for (let chunk = 1; chunk <= targetChunk; chunk++) {
         const startIndex = chunk * CHUNK_SIZE;
         const endIndex = startIndex + CHUNK_SIZE - 1;
-        
         // Check if we have more posts to load
         if (startIndex >= allPosts.length) {
             break;
         }
-        
         renderPostsChunk(postFeed, allPosts, startIndex, endIndex);
     }
 }
-
-
 export function renderPostsChunk(postFeed, posts, from, to) {
-    if (!postFeed) return;
-    
-    console.log('postFeedHandler.js: renderPostsChunk() called from:', from, 'to:', to);
-    
+    if (!postFeed) return;    
     for (let i = from; i <= to && i < posts.length; i++) {
         const postElement = PostComponent(posts[i]);
         postFeed.appendChild(postElement);
     }
-    
-    console.log('postFeedHandler.js: Rendered posts from index', from, 'to', Math.min(to, posts.length - 1));
 }
 
 
@@ -129,7 +104,6 @@ function renderError(postFeed, message) {
     while (postFeed.firstChild) {
         postFeed.removeChild(postFeed.firstChild);
     }
-    
     // Create error display div
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';

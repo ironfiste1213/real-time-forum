@@ -2,7 +2,7 @@ import { sharedMainFeedHandlers } from '../hanlders/mainFeedHandlers/mainFeedHan
 import { createMainFeedContent } from '../components/mainfeedComponent/mainFeedContainer.js';
 import { postDetailsHandler } from '../hanlders/postDetailsHandlers/postDetailsHandler.js';
 import { transitionTo } from '../viewState.js';
-
+import { updateTotalUnreadUI } from '../ws/helperFunctions/updateUnreadCounts.js';
 /**
  * Post Details View
  * Renders the full post details when navigating to a specific post directly via URL.
@@ -46,7 +46,11 @@ export function singlePostView(postId, user) {
         // which is created by createMainFeedContent()
         postDetailsHandler(postId);
         console.log('view.js: Post details rendered');
-        
+
+        // Update the unread count UI after view transition
+        updateTotalUnreadUI();
+        console.log('view.js: Unread count UI updated');
+
         console.log('view.js: singlePostView() completed');
     });
 }

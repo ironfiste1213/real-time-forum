@@ -8,6 +8,8 @@ import { usersListView } from '../../views/usersListView.js';
 import { chatState } from '../../ws/state.js';
 import { clearEventListeners } from '../../tools/dom/clearEventListeners.js';
 
+let hidePanelTimeout = null;
+
 /**
  * Toggles the chat panel visibility.
  * Creates the panel if it doesn't exist, otherwise toggles its visibility.
@@ -31,28 +33,41 @@ export function chatButtonHandler() {
  */
 function showChatPanel() {
     console.log('chatButtonHandler.js: showChatPanel() called');
-    
+
+    // Clear any existing hide timeout
+    if (hidePanelTimeout) {
+        clearTimeout(hidePanelTimeout);
+        hidePanelTimeout = null;
+    }
+
     // Create the chat panel
     const chatPanel = createChatPanel();
-    
+
     // Add to the body
     document.body.appendChild(chatPanel);
     console.log('chatButtonHandler.js: Chat panel appended to body');
-    
+
     // Show the panel with animation - add expanded class
     requestAnimationFrame(() => {
         chatPanel.classList.add('show', 'expanded');
     });
-    
+
     // Update chat state
     chatState.isChatOpen = true;
-    
+
     // Load the users list
     const usersContainer = chatPanel.querySelector('#users-list-container');
     if (usersContainer) {
+        // Ensure users list is visible
+        usersContainer.classList.add('show');
+        // Ensure conversation container is hidden
+        const conversationContainer = chatPanel.querySelector('#conversation-container');
+        if (conversationContainer) {
+            conversationContainer.classList.remove('show');
+        }
         usersListView(usersContainer);
     }
-    
+
     // Add close button event listener
     const closeBtn = chatPanel.querySelector('.close-btn');
     if (closeBtn) {
@@ -61,7 +76,7 @@ function showChatPanel() {
             hideChatPanel(chatPanel);
         });
     }
-    
+
     // Add minimize button event listener
     const minimizeBtn = chatPanel.querySelector('.minimize-btn');
     if (minimizeBtn) {
@@ -70,7 +85,7 @@ function showChatPanel() {
             minimizeChatPanel(chatPanel);
         });
     }
-    
+
     // Make the panel draggable
     makeDraggable(chatPanel);
 }
@@ -81,17 +96,17 @@ function showChatPanel() {
  */
 function hideChatPanel(chatPanel) {
     console.log('chatButtonHandler.js: hideChatPanel() called');
-    
+
     chatPanel.classList.remove('show');
     chatPanel.classList.add('hide');
-    
+
     // Remove after animation
-    setTimeout(() => {
+    hidePanelTimeout = setTimeout(() => {
         if (chatPanel.parentNode) {
             chatPanel.parentNode.removeChild(chatPanel);
         }
     }, 300);
-    
+
     // Update chat state
     chatState.isChatOpen = false;
 }
@@ -122,13 +137,24 @@ function minimizeChatPanel(chatPanel) {
  */
 function expandChatPanel(chatPanel) {
     console.log('chatButtonHandler.js: expandChatPanel() called');
-    
+
     chatPanel.classList.remove('minimized');
     chatPanel.classList.add('expanded');
-    
+
     // Update chat state
     chatState.isChatOpen = true;
-    
+
+    // Reset container states - show users list, hide conversation
+    const usersContainer = chatPanel.querySelector('#users-list-container');
+    const conversationContainer = chatPanel.querySelector('#conversation-container');
+
+    if (usersContainer) {
+        usersContainer.classList.add('show');
+    }
+    if (conversationContainer) {
+        conversationContainer.classList.remove('show');
+    }
+
     // Re-add button event listeners
     const closeBtn = chatPanel.querySelector('.close-btn');
     if (closeBtn) {
@@ -137,7 +163,7 @@ function expandChatPanel(chatPanel) {
             hideChatPanel(chatPanel);
         });
     }
-    
+
     const minimizeBtn = chatPanel.querySelector('.minimize-btn');
     if (minimizeBtn) {
         minimizeBtn.addEventListener('click', (event) => {
@@ -201,14 +227,26 @@ function makeDraggable(panel) {
             panel.style.transition = '';
         }
     });
+
+   
 }
 
 /**
+ * Tracks whether the chat button listener has already been attached
+ * @type {boolean}
+ */
+let chatButtonListenerAttached = false;
+
+/**
  * Attaches the chat button click listener.
- * Call this function after the floating chat button is created.
+ * This function is idempotent - calling it multiple times won't add duplicate listeners.
  */
 export function attachChatButtonListener() {
-    console.log('chatButtonHandler.js: attachChatButtonListener() called');
+    // Prevent duplicate listener attachment
+    if (chatButtonListenerAttached) {
+        //console.log('chatButtonHandler.js: Chat button listener already attached, skipping');
+        return;
+    }
     
     const chatButton = document.querySelector('#floating-chat-btn');
     if (chatButton) {
@@ -216,10 +254,18 @@ export function attachChatButtonListener() {
             event.stopPropagation();
             chatButtonHandler();
         });
-        console.log('chatButtonHandler.js: Chat button listener attached');
+        chatButtonListenerAttached = true;
+        //console.log('chatButtonHandler.js: Chat button listener attached');
     } else {
         console.warn('chatButtonHandler.js: Chat button not found');
     }
+}
+
+/**
+ * Resets the listener attachment flag (useful for testing or cleanup)
+ */
+export function resetChatButtonListenerFlag() {
+    chatButtonListenerAttached = false;
 }
 
 /**

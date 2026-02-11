@@ -3,12 +3,7 @@
  * Handles creating and fetching comments for posts
  */
 
-/**
- * Creates a new comment on a post
- * @param {number} postId - The ID of the post to comment on
- * @param {string} content - The comment content
- * @returns {Promise<Object>} The created comment data
- */
+
 export async function createComment(postId, content) {
     console.log('createCommentRequest.js: Creating comment for post ID:', postId);
     

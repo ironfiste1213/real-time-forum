@@ -1,12 +1,12 @@
 // Create post section component
 export function createCreatePostComponent() {
-    console.log('creatPostCoponent.js: createCreatePostComponent() called');
+    //console.log('creatPostCoponent.js: createCreatePostComponent() called');
     
     // Create post section (initially hidden via CSS)
     const createPostSection = document.createElement('section');
     createPostSection.id = 'create-post-section';
     createPostSection.className = 'card';
-    console.log('creatPostCoponent.js: Create post section created');
+    //console.log('creatPostCoponent.js: Create post section created');
 
     const createPostHeading = document.createElement('h3');
     createPostHeading.textContent = 'Create a New Post';
@@ -15,7 +15,7 @@ export function createCreatePostComponent() {
     const createPostForm = document.createElement('form');
     createPostForm.id = 'create-post-form';
     createPostForm.setAttribute('data-has-listener', 'true'); // Mark as having event listener
-    console.log('creatPostCoponent.js: Create post form created');
+    //console.log('creatPostCoponent.js: Create post form created');
 
     // Title input
     const titleGroup = document.createElement('div');
@@ -32,7 +32,7 @@ export function createCreatePostComponent() {
     titleGroup.appendChild(titleLabel);
     titleGroup.appendChild(titleInput);
     createPostForm.appendChild(titleGroup);
-    console.log('creatPostCoponent.js: Title input added');
+    //console.log('creatPostCoponent.js: Title input added');
 
     // Content textarea
     const contentGroup = document.createElement('div');
@@ -49,7 +49,7 @@ export function createCreatePostComponent() {
     contentGroup.appendChild(contentLabel);
     contentGroup.appendChild(contentTextarea);
     createPostForm.appendChild(contentGroup);
-    console.log('creatPostCoponent.js: Content textarea added');
+    //console.log('creatPostCoponent.js: Content textarea added');
 
     // Categories
     const categoriesFieldset = document.createElement('fieldset');
@@ -62,7 +62,7 @@ export function createCreatePostComponent() {
     categoriesContainer.className = 'categories-checkboxes';
     categoriesFieldset.appendChild(categoriesContainer);
     createPostForm.appendChild(categoriesFieldset);
-    console.log('creatPostCoponent.js: Categories fieldset added');
+    //console.log('creatPostCoponent.js: Categories fieldset added');
 
     // Submit button
     const submitButton = document.createElement('button');
@@ -70,11 +70,11 @@ export function createCreatePostComponent() {
     submitButton.textContent = 'Create Post';
     submitButton.id = 'create-post-submit-btn';
     createPostForm.appendChild(submitButton);
-    console.log('creatPostCoponent.js: Submit button added');
+    //console.log('creatPostCoponent.js: Submit button added');
 
     createPostSection.appendChild(createPostForm);
 
-    console.log('creatPostCoponent.js: Create post component created successfully');
+    //console.log('creatPostCoponent.js: Create post component created successfully');
     return createPostSection;
 }
 

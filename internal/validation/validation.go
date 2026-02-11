@@ -17,19 +17,8 @@ const (
 	RateLimitRequests = 10 // Maximum requests per time window
 	RateLimitWindow   = 60 // Time window in seconds (1 minute)
 
-	// Spam detection thresholds
-	MaxCapsPercentage = 0.7 // Maximum percentage of capital letters (70%)
-	MinSpamLength     = 10  // Minimum text length to check for spam patterns
 )
 
-// Spam patterns to detect
-var spamPatterns = []*regexp.Regexp{
-	regexp.MustCompile(`(?i)(buy now|click here|free money|make money fast|work from home|limited time offer|act now)`),
-	regexp.MustCompile(`(?i)https?://[^\s]+`),
-	regexp.MustCompile(`(?i)www\.[^\s]+`),
-	regexp.MustCompile(`(?i)\$\d+|\d+\s*dollars`),
-	regexp.MustCompile(`(?i)(winner|congratulations|you have won)`),
-}
 
 // Forbidden characters - control characters that should not be allowed
 var controlCharPattern = regexp.MustCompile(`[\x00-\x08\x0b\x0c\x0e-\x1f\x7f]`)
@@ -131,39 +120,6 @@ func SanitizeHTML(text string) string {
 	sanitized = regexp.MustCompile(`(?i)data:`).ReplaceAllString(sanitized, "datablocked:")
 
 	return sanitized
-}
-
-// IsSpam checks if the text appears to be spam
-func IsSpam(text string) bool {
-	// Skip very short texts
-	if utf8.RuneCountInString(text) < MinSpamLength {
-		return false
-	}
-
-	// Check for spam patterns
-	for _, pattern := range spamPatterns {
-		if pattern.MatchString(text) {
-			return true
-		}
-	}
-
-	// Check for excessive capital letters
-	capsCount := 0
-	for _, r := range text {
-		if r >= 'A' && r <= 'Z' {
-			capsCount++
-		}
-	}
-
-	totalLetters := utf8.RuneCountInString(text)
-	if totalLetters > 0 {
-		capsPercentage := float64(capsCount) / float64(totalLetters)
-		if capsPercentage > MaxCapsPercentage {
-			return true
-		}
-	}
-
-	return false
 }
 
 // itoa converts int to string (helper function)

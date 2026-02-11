@@ -21,7 +21,7 @@ export async function loadConversations() {
         const data = await response.json();
         const conversations = data.conversations || [];
 
-        console.log('loadConversations.js: Received', conversations.length, 'conversations');
+        console.log('loadConversations.js: Received', conversations, 'conversations');
 
         if (conversations.length === 0) {
             return [];
@@ -53,7 +53,8 @@ export async function loadConversations() {
                 }
             }
         }
-
+        console.log("--------------: ", conversationMap);
+        
         // Convert map to array and sort by last_message_time descending (most recent first)
         const deduplicatedConversations = Array.from(conversationMap.values())
             .sort((a, b) => new Date(b.last_message_time) - new Date(a.last_message_time));

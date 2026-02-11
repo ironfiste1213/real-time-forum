@@ -5,16 +5,12 @@ import { renderCommentHandler } from "./renderCommenthander.js";
  * New Comment Handler
  * Handles new comment submissions in the post details view
  * 
- * @param {number} postId - The ID of the post to add comment to
  */
-export function attachNewCommentHandler(postId) {
-    console.log('newCommentHandler.js: attachNewCommentHandler() called with postId:', postId);
-    
+export function attachNewCommentHandler(postId) {    
     if (!postId || postId <= 0) {
         console.error('newCommentHandler.js: Invalid post ID:', postId);
         return;
     }
-    
     // Get the comment textarea
     const commentTextarea = document.getElementById('comment-input-' + postId);
     if (!commentTextarea) {
@@ -28,13 +24,10 @@ export function attachNewCommentHandler(postId) {
         console.error('newCommentHandler.js: Submit button not found');
         return;
     }
-    
     // Handle submit button click
     submitBtn.addEventListener('click', async () => {
         const content = commentTextarea.value.trim();
-        
         if (!content) {
-            console.log('newCommentHandler.js: Comment content is empty');
             alert('Please enter a comment');
             return;
         }
@@ -45,9 +38,7 @@ export function attachNewCommentHandler(postId) {
         
         try {
             console.log('newCommentHandler.js: Creating comment for postId:', postId);
-            const newComment = await createComment(postId, content);
-            console.log('newCommentHandler.js: Comment created successfully:', newComment);
-            
+            const newComment = await createComment(postId, content);            
             // Clear the textarea
             commentTextarea.value = '';
             
@@ -55,10 +46,7 @@ export function attachNewCommentHandler(postId) {
             // Go back to first page to see the new comment
             await renderCommentHandler(postId, 1);
             
-            console.log('newCommentHandler.js: Comments refreshed');
-            
         } catch (error) {
-            console.error('newCommentHandler.js: Error creating comment:', error);
             alert('Failed to post comment. Please try again.');
         } finally {
             // Re-enable the button
@@ -73,8 +61,6 @@ export function attachNewCommentHandler(postId) {
             event.preventDefault();
             submitBtn.click();
         }
-    });
-    
-    console.log('newCommentHandler.js: New comment handler attached successfully');
+    });    
 }
 

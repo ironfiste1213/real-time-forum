@@ -35,6 +35,13 @@ export function incrementUnreadCount(senderId) {
         conversation.unread_count = (conversation.unread_count || 0) + 1;
         console.log('updateUnreadCounts.js: Unread count for user', senderId, 'is now:', conversation.unread_count);
         
+        // Also update chatState.allUsers with the new unread count for immediate UI update
+        const userInAllUsers = chatState.allUsers.find(u => u.id === senderId);
+        if (userInAllUsers) {
+            userInAllUsers.unread_count = conversation.unread_count;
+            console.log('updateUnreadCounts.js: Updated unread_count in chatState.allUsers for user:', senderId);
+        }
+        
         // Update the total unread count UI
         updateTotalUnreadUI();
         
@@ -48,7 +55,7 @@ export function incrementUnreadCount(senderId) {
  * Update the total unread count UI based on chatState.conversations
  * Called after incrementing unread count for a specific user
  */
-function updateTotalUnreadUI() {
+export function updateTotalUnreadUI() {
     try {
         // Calculate total unread count from all conversations
         const totalUnread = Array.isArray(chatState.conversations)

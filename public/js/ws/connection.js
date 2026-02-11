@@ -15,6 +15,8 @@
 import { loadConversationsAndUpdateUnread } from './helperFunctions/updateUnreadCounts.js';
 import { chatState } from './state.js';
 import { handleMessage } from './messageTypeHandlers/messagehandling.js';
+import { router } from '../router.js';
+import { transitionTo } from '../viewState.js';
 
 /**
  * WebSocket connection instance
@@ -33,10 +35,20 @@ let reconnectTimeout = null;
  * @param {string} url - The WebSocket server URL
  */
 export function initWebSocket(url) {
+    // If we already have a valid connection, don't reinitialize
+    if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+        console.log('connection.js: WebSocket already connected or connecting, skipping initialization');
+        return;
+    }
+
     // Close any existing connection before creating a new one
     if (ws) {
         ws.close();
         ws = null;
+    }
+    if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+        reconnectTimeout = null;
     }
 
     console.log('connection.js: Initializing WebSocket connection to:', url);
@@ -79,9 +91,18 @@ export function initWebSocket(url) {
         chatState.ws = null;
         
         console.log('connection.js: Disconnected - isConnected:', chatState.isConnected, '| Status:', chatState.connectionStatus);
-        
+        if (reconnectTimeout) {
+            clearTimeout(reconnectTimeout);
+            reconnectTimeout = null;
+        }
+
+        if (event.code != 1000 && event.code != 1008) {
         // Implement reconnection logic
+            
         scheduleReconnect(url);
+    }else {
+        router({ispush: true, path:"/login"})
+    }
     };
 
     /**
@@ -150,7 +171,7 @@ export function closeConnection() {
     }
     
     if (ws) {
-        ws.close();
+        ws.close(1000, 'User disconnected');
         ws = null;
         chatState.ws = null;
     }

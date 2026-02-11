@@ -3,19 +3,19 @@
  * 
  * This handler processes "message_from_me" WebSocket messages which are sent when
  * the user sends a message from another browser tab/device. It stores the message
- * locally and updates the conversation view if visible.
+ * locally in currentMessages and updates the conversation view if visible.
  * 
  * Flow:
  * 1. Log incoming message data for debugging
  * 2. Validate required fields (to_user_id, content)
  * 3. Check if we have an active conversation with the recipient
  * 4. Create a message object with proper structure
- * 5. Store in chatState.privateMessages
+ * 5. Store in chatState.currentMessages
  * 6. Update the conversation view if visible
  */
 
 import { chatState } from '../state.js';
-import { displayPrivateMessages, storePrivateMessage } from '../helperFunctions/privateMessagesHelper.js';
+import { displayCurrentMessages, storeCurrentMessage } from '../helperFunctions/privateMessagesHelper.js';
 
 /**
  * Handle incoming "message_from_me" WebSocket messages
@@ -58,11 +58,11 @@ export function handleMessageFromMe(data) {
 
         console.log('[messageFromMe.js:handleMessageFromMe] [DEBUG] Created message object:', message);
 
-        // Step 4: Store the message using helper function (normalizes and stores)
-        storePrivateMessage(message);
+        // Step 4: Store the message using helper function (normalizes and stores in currentMessages)
+        storeCurrentMessage(message);
 
         // Step 5: Display the message in the active conversation (append mode)
-        displayPrivateMessages(toUserId, true);
+        displayCurrentMessages(true);
 
         console.log('[messageFromMe.js:handleMessageFromMe] [DEBUG] ===== MESSAGE_FROM_ME PROCESSED SUCCESSFULLY =====');
     } else {

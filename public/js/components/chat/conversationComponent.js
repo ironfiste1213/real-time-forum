@@ -2,10 +2,12 @@
  * Conversation Component
  * Creates a conversation view with navbar, messages area, and input.
  * Used for individual chat conversations in the chat panel.
+ * 
+ * @param {string} recipientName - The name of the user we're chatting with (optional, defaults to "Chat")
  */
 
-export function conversationComponent() {
-    console.log('conversationComponent.js: conversationComponent() called');
+export function conversationComponent(recipientName = 'Chat') {
+    // console.log('conversationComponent.js: conversationComponent() called with recipientName:', recipientName);
 
     // Create the main conversation container
     const container = document.createElement('div');
@@ -25,10 +27,10 @@ export function conversationComponent() {
     backButton.setAttribute('data-has-conversation-listener', 'true');
     navbar.appendChild(backButton);
 
-    // Conversation title
+    // Conversation title - display the recipient's name
     const title = document.createElement('span');
     title.className = 'conversation-title';
-    title.textContent = 'Chat';
+    title.textContent = recipientName;
     navbar.appendChild(title);
 
     // Navbar controls (optional spacer for balance)
@@ -47,6 +49,7 @@ export function conversationComponent() {
     // Input area
     const inputArea = document.createElement('div');
     inputArea.className = 'conversation-input-area';
+    inputArea.id = 'conversation-input-area';
 
     // Text input
     const messageInput = document.createElement('input');
@@ -65,7 +68,7 @@ export function conversationComponent() {
 
     container.appendChild(inputArea);
 
-    console.log('conversationComponent.js: Conversation component created successfully');
+    // console.log('conversationComponent.js: Conversation component created successfully');
     return container;
 }
 

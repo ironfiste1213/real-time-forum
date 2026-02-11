@@ -1,6 +1,7 @@
 import { loginApi } from "../../api/auth/loginRequest.js";
 import { handleLocation, router } from "../../router.js";
 import { showError } from "../../tools/error/showError.js";
+import { chatState } from "../../ws/state.js";
 
 
 export async function loginHandler(rootContainer, distination) {
@@ -25,6 +26,13 @@ export async function loginHandler(rootContainer, distination) {
 
         if (result.success) {
             console.log('Login successful:', result.message);
+            
+            // Set currentUser in chatState for debounce tracking
+            if (result.user && result.user.id) {
+                console.log('loginlogic.js: Setting currentUser, userId:', result.user.id);
+                chatState.currentUser = result.user;
+            }
+            
             // Clear form and redirect to main view
             loginForm.reset();
             window.history.pushState({}, "", distination);
@@ -49,3 +57,4 @@ export async function loginHandler(rootContainer, distination) {
         });
     }
 }
+

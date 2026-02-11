@@ -1,8 +1,4 @@
-/**
- * Marks messages as read for a given user.
- * @param {string|number} userId - The ID of the user whose messages should be marked as read
- * @returns {Promise<void>} A promise that resolves when the operation completes
- */
+
 export async function markMessagesAsRead(userId) {
     try {
         console.log(`markMessagesAsRead.js: markMessagesAsRead() called for userId: ${userId}`);

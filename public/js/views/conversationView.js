@@ -2,212 +2,155 @@
  * Conversation View
  * Displays a conversation with a specific user.
  * Loads conversation history and renders messages in the conversation component.
+ * 
+ * IMPORTANT: This view now uses a dedicated #conversation-container at the same
+ * level as #users-list-container in the chat panel. This ensures clean separation
+ * between the users list and conversation views.
  */
-
+import { setupBackButton } from '../hanlders/chat/backbuttonHandler.js';
 import { conversationComponent } from '../components/chat/conversationComponent.js';
 import { loadConversationHistory } from '../api/messages/conversationHistory.js';
 import { chatState } from '../ws/state.js';
-import { usersListView } from './usersListView.js';
-import { setupConversationInputListener } from '../hanlders/chat/conversationInputHandler.js';
+import { setupConversationInputListener, disableConversationInput, enableConversationInput } from '../hanlders/chat/conversationInputHandler.js';
+import { clearCurrentMessages, storeConversationHistory, displayCurrentMessages } from '../ws/helperFunctions/privateMessagesHelper.js';
+import { setupConversationScrollListener, initConversationPagination } from '../hanlders/chat/conversationScrollHandler.js';
 import { transitionTo } from '../viewState.js';
+import { updateTotalUnreadUI } from '../ws/helperFunctions/updateUnreadCounts.js';
+
 /**
  * Conversation View - Displays a conversation with a specific user
  * 
- * @param {HTMLElement|string} containerOrSelector - Container element or CSS selector
- * @param {number} userId - The user ID to load conversation with
- * @returns {Promise<HTMLElement|null>} The conversation container or null if error
+ * Uses the dedicated #conversation-container (same level as #users-list-container)
+ * for clean separation between views.
  */
 export async function conversationView(containerOrSelector, userId) {
-    console.log('conversationView.js: conversationView() called with userId:', userId);
+    // console.log('conversationView.js: conversationView() called with userId:', userId);
     
-    // Get or create container element
+    // Get the dedicated conversation container
     let container;
     if (typeof containerOrSelector === 'string') {
         container = document.querySelector(containerOrSelector);
         if (!container) {
-            console.error('conversationView.js: Container not found:', containerOrSelector);
+            console.error('usersListView.js: Container not found:', containerOrSelector);
             return null;
         }
     } else {
         container = containerOrSelector;
     }
     
-    console.log('conversationView.js: Container found:', !!container);
+    // console.log('conversationView.js: Container found:', !!container);
+    
+    // FIX: Clear conversationContainer reference first to prevent stale references
+    // This ensures displayCurrentMessages() doesn't use old container reference
+    if (chatState.conversationContainer !== null) {
+        // console.log('conversationView.js: Clearing stale conversationContainer reference');
+        chatState.conversationContainer = null;
+    }
     
     // Clear existing content
     container.innerHTML = '';
-    console.log('conversationView.js: Container cleared');
+    // console.log('conversationView.js: Container cleared');
+    
+    // Clear current messages before loading new conversation
+    clearCurrentMessages();
+    // console.log('conversationView.js: Cleared currentMessages');
+
+    // Look up the recipient's name from chatState
+    let recipientName = 'Chat'; // Default fallback
+    const userInAllUsers = chatState.allUsers.find(u => u.id === userId);
+    if (userInAllUsers) {
+        recipientName = userInAllUsers.nickname || userInAllUsers.username || 'Chat';
+        console.log('conversationView.js: Found recipient name:', recipientName);
+    } else {
+        // Also check in conversations as fallback
+        const conversation = chatState.conversations.find(c => c.partner_id === userId || c.user_id === userId);
+        if (conversation) {
+            recipientName = conversation.nickname || conversation.username || 'Chat';
+            console.log('conversationView.js: Found recipient name in conversations:', recipientName);
+        } else {
+            console.log('conversationView.js: User not found, using default name');
+        }
+    }
     
     // Load conversation history
-    console.log('conversationView.js: Loading conversation history for userId:', userId);
+     console.log('====*****===conversationView.js: Loading conversation history for userId:', userId);
+
     const messages = await loadConversationHistory(userId);
     console.log('conversationView.js: Loaded', messages.length, 'messages');
     
-    // Create conversation component
-    const conversationEl = conversationComponent();
-    console.log('conversationView.js: Conversation component created');
+    // Clear unread count for this conversation in chatState
+    // The backend marks messages as read via the API call
+    // Reuse the conversation variable if already defined, or find it
+    const conversationForUnread = chatState.conversations.find(c => c.partner_id === userId || c.user_id === userId);
+    if (conversationForUnread) {
+        conversationForUnread.unread_count = 0;
+    }
+    // Also clear in allUsers - reuse userInAllUsers if available
+    if (userInAllUsers) {
+        userInAllUsers.unread_count = 0;
+    } else {
+        const userInAllUsersForUnread = chatState.allUsers.find(u => u.id === userId);
+        if (userInAllUsersForUnread) {
+            userInAllUsersForUnread.unread_count = 0;
+        }
+    }
+    // Update total unread UI
+    updateTotalUnreadUI();
+    
+    // Store the loaded messages in currentMessages
+    storeConversationHistory(messages);
+    // console.log('conversationView.js: Stored messages in currentMessages');
+    
+    // Create conversation component with recipient name
+    const conversationEl = conversationComponent(recipientName);
+    // console.log('conversationView.js: Conversation component created');
     
     // Set up input listener for sending messages
     setupConversationInputListener(conversationEl);
-    console.log('conversationView.js: Input listener set up');
+    // console.log('conversationView.js: Input listener set up');
     
-    // Display messages in the conversation
-    displayMessages(messages, conversationEl);
-    
-    // Append to container
-    container.appendChild(conversationEl);
-    console.log('conversationView.js: Conversation component appended to container');
-
-    // Store reference to container for updates
+    // Store reference to container for updates BEFORE displaying messages
     chatState.activeConversation = userId;
     chatState.conversationContainer = container;
+    // console.log('conversationView.js: Set conversationContainer in chatState');
+
+    // Append to container first - elements must exist before we can manipulate them
+    container.appendChild(conversationEl);
+    // console.log('conversationView.js: Conversation component appended to container');
+
+    // Check if the recipient user is online and enable/disable input accordingly
+    // This must happen AFTER the element is appended to the DOM
+    const isRecipientOnline = chatState.onlineUsers.includes(recipientName);
+    console.log('conversationView.js: Recipient userId', userId, 'is online:', isRecipientOnline);
+    
+    if (isRecipientOnline) {
+        enableConversationInput();
+    } else {
+        disableConversationInput();
+    }
+
+    // Display messages from currentMessages (now populated)
+    displayCurrentMessages(false);
+    // console.log('conversationView.js: Displayed messages');
+    
+    // Set up scroll listener for loading more messages on scroll
+    setupConversationScrollListener(conversationEl);
+    // console.log('conversationView.js: Scroll listener set up');
+    
+    // Initialize pagination state for this conversation
+    initConversationPagination(userId, messages.length);
+    // console.log('conversationView.js: Pagination initialized');
     
     // Set up back button functionality
     setupBackButton(conversationEl);
     
+    // Show conversation container, hide users list container
+    container.classList.add('show');
+    const usersContainer = document.querySelector('#users-list-container');
+    if (usersContainer) {
+        usersContainer.classList.remove('show');
+    }
+    
     return container;
 }
-
-/**
- * Set up the back button in conversation to return to users list
- * Uses transitionTo to clear conversation listeners before showing users list
- * @param {HTMLElement} conversationEl - The conversation component element
- */
-function setupBackButton(conversationEl) {
-    const backButton = conversationEl.querySelector('.conversation-back-btn');
-    if (!backButton) {
-        console.log('conversationView.js: Back button not found');
-        return;
-    }
-    
-    console.log('conversationView.js: Setting up back button');
-    
-    backButton.addEventListener('click', () => {
-        console.log('conversationView.js: Back button clicked');
-        
-        // Find the users container
-        const usersContainer = document.querySelector('#users-list-container');
-        if (usersContainer) {
-            // Use transitionTo to handle cleanup of conversation listeners before showing users list
-            // Pass usersContainer as arg to avoid variable shadowing
-            transitionTo('usersList', (container) => {
-                container.innerHTML = '';
-                usersListView(container);
-            }, {
-                container: usersContainer,
-                dataAttribute: 'data-has-conversation-listener'
-            }, usersContainer);
-        }
-
-        // Clear conversation container reference
-        chatState.activeConversation = null;
-        chatState.conversationContainer = null;
-    });
-}
-
-/**
- * Display messages in the conversation component
- * Takes a message list and renders them in the 'conversation-messages' div
- * 
- * @param {Array} messages - Array of message objects
- * @param {HTMLElement} conversationEl - The conversation component element
- */
-export function displayMessages(messages, conversationEl) {
-    console.log('conversationView.js: displayMessages() called with', messages.length, 'messages');
-    
-    // Find the messages container
-    const messagesContainer = conversationEl.querySelector('#conversation-messages');
-    if (!messagesContainer) {
-        console.error('conversationView.js: Messages container not found');
-        return;
-    }
-    
-    console.log('conversationView.js: Messages container found');
-    
-    // Clear existing messages
-    messagesContainer.innerHTML = '';
-    
-    // Check if there are no messages
-    if (!messages || messages.length === 0) {
-        console.log('conversationView.js: No messages to display');
-        const noMessages = document.createElement('div');
-        noMessages.className = 'conversation-no-messages';
-        noMessages.textContent = 'No messages yet. Start the conversation!';
-        messagesContainer.appendChild(noMessages);
-        return;
-    }
-    
-    console.log('conversationView.js: Rendering', messages.length, 'messages');
-    
-    // Render each message
-    messages.forEach((message, index) => {
-        const messageEl = createMessageElement(message);
-        messagesContainer.appendChild(messageEl);
-        console.log('conversationView.js: Rendered message', index + 1, '- ID:', message.id);
-    });
-    
-    // Scroll to bottom
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    console.log('conversationView.js: Scrolled to bottom');
-}
-
-/**
- * Create a single message element
- * Uses normalized message format with from_user_id field
- * 
- * @param {Object} message - Message object (should be normalized)
- * @returns {HTMLElement} The message element
- */
-function createMessageElement(message) {
-    const messageEl = document.createElement('div');
-    messageEl.className = 'conversation-message';
-    messageEl.dataset.messageId = message.id;
-
-    // Normalize message to ensure consistent field access
-    const normalized = normalizeMessageForView(message);
-
-    // Determine if message is sent by current user or received
-    // Use is_own flag first (set when we send), then fall back to from_user_id comparison
-    const isSent = normalized.is_own || normalized.from_user_id === chatState.currentUser?.id;
-    messageEl.classList.add(isSent ? 'message-sent' : 'message-received');
-
-    // Message content
-    const messageContent = document.createElement('div');
-    messageContent.className = 'message-content';
-    messageContent.textContent = normalized.content;
-    messageEl.appendChild(messageContent);
-
-    // Message time
-    const messageTime = document.createElement('div');
-    messageTime.className = 'message-time';
-    if (normalized.createdAt) {
-        const date = new Date(normalized.createdAt);
-        messageTime.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-    } else {
-        messageTime.textContent = '';
-    }
-    messageEl.appendChild(messageTime);
-
-    return messageEl;
-}
-
-/**
- * Normalize message object to consistent format for view rendering
- * Handles both WebSocket (snake_case) and HTTP API (camelCase) responses
- * 
- * @param {Object} rawMessage - Raw message from API or WebSocket
- * @returns {Object} Normalized message object
- */
-function normalizeMessageForView(rawMessage) {
-    return {
-        id: rawMessage.id || rawMessage.message_id,
-        from_user_id: rawMessage.from_user_id || rawMessage.senderId || rawMessage.sender_id,
-        to_user_id: rawMessage.to_user_id || rawMessage.receiverId || rawMessage.receiver_id,
-        content: rawMessage.content || rawMessage.text || rawMessage.message || '',
-        createdAt: rawMessage.createdAt || rawMessage.created_at || rawMessage.timestamp || rawMessage.time,
-        is_own: rawMessage.is_own === true
-    };
-}
-
-
 

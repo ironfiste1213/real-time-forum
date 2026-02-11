@@ -1,30 +1,24 @@
 import { chatState } from "../state.js";
-import { showNotification } from "../../components/notification/notificationComponent.js";
 import { handleNotification } from "./notificationHandler.js";
 import { updateUserOnlineStatus } from "../../views/usersListView.js";
+import { enableConversationInput } from "../../hanlders/chat/conversationInputHandler.js";
 
 /**
  * Handles incoming "user_online" WebSocket messages.
- * This function is used as a handler for the user_online message type.
  * 
- * Flow:
- * 1. Validates that the input data contains a valid user ID string
- * 2. Checks if the user is already in chatState.onlineUsers
- * 3. If not already present:
- *    - Shows a notification using the notification handler
- *    - Adds the user to chatState.onlineUsers
- * 4. Updates the view:
- *    - If usersListContainer exists → updates single user status in view
- *    - If not → just updates the data (already done in step 3)
+ * Logic:
+ * 1. When a user comes online, wait 3 seconds
+ * 2. If the user goes offline within 3s, cancel the notification
+ * 3. If user is still online after 3s, show notification
  * 
  * @param {Object} data - The user_online message data from WebSocket
- * @param {string} data.from_user_id - The ID of the user who came online (string)
+ * @param {number} data.from_user_id - The ID of the user who came online
  * @param {string} [data.nickname] - Optional nickname of the user who came online
  */
 export function handleUserOnline(data) {
     console.log('[userOnline.js:handleUserOnline] Handling user_online event:', data);
 
-    // Step 1: Validate input - check if user ID exists and is valid
+    // Step 1: Validate input
     if (!data || typeof data.from_user_id !== 'number' || data.from_user_id <= 0) {
         console.error('[userOnline.js:handleUserOnline] Invalid user data:', data);
         return;
@@ -33,40 +27,71 @@ export function handleUserOnline(data) {
     const userId = data.from_user_id;
     const nickname = data.nickname || String(userId);
 
-    // Check if the user coming online is the current user
-    // If so, skip the notification (we don't want to notify ourselves)
+    // Skip notification for current user
     if (chatState.currentUser && userId === chatState.currentUser.id) {
-        console.log('[userOnline.js:handleUserOnline] User is current user, skipping notification:', nickname, '(ID:', userId, ')');
+        console.log('[userOnline.js:handleUserOnline] User is current user, skipping notification:', nickname);
         return;
     }
 
-    // Step 2: Check if user is already in chatState.onlineUsers (array of nicknames)
-    const isAlreadyOnline = chatState.onlineUsers.includes(userId);
+    // Check if already online
+    const isAlreadyOnline = chatState.onlineUsers.includes(nickname);
 
-    // Step 3: If not already online, show notification and add to state
     if (!isAlreadyOnline) {
         console.log('[userOnline.js:handleUserOnline] User is new online:', nickname, '(ID:', userId, ')');
-
-        // Show notification using the notification handler
-        handleNotification({
-            type: 'info',
-            message: `${nickname} is online`
-        });
-
-        // Add the user to chatState.onlineUsers (array of nicknames)
+        
+        // Add to online users
         chatState.onlineUsers.push(userId);
-
-        console.log('[userOnline.js:handleUserOnline] User added to onlineUsers. Total online:', chatState.onlineUsers.length);
+        
+        // Check if we have a pending offline debounce for this user
+        const pendingDebounce = chatState.userConnectionDebounce.get(userId);
+        
+        if (pendingDebounce && pendingDebounce.type === 'offline') {
+            // User went offline and came back online within 3s - cancel the offline notification
+            console.log('[userOnline.js:handleUserOnline] User reconnected within 3s, canceling offline notification');
+            
+            if (pendingDebounce.timeoutId) {
+                clearTimeout(pendingDebounce.timeoutId);
+            }
+            
+            // Remove the debounce entry - no notification needed
+            chatState.userConnectionDebounce.delete(userId);
+        } else {
+            // No pending offline, this is a genuine new online event
+            // Set up a 3s debounce to show notification
+            console.log('[userOnline.js:handleUserOnline] Waiting 3s before showing online notification');
+            
+            const timeoutId = setTimeout(() => {
+                console.log('[userOnline.js:handleUserOnline] 3s elapsed, showing notification for:', nickname);
+                
+                // Show notification
+                handleNotification({
+                    type: 'info',
+                    message: `${nickname} is online`
+                });
+                
+                // Clean up debounce entry
+                chatState.userConnectionDebounce.delete(userId);
+            }, 3000);
+            
+            // Store the debounce state
+            chatState.userConnectionDebounce.set(userId, {
+                type: 'online',
+                timeoutId: timeoutId,
+                handled: false
+            });
+        }
     } else {
-        console.log('[userOnline.js:handleUserOnline] User was already online:', nickname, '(ID:', userId, ')');
+        console.log('[userOnline.js:handleUserOnline] User was already online:', nickname);
     }
 
-    // Step 4: Update the view if we're in a users list view
+    // Update the view
     if (chatState.usersListContainer) {
-        console.log('[userOnline.js:handleUserOnline] Users list container exists, updating single user status');
         updateUserOnlineStatus(userId, true);
-    } else {
-        console.log('[userOnline.js:handleUserOnline] No users list container, only data updated');
+    }
+
+    // Enable conversation input if needed
+    if (chatState.activeConversation === userId) {
+        enableConversationInput();
     }
 }
 

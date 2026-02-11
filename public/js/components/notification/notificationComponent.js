@@ -4,12 +4,7 @@
  * Supports multiple types: success, error, info, warning.
  */
 
-/**
- * Creates a notification container with the given message and type.
- * @param {string} message - The notification message to display
- * @param {string} type - The type of notification: 'success', 'error', 'info', 'warning'
- * @returns {HTMLElement} The notification container element
- */
+
 export function createNotification(message, type = 'info') {
     console.log('notificationComponent.js: createNotification() called with message:', message, 'type:', type);
 

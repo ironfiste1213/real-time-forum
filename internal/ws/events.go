@@ -31,7 +31,6 @@ const (
 	// Status notifications
 	UserOnline  MessageType = "user_online"  // User came online
 	UserOffline MessageType = "user_offline" // User went offline
-	OnlineUsers MessageType = "online_users" // List of online users
 
 	// System messages
 	MessageDelivered MessageType = "message_delivered" // Confirmation of message delivery

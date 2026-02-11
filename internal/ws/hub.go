@@ -1,7 +1,6 @@
 package ws
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"sync"
@@ -193,13 +192,6 @@ func (h *Hub) registerClient(client *Client) {
 		client.nickname,
 	)
 	h.broadcastUserOnline(client.userID, client.nickname)
-
-	// Send the current online users list to the newly connected client
-	log.Printf(
-		"[hub.go:registerClient] Sending online users list to new client %d",
-		client.userID,
-	)
-	h.sendOnlineUsersList(client)
 }
 
 // unregisterClient removes a client from the hub
@@ -523,46 +515,6 @@ func (h *Hub) broadcastUserOffline(userID int, nickname string) {
 	// h.Mu.Lock()
 	// h.cleanupTypingSessionsForUser(userID)
 	// h.Mu.Unlock()
-}
-
-// sendOnlineUsersList sends the current list of online users to a specific client
-func (h *Hub) sendOnlineUsersList(client *Client) {
-	h.Mu.RLock()
-
-	// Use map as a set to avoid duplicate nicknames
-	seen := make(map[string]struct{})
-	onlineUsers := make([]string, 0)
-
-	for c := range h.clients {
-		if _, exists := seen[c.nickname]; exists {
-			continue
-		}
-		seen[c.nickname] = struct{}{}
-		onlineUsers = append(onlineUsers, c.nickname)
-	}
-
-	h.Mu.RUnlock()
-
-	// Create message with online users list
-	onlineUsersJSON, _ := json.Marshal(onlineUsers)
-	message := Message{
-		Type:    OnlineUsers,
-		Content: string(onlineUsersJSON),
-	}
-
-	select {
-	case client.send <- message.ToJSON():
-		log.Printf(
-			"[hub.go:sendOnlineUsersList][DEBUG] Sent online users list to user %d: %v",
-			client.userID,
-			onlineUsers,
-		)
-	default:
-		log.Printf(
-			"[hub.go:sendOnlineUsersList] Could not send online users list to user %d",
-			client.userID,
-		)
-	}
 }
 
 // sendMessageDelivered notifies the sender that their message was delivered

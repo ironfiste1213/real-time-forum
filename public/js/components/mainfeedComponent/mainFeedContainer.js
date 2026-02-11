@@ -1,18 +1,17 @@
 import { createCreatePostComponent } from "./creatPostCoponent.js";
-import { createFloatingChatButton } from "./chatButtonComponent.js";
 import { createNav } from "./navbarComponent.js";
 
 export function createMainFeedContent(user) {
-    console.log('mainFeedContainer.js: createMainFeedContent() called with user:', user ? user.nickname : 'null');
+    //console.log('mainFeedContainer.js: createMainFeedContent() called with user:', user ? user.nickname : 'null');
 
     // Navigation
-    console.log('mainFeedContainer.js: Creating navigation');
+    //console.log('mainFeedContainer.js: Creating navigation');
     const nav = createNav(user);
 
     const container = document.createElement('div');
     container.style.width = '100%';
     container.appendChild(nav);
-    console.log('mainFeedContainer.js: Navigation appended to container');
+    //console.log('mainFeedContainer.js: Navigation appended to container');
 
     // Main feed view
     const mainFeedView = document.createElement('div');
@@ -24,27 +23,24 @@ export function createMainFeedContent(user) {
     mainContent.style.width = '100%';
 
     // Create post section using the imported function
-    console.log('mainFeedContainer.js: Creating post component');
+    //console.log('mainFeedContainer.js: Creating post component');
     const createPostSection = createCreatePostComponent();
     mainContent.appendChild(createPostSection);
-    console.log('mainFeedContainer.js: Post component appended');
+    //console.log('mainFeedContainer.js: Post component appended');
     const postFeedSection = document.createElement('section');
     postFeedSection.id = 'post-feed-section';
 
-    console.log('mainFeedContainer.js: Post feed section created');
+    //console.log('mainFeedContainer.js: Post feed section created');
 
     mainContent.appendChild(postFeedSection);
     mainFeedView.appendChild(mainContent);
     container.appendChild(mainFeedView);
-    console.log('mainFeedContainer.js: Main content appended');
+    //console.log('mainFeedContainer.js: Main content appended');
 
-    // Add floating chat button using the imported function
-    console.log('mainFeedContainer.js: Creating floating chat button');
-    const floatingChatButton = createFloatingChatButton();
-    container.appendChild(floatingChatButton);
-    console.log('mainFeedContainer.js: Floating chat button appended');
+    // Note: Floating chat button is now initialized globally via initChatButton() in app.js
+    // It is appended directly to document.body and persists across view changes
 
-    console.log('mainFeedContainer.js: Main feed content created successfully');
+    //console.log('mainFeedContainer.js: Main feed content created successfully');
     return container;
 }
 

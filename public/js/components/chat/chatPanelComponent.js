@@ -55,6 +55,14 @@ export function createChatPanel() {
     
     panel.appendChild(usersContainer);
     
+    // Conversation container - empty div at same level as users-list-container
+    // This will be used to display conversations when a user is selected
+    const conversationContainer = document.createElement('div');
+    conversationContainer.className = 'chat-panel-conversation';
+    conversationContainer.id = 'conversation-container';
+    // Initially hidden (no show class)
+    panel.appendChild(conversationContainer);
+    
     console.log('chatPanelComponent.js: Chat panel created successfully');
     return panel;
 }

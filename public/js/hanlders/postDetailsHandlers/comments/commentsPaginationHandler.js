@@ -17,23 +17,17 @@ let fetchCallback = null;
 
 /**
  * Initialize pagination with backend data
- * @param {number} postId - The post ID
- * @param {number} total - Total number of comments from backend
- * @param {number} page - Current page number
- * @param {number} limit - Comments per page (default: 5)
  */
 export function initPagination(postId, total, page, limit = 5) {
     currentPostId = postId;
     totalComments = total;
     currentPage = page;
     commentsLimit = limit;
-    
-    console.log(`commentsPaginationHandler.js: Initialized - postId: ${postId}, total: ${total}, page: ${page}, limit: ${limit}`);
 }
 
 /**
  * Check if there are more comments to load (Next page exists)
- * @returns {boolean} True if more comments exist
+ * 
  */
 export function hasNextPage() {
     if (!totalComments || totalComments === 0) {
@@ -45,7 +39,6 @@ export function hasNextPage() {
 
 /**
  * Check if there are previous comments (Not on first page)
- * @returns {boolean} True if not on first page
  */
 export function hasPrevPage() {
     return currentPage > 1;
@@ -53,7 +46,6 @@ export function hasPrevPage() {
 
 /**
  * Get the current page number
- * @returns {number} Current page
  */
 export function getCurrentPage() {
     return currentPage;
@@ -61,7 +53,6 @@ export function getCurrentPage() {
 
 /**
  * Get the total number of comments
- * @returns {number} Total comments
  */
 export function getTotalComments() {
     return totalComments;
@@ -69,7 +60,6 @@ export function getTotalComments() {
 
 /**
  * Get comments limit per page
- * @returns {number} Comments per page
  */
 export function getCommentsLimit() {
     return commentsLimit;
@@ -77,18 +67,14 @@ export function getCommentsLimit() {
 
 /**
  * Create pagination controls (Next/Prev buttons)
- * @param {HTMLElement} container - The container to append controls to
- * @returns {HTMLElement} The pagination controls container
  */
 export function createPaginationControls(container) {
     // Remove existing pagination controls if any
     removePaginationControls(container);
-
     if (!container) {
         console.error('commentsPaginationHandler.js: Container not found for pagination controls');
         return null;
     }
-
     const paginationContainer = document.createElement('div');
     paginationContainer.classList.add('comments-pagination-controls');
     paginationContainer.id = 'comments-pagination-controls';
@@ -130,7 +116,6 @@ export function createPaginationControls(container) {
 
 /**
  * Remove pagination controls from container
- * @param {HTMLElement} container - The container to remove controls from
  */
 function removePaginationControls(container) {
     if (!container) {
@@ -146,7 +131,6 @@ function removePaginationControls(container) {
 
 /**
  * Attach event listeners to pagination buttons
- * @param {Function} fetchHandler - Callback function to fetch comments (receives postId, page)
  */
 export function attachPaginationListeners(fetchHandler) {
     fetchCallback = fetchHandler;
@@ -203,23 +187,19 @@ export function attachPaginationListeners(fetchHandler) {
 /**
  * Update pagination UI after fetch
  * Called after comments are fetched to update button states
- * @param {HTMLElement} container - The comments container
  */
 export function updatePaginationUI(container) {
     if (!container) {
         console.error('commentsPaginationHandler.js: Container not found for UI update');
         return;
     }
-
     // Recreate pagination controls with updated state
     createPaginationControls(container);
-    
     // Re-attach listeners
     if (fetchCallback) {
         attachPaginationListeners(fetchCallback);
     }
 
-    console.log('commentsPaginationHandler.js: Pagination UI updated');
 }
 
 /**
@@ -238,7 +218,6 @@ export function resetPagination() {
 
 /**
  * Get current pagination state
- * @returns {Object} Current state object
  */
 export function getPaginationState() {
     return {

@@ -1,5 +1,4 @@
 export function showError(form, message) {
-    console.log('registerlogic.js: showError() called with message:', message);
     // Remove existing error if any
     const existingError = form.querySelector('.error-message');
     if (existingError) {

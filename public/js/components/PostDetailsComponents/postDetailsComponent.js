@@ -117,18 +117,6 @@ export function PostDetailsComponent(data, onNewComment = null) {
     content.textContent = data.content || '';
     container.appendChild(content);
     
-    // Post actions - matches main feed
-    const actions = document.createElement('div');
-    actions.classList.add('post-actions');
-    
-    // Comment button
-    const commentBtn = document.createElement('button');
-    commentBtn.classList.add('post-action-btn', 'comment-btn');
-    commentBtn.innerHTML = '💬 Comment';
-    actions.appendChild(commentBtn);
-    
-    container.appendChild(actions);
-    
     // Comment input section - inlined directly in PostDetailsComponent
     const commentInput = createCommentInput(data.id);
     container.appendChild(commentInput.container);

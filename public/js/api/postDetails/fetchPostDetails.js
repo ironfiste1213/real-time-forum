@@ -1,9 +1,5 @@
 /**
  * Fetches details of a single post by its ID.
- * 
- * @param {number|string} postId - The ID of the post to fetch
- * @returns {Promise<Object>} The post data
- * @throws {Error} Network errors or non-200 HTTP responses
  */
 export async function fetchPostDetails(postId) {
     console.log('fetchPostDetails.js: fetchPostDetails() called with postId:', postId);

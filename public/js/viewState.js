@@ -15,7 +15,7 @@ export const pathState = {
 
 /**
  * Posts Pagination State
- * Tracks the chunk index for posts pagination so when users return 
+ * Tracks the chunk index for posts pagination so when users returns 
  * to the main view, they see posts from their last position.
  */
 export const postsPaginationState = {
@@ -120,3 +120,4 @@ export function transitionTo(viewName, renderFn, options = {}, ...args) {
     return renderFn(...args);
 }
 
+//export function  transitionTochat(viewName, renderFn, op)

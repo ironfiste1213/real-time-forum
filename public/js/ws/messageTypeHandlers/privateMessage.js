@@ -3,17 +3,19 @@
  * Handles incoming "private_message" WebSocket messages from other users.
  * 
  * Flow:
- * 1. Log incoming message data for debugging
- * 2. Validate required fields (from_user_id, content)
- * 3. Store the message in chatState.privateMessages
- * 4. If conversation with sender is active, display the new message
- * 5. If conversation is not active, update unread count
+ * 1. Validate required fields (from_user_id, content)
+ * 2. If conversation with sender is active:
+ *    - Store message in chatState.currentMessages
+ *    - Display the new message
+ * 3. If conversation is not active:
+ *    - Update unread count badge only
+ *    - Don't store (will fetch from API if user opens conversation)
  */
 
 import { chatState } from '../state.js';
-import { displayPrivateMessages, storePrivateMessage } from '../helperFunctions/privateMessagesHelper.js';
+import { displayCurrentMessages, storeCurrentMessage } from '../helperFunctions/privateMessagesHelper.js';
 import { incrementUnreadCount } from '../helperFunctions/updateUnreadCounts.js';
-
+import { updateUsersListView } from '../../view.js';
 /**
  * Handle incoming "private_message" WebSocket messages
  * 
@@ -51,28 +53,26 @@ export function handlePrivateMessage(data) {
 
     console.log('[privateMessage.js:handlePrivateMessage] Created message object:', message);
 
-    // Step 3: Store the message using helper function (normalizes and stores)
-    storePrivateMessage(message);
-    console.log('[privateMessage.js:handlePrivateMessage] Message stored in chatState.privateMessages');
-
-    // Step 4: Check if we have an active conversation with the sender
+    // Step 3: Check if we have an active conversation with the sender
     if (chatState.activeConversation && chatState.activeConversation === senderId) {
-        console.log('[privateMessage.js:handlePrivateMessage] Active conversation with sender, displaying message');
+        console.log('[privateMessage.js:handlePrivateMessage] Active conversation with sender');
 
-        // Display the new message in the conversation (append mode)
-        displayPrivateMessages(senderId, true);
+        // Store and display the message
+        storeCurrentMessage(message);
+        displayCurrentMessages(true);
+        incrementUnreadCount(senderId);
 
         // Mark message as read
         message.is_read = true;
 
-        console.log('[privateMessage.js:handlePrivateMessage] Message displayed in active conversation');
+        console.log('[privateMessage.js:handlePrivateMessage] Message stored and displayed');
     } else {
         console.log('[privateMessage.js:handlePrivateMessage] No active conversation with sender');
         console.log('[privateMessage.js:handlePrivateMessage] Active conversation user ID:', chatState.activeConversation);
 
-        // Step 5: Update unread counts
+        // Step 5: Update unread counts (don't store - will fetch from API if user opens conversation)
         incrementUnreadCount(senderId);
-
+        updateUsersListView()
         console.log('[privateMessage.js:handlePrivateMessage] Updated unread counts');
     }
 

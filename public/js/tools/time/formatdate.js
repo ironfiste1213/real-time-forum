@@ -5,8 +5,6 @@
 
 /**
  * Formats a date string into a human-readable format
- * @param {string} dateString - ISO date string
- * @returns {string} Formatted date string
  */
 export function formatDate(dateString) {
     if (!dateString) {

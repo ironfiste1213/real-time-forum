@@ -38,12 +38,9 @@ function loadMorePosts(postFeed, allPosts, loadMoreButton, CHUNK_SIZE) {
     if (startIndex >= allPosts.length) {
         return; // No more posts to load
     }
-    
     renderPostsChunk(postFeed, allPosts, startIndex, endIndex);
-    
     // Hide load more button if no more posts
-    if (endIndex >= allPosts.length - 1) {
-       
+    if (endIndex >= allPosts.length - 1) {      
         if (loadMoreButton) {
             loadMoreButton.style.display = 'none';
         }
@@ -52,7 +49,6 @@ function loadMorePosts(postFeed, allPosts, loadMoreButton, CHUNK_SIZE) {
 
 /**
  * Get the current chunk index from viewState
- * @returns {number} The current chunk index
  */
 export function getCurrentChunk() {
     return postsPaginationState.getChunk();

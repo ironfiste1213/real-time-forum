@@ -2,26 +2,20 @@ import { categoriesHandler } from "./categoriesHandler.js";
 
 export function createPostToggleHandler() {
     console.log('PostToggleHandler.js: createPostToggleHandler() called');
-    
     const createPostToggle = document.querySelector('#create-post-toggle');
     const createPostSection = document.querySelector('#create-post-section');
-    
     if (!createPostToggle) {
         console.log('PostToggleHandler.js: #create-post-toggle not found');
         return;
-    }
-    
+    }    
     if (!createPostSection) {
         console.log('PostToggleHandler.js: #create-post-section not found');
         return;
-    }
-    
+    }   
     // Track if categories have been loaded for this session
-    let categoriesLoaded = false;
-    
+    let categoriesLoaded = false;    
     createPostToggle.addEventListener('click', () => {
-        console.log('PostToggleHandler.js: Create post toggle clicked');
-        
+        console.log('PostToggleHandler.js: Create post toggle clicked');       
         if (createPostSection.classList.contains('open')) {
             createPostSection.classList.remove('open');
             createPostToggle.textContent = '+ Create Post';

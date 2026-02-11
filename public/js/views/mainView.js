@@ -1,6 +1,7 @@
 import { sharedMainFeedHandlers, postListHandlers } from '../hanlders/mainFeedHandlers/mainFeedHandlers.js';
 import { createMainFeedContent } from '../components/mainfeedComponent/mainFeedContainer.js';
 import { transitionTo } from '../viewState.js';
+import { updateTotalUnreadUI } from '../ws/helperFunctions/updateUnreadCounts.js';
 
 /**
  * Main View (Home/Feed)

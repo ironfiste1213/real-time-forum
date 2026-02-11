@@ -247,4 +247,3 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"message": "Logout successful"}`))
 	log.Printf("LOGOUT HANDLER: Successfully processed logout for session token: %s", sessionToken)
 }
-

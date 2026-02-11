@@ -16,10 +16,6 @@ let isLoadingComments = false;
  * 
  * This handler is responsible ONLY for rendering comments UI.
  * All pagination logic is delegated to commentsPaginationHandler.
- * 
- * @param {number} postId - The ID of the post to fetch comments for
- * @param {number} page - Page number (default: 1)
- * @returns {Promise<void>}
  */
 export async function renderCommentHandler(postId, page = 1) {
     // Validate inputs
@@ -82,13 +78,9 @@ export async function renderCommentHandler(postId, page = 1) {
 
             // Attach pagination event listeners
             attachPaginationListeners(renderCommentHandler);
-        }else {
-            console.log("eeeeeeeeeeeeeeeeeeeeeeeeeeee");
-            
         }
 
     } catch (error) {
-        console.error('renderCommenthander.js: Error fetching comments:', error);
         handleCommentsError(error);
     } finally {
         isLoadingComments = false;
@@ -97,9 +89,7 @@ export async function renderCommentHandler(postId, page = 1) {
 
 /**
  * Render the complete comments section (for page 1)
- * @param {HTMLElement} container - The container element
- * @param {Array} comments - Array of comment objects
- * @param {number} total - Total number of comments
+
  */ 
 
 function renderCommentsSection(container, comments, total) {
@@ -126,7 +116,7 @@ function renderCommentsSection(container, comments, total) {
 
 /**
  * Create a loading indicator element
- * @returns {HTMLElement} The loading indicator element
+ * 
  */
 function createLoadingIndicator() {
     const loadingDiv = document.createElement('div');

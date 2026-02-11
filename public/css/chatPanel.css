@@ -40,7 +40,8 @@
 }
 
 .chat-panel.minimized .chat-panel-search,
-.chat-panel.minimized .chat-panel-users {
+.chat-panel.minimized .chat-panel-users,
+.chat-panel.minimized .chat-panel-conversation {
     display: none;
 }
 
@@ -190,11 +191,30 @@
     min-width: 0;
 }
 
+.chat-user-name-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .chat-user-name {
     font-weight: 600;
     font-size: 14px;
     color: #050505;
     margin-bottom: 3px;
+}
+
+/* Unread badge next to username in users list */
+.chat-unread-badge-user {
+    background-color: #e41e3f;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 2px 6px;
+    border-radius: 10px;
+    min-width: 18px;
+    text-align: center;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
 .chat-user-status {
@@ -226,5 +246,36 @@
     color: #65676b;
     font-size: 14px;
     font-style: italic;
+}
+
+/* ============================================
+   CONVERSATION CONTAINER
+   ============================================ */
+
+/* Conversation container - same level as users-list-container */
+.chat-panel-conversation {
+    flex: 1;
+    overflow: hidden;
+    display: none;
+    flex-direction: column;
+    background-color: #fff;
+}
+
+/* Show state for conversation container - when active, this container is visible */
+.chat-panel-conversation.show {
+    display: flex;
+}
+
+/* Conversation container visibility control */
+.chat-panel-users {
+    transition: opacity 0.2s ease;
+}
+
+.chat-panel-users.show {
+    display: block;
+}
+
+.chat-panel-users:not(.show) {
+    display: none;
 }
 

@@ -1,18 +1,18 @@
 export function createNav(user) {
-    console.log('navbarComponent.js: createNav() called with user:', user ? user.nickname : 'null');
+    //console.log('navbarComponent.js: createNav() called with user:', user ? user.nickname : 'null');
     
     const nav = document.createElement('nav');
-    console.log('navbarComponent.js: Nav element created');
+    //console.log('navbarComponent.js: Nav element created');
 
     // Left section: Welcome message
     const leftSection = document.createElement('div');
     leftSection.className = 'nav-left';
     const welcomeMessage = document.createElement('span');
     welcomeMessage.id = 'welcome-message';
-    console.log("eeeeeeeeeeeeeeeeeeeeee", user);
+    //console.log("eeeeeeeeeeeeeeeeeeeeee", user);
     
     welcomeMessage.textContent = user && user.nickname ? `Welcome, ${user.nickname}! to the REAL-TIME-FORUM` : 'Welcome! to the REAL-TIME-FORUM';
-    console.log('navbarComponent.js: Welcome message set:', welcomeMessage.textContent);
+    //console.log('navbarComponent.js: Welcome message set:', welcomeMessage.textContent);
     leftSection.appendChild(welcomeMessage);
     nav.appendChild(leftSection);
 
@@ -24,7 +24,7 @@ export function createNav(user) {
     createPostToggle.textContent = '+ Create Post';
     createPostToggle.className = 'create-post-toggle-btn';
     createPostToggle.setAttribute('data-has-listener', 'true'); // Mark as having event listener
-    console.log('navbarComponent.js: Create post toggle button created');
+    //console.log('navbarComponent.js: Create post toggle button created');
     centerSection.appendChild(createPostToggle);
     nav.appendChild(centerSection);
 
@@ -36,12 +36,12 @@ export function createNav(user) {
     logoutButton.id = 'logout-button';
     logoutButton.textContent = '➜]';
     logoutButton.setAttribute('data-has-listener', 'true'); // Mark as having event listener
-    console.log('navbarComponent.js: Logout button created');
+    //console.log('navbarComponent.js: Logout button created');
     rightSection.appendChild(logoutButton);
 
     nav.appendChild(rightSection);
 
-    console.log('navbarComponent.js: Nav created successfully');
+    //console.log('navbarComponent.js: Nav created successfully');
     return nav;
 }
 

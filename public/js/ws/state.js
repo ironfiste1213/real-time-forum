@@ -1,18 +1,4 @@
 /**
- * Chat State Management
- * Centralized state object for real-time WebSocket chat functionality.
- * 
- * This module exports a single chatState object that holds all chat-related
- * state and can be imported and used in connection.js, handlers.js, or
- * any other chat module.
- * 
- * Usage:
- * - Import: import { chatState } from './chat/state.js';
- * - Access properties: chatState.isConnected, chatState.onlineUsers, etc.
- * - Modify state: chatState.isConnected = true;
- */
-
-/**
  * Chat state object containing all WebSocket chat state properties
  */
 export const chatState = {
@@ -31,8 +17,8 @@ export const chatState = {
     conversations: [], // Recent conversations
     activeConversation: null,
     
-    // Private messages storage (map userId → messages array)
-    privateMessages: {},
+    // Current conversation messages (only stores active conversation)
+    currentMessages: [],
     
     // Current authenticated user
     currentUser: null,
@@ -61,7 +47,18 @@ export const chatState = {
     usersListContainer: null,
     
     // Conversation container reference
-    conversationContainer: null
+    conversationContainer: null,
+    
+    // Conversation pagination state
+    conversationOffset: 0,
+    conversationHasMore: true,
+    conversationIsLoading: false,
+    conversationHistoryLoaded: false,
+    conversationUserId: null,
+    
+    // User connection debounce state
+    // Key: userId, Value: { type: 'online'|'offline', timeoutId: number, handled: boolean }
+    userConnectionDebounce: new Map()
 };
 
 /**
@@ -75,17 +72,29 @@ export function resetChatState() {
     chatState.allUsers = [];
     chatState.conversations = [];
     chatState.activeConversation = null;
-    chatState.privateMessages = {};
+    chatState.currentMessages = [];
     chatState.currentUser = null;
     chatState.reconnectAttempts = 0;
     chatState.reconnectDelay = 1000;
     chatState.isChatOpen = false;
     chatState.messageIdCounter = 0;
     chatState.loadUsersIntervalId = null;
-    chatState.SortedUserslist = null;
     chatState.usersWithStatus = null;
     chatState.usersListContainer = null;
     chatState.conversationContainer = null;
+    chatState.conversationOffset = 0;
+    chatState.conversationHasMore = true;
+    chatState.conversationIsLoading = false;
+    chatState.conversationHistoryLoaded = false;
+    chatState.conversationUserId = null;
+    
+    // Clear all debounce timeouts
+    chatState.userConnectionDebounce.forEach((value, key) => {
+        if (value.timeoutId) {
+            clearTimeout(value.timeoutId);
+        }
+    });
+    chatState.userConnectionDebounce.clear();
 }
 
 /**

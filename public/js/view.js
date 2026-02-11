@@ -5,5 +5,5 @@ export { mainview } from './views/mainView.js';
 export { singlePostView } from './views/singlePostView.js';
 export { show404View } from './views/show404View.js';
 export { usersListView, updateUsersListView, updateUserOnlineStatus } from './views/usersListView.js';
-export { conversationView, displayMessages } from './views/conversationView.js';
+export { conversationView } from './views/conversationView.js';
 

@@ -9,8 +9,7 @@ import { pathState } from "../../viewState.js";
  * Handles displaying full post details when a post is clicked
  * Clears the post feed and renders the post details with comments
  * 
- * @param {number} postId - The ID of the post to display
- * @param {HTMLElement} rootContainer - The root container (optional, will query if not provided)
+
  */
 export async function postDetailsHandler(postId, rootContainer = null) {
     console.log('postDetailsHandler.js: postDetailsHandler() called with postId:', postId);

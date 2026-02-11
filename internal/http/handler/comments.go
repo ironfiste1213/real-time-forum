@@ -67,16 +67,7 @@ func CreateCommentHandler(w http.ResponseWriter, r *http.Request) {
 	// Sanitize the content to prevent XSS
 	sanitizedContent := validation.SanitizeHTML(req.Content)
 
-	// Check for spam
-	if validation.IsSpam(sanitizedContent) {
-		log.Printf("CreateCommentHandler: Spam detected in comment by user ID: %d", user.ID)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"message": "Your comment appears to be spam and cannot be submitted",
-		})
-		return
-	}
+	
 
 	comment := &models.Comment{
 		PostID:  PostID,

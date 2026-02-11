@@ -76,16 +76,6 @@ func CreatePostHandler(w http.ResponseWriter, r *http.Request) {
 	post.Title = validation.SanitizeHTML(req.Title)
 	post.Content = validation.SanitizeHTML(req.Content)
 
-	// 7. Check for spam
-	if validation.IsSpam(post.Title) || validation.IsSpam(post.Content) {
-		log.Printf("[posts.go:CreatePostHandler] Spam detected in post by user ID: %d", user.ID)
-		w.Header().Set("Content-Type", "application/json")
-		w.WriteHeader(http.StatusBadRequest)
-		json.NewEncoder(w).Encode(map[string]interface{}{
-			"message": "Your post appears to be spam and cannot be submitted",
-		})
-		return
-	}
 
 	log.Printf("[posts.go:CreatePostHandler] Validation passed. Proceeding to save post.")
 

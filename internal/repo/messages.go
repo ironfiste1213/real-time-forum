@@ -54,7 +54,7 @@ func GetPrivateMessagesBetweenUsers(userID1, userID2 int, limit, offset int) ([]
 
 	return messages, nil
 }
-  
+
 // MarkMessagesAsRead marks messages from sender to receiver as read
 func MarkMessagesAsRead(senderID, receiverID int) error {
 	query := `
@@ -85,29 +85,36 @@ func GetUnreadMessageCount(userID int) (int, error) {
 	}
 	return count, nil
 }
-
-// GetRecentConversations returns recent conversation partners for a user
 func GetRecentConversations(userID int, limit int) ([]map[string]interface{}, error) {
 	query := `
-		SELECT DISTINCT
-			CASE
-				WHEN pm.sender_id = ? THEN pm.receiver_id
-				ELSE pm.sender_id
-			END as other_user_id,
+		SELECT
+			u.id            AS other_user_id,
 			u.nickname,
-			pm.content as last_message,
-			pm.created_at as last_message_time,
-			(SELECT COUNT(*) FROM private_messages WHERE receiver_id = ? AND sender_id =
-				CASE
-					WHEN pm.sender_id = ? THEN pm.receiver_id
-					ELSE pm.sender_id
-				END AND is_read = FALSE) as unread_count
-		FROM private_messages pm
-		JOIN users u ON u.id = CASE
-			WHEN pm.sender_id = ? THEN pm.receiver_id
-			ELSE pm.sender_id
-		END
-		WHERE pm.sender_id = ? OR pm.receiver_id = ?
+			pm.content      AS last_message,
+			pm.created_at   AS last_message_time,
+			(
+				SELECT COUNT(*)
+				FROM private_messages
+				WHERE receiver_id = ?
+				  AND sender_id = u.id
+				  AND is_read = FALSE
+			) AS unread_count
+		FROM users u
+		JOIN private_messages pm ON pm.id = (
+			SELECT id
+			FROM private_messages
+			WHERE (sender_id = ? AND receiver_id = u.id)
+			   OR (sender_id = u.id AND receiver_id = ?)
+			ORDER BY created_at DESC
+			LIMIT 1
+		)
+		WHERE u.id != ?
+		  AND EXISTS (
+			SELECT 1
+			FROM private_messages
+			WHERE (sender_id = ? AND receiver_id = u.id)
+			   OR (sender_id = u.id AND receiver_id = ?)
+		  )
 		ORDER BY pm.created_at DESC
 		LIMIT ?
 	`
@@ -126,20 +133,23 @@ func GetRecentConversations(userID int, limit int) ([]map[string]interface{}, er
 		var lastMessageTime string
 		var unreadCount int
 
-		err := rows.Scan(&otherUserID, &nickname, &lastMessage, &lastMessageTime, &unreadCount)
-		if err != nil {
+		if err := rows.Scan(&otherUserID, &nickname, &lastMessage, &lastMessageTime, &unreadCount); err != nil {
 			log.Printf("[messages.go:GetRecentConversations] Error scanning conversation: %v", err)
 			continue
 		}
 
-		conversation := map[string]interface{}{
+		conversations = append(conversations, map[string]interface{}{
 			"user_id":           otherUserID,
 			"nickname":          nickname,
 			"last_message":      lastMessage,
 			"last_message_time": lastMessageTime,
 			"unread_count":      unreadCount,
-		}
-		conversations = append(conversations, conversation)
+		})
+	}
+
+	if err := rows.Err(); err != nil {
+		log.Printf("[messages.go:GetRecentConversations] Row iteration error: %v", err)
+		return nil, err
 	}
 
 	return conversations, nil
