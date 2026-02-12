@@ -1,3 +1,5 @@
+import { handleStatusCode } from '../../tools/error/statusCodeHandler.js';
+import { handleNetworkError } from '../../tools/error/networkErrorHandler.js';
 
 export async function loadConversations() {
     try {
@@ -14,6 +16,8 @@ export async function loadConversations() {
         console.log('loadConversations.js: Response received, status:', response.status);
 
         if (!response.ok) {
+            // Handle status code (will redirect to login on 401)
+            handleStatusCode(response);
             console.log('loadConversations.js: Response not OK, returning empty array');
             return [];
         }
@@ -63,7 +67,7 @@ export async function loadConversations() {
         return deduplicatedConversations;
 
     } catch (error) {
-        console.error('loadConversations.js: Error loading conversations:', error.message);
+        handleNetworkError(error, 'loadConversations');
         // Handle fetch errors gracefully - return empty array
         return [];
     }

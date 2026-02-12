@@ -26,9 +26,15 @@ func RegisterRoutes(mux *http.ServeMux) {
 	mux.Handle("/js/", fileServer)
 
 	// API and page routes
-	mux.HandleFunc("/api/register", handler.RegisterHandler)
-	mux.HandleFunc("/api/login", handler.LoginHandler)
-	mux.HandleFunc("/api/logout", handler.LogoutHandler)
+	mux.HandleFunc("/api/register", func(w http.ResponseWriter, r *http.Request) {
+		RateLimitMiddleware(http.HandlerFunc(handler.RegisterHandler), authRateLimiter, "register").ServeHTTP(w, r)
+	})
+	mux.HandleFunc("/api/login", func(w http.ResponseWriter, r *http.Request) {
+		RateLimitMiddleware(http.HandlerFunc(handler.LoginHandler), authRateLimiter, "login").ServeHTTP(w, r)
+	})
+	mux.HandleFunc("/api/logout", func(w http.ResponseWriter, r *http.Request) {
+		RateLimitMiddleware(http.HandlerFunc(handler.LogoutHandler), authRateLimiter, "logout").ServeHTTP(w, r)
+	})
 	mux.HandleFunc("/register", handler.IndexHandler)
 	mux.HandleFunc("/login", handler.IndexHandler)
 	// Add a new route to check authentication status
@@ -44,7 +50,7 @@ func RegisterRoutes(mux *http.ServeMux) {
 			}
 			json.NewEncoder(w).Encode(map[string]interface{}{"isAuthenticated": true, "user": user})
 		})
-		AuthMiddleware(statusHandler).ServeHTTP(w, r)
+		AuthMiddleware(RateLimitMiddleware(statusHandler, readRateLimiter, "status")).ServeHTTP(w, r)
 	})
 
 	// Handle all /api/posts/... routes
@@ -60,9 +66,9 @@ func RegisterRoutes(mux *http.ServeMux) {
 			log.Printf("[routes.go:RegisterRoutes] Path is for comments. Routing by method: %s", r.Method)
 			switch r.Method {
 			case http.MethodGet:
-				AuthMiddleware(http.HandlerFunc(handler.GetCommentsByPostIDHandler)).ServeHTTP(w, r)
+				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetCommentsByPostIDHandler), readRateLimiter, "get_comments")).ServeHTTP(w, r)
 			case http.MethodPost:
-				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.CreateCommentHandler), commentRateLimiter, "create_comment")).ServeHTTP(w, r)
+				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.CreateCommentHandler), writeRateLimiter, "create_comment")).ServeHTTP(w, r)
 			default:
 				handler.RespondWithError(w, http.StatusMethodNotAllowed, "Method not allowed for comments")
 			}
@@ -75,45 +81,41 @@ func RegisterRoutes(mux *http.ServeMux) {
 			log.Printf("[routes.go:RegisterRoutes] Router: Path is for list/create. Routing by method: %s", r.Method)
 			switch r.Method {
 			case http.MethodGet:
-				AuthMiddleware(http.HandlerFunc(handler.GetAllPostsHandler)).ServeHTTP(w, r)
+				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetAllPostsHandler), readRateLimiter, "get_posts")).ServeHTTP(w, r)
 			case http.MethodPost:
-				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.CreatePostHandler), postRateLimiter, "create_post")).ServeHTTP(w, r)
+				AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.CreatePostHandler), writeRateLimiter, "create_post")).ServeHTTP(w, r)
 			}
 		} else if r.Method == http.MethodGet { // If there's an ID and method is GET, fetch the specific post.
 			log.Printf("[routes.go:RegisterRoutes] Router: Path is for a specific resource (ID: %s).", path)
-			AuthMiddleware(http.HandlerFunc(handler.GetPostByIDHandler)).ServeHTTP(w, r)
+			AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetPostByIDHandler), readRateLimiter, "get_post")).ServeHTTP(w, r)
 		}
 	})
 	mux.HandleFunc("/api/categories", func(w http.ResponseWriter, r *http.Request) {
- 	AuthMiddleware(http.HandlerFunc(handler.GetAllCategoriesHandler)).ServeHTTP(w, r)
-	 })
-	//mux.HandleFunc("/api/categories", handler.GetAllCategoriesHandler)
+		AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetAllCategoriesHandler), readRateLimiter, "get_categories")).ServeHTTP(w, r)
+	})
 
-	// Users API route - temporarily no auth for testing
-	//mux.HandleFunc("/api/users", handler.GetAllUsersHandler)
-	 mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
-	 	AuthMiddleware(http.HandlerFunc(handler.GetAllUsersHandler)).ServeHTTP(w, r)
-	 })
+	mux.HandleFunc("/api/users", func(w http.ResponseWriter, r *http.Request) {
+		AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetAllUsersHandler), readRateLimiter, "get_users")).ServeHTTP(w, r)
+	})
 	// Private messaging routes
 
 	mux.HandleFunc("/api/messages", func(w http.ResponseWriter, r *http.Request) {
-		AuthMiddleware(http.HandlerFunc(handler.GetPrivateMessagesHandler)).ServeHTTP(w, r)
+		AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetPrivateMessagesHandler), readRateLimiter, "get_messages")).ServeHTTP(w, r)
 	})
 	mux.HandleFunc("/api/conversations", func(w http.ResponseWriter, r *http.Request) {
-		AuthMiddleware(http.HandlerFunc(handler.GetConversationsHandler)).ServeHTTP(w, r)
+		AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetConversationsHandler), readRateLimiter, "get_conversations")).ServeHTTP(w, r)
 	})
 	mux.HandleFunc("/api/messages/unread", func(w http.ResponseWriter, r *http.Request) {
-		AuthMiddleware(http.HandlerFunc(handler.GetUnreadCountHandler)).ServeHTTP(w, r)
+		AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.GetUnreadCountHandler), readRateLimiter, "get_unread_count")).ServeHTTP(w, r)
 	})
 	mux.HandleFunc("/api/messages/mark-read", func(w http.ResponseWriter, r *http.Request) {
-		AuthMiddleware(http.HandlerFunc(handler.MarkMessageRead)).ServeHTTP(w, r)
+		AuthMiddleware(RateLimitMiddleware(http.HandlerFunc(handler.MarkMessageRead), writeRateLimiter, "mark_read")).ServeHTTP(w, r)
 	})
 
 	// WebSocket route
 	mux.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
 		AuthMiddleware(http.HandlerFunc(handler.WebSocketHandler)).ServeHTTP(w, r)
 	})
-	// mux.HandleFunc("/ws", handler.WebSocketHandler)
 
 	// Catch-all handler for unmatched routes (must be last)
 	// This will handle any route not matched above, including invalid API endpoints

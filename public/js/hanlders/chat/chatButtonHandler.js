@@ -269,14 +269,23 @@ export function resetChatButtonListenerFlag() {
 }
 
 /**
- * Clear chat event listeners from elements with data-has-chat-listener attribute.
- * Should be called during logout to clean up chat-specific listeners.
+ * Clear chat event listeners from elements with chat-related data attributes.
+ * Should be called during logout or unauthorized to clean up all chat-specific listeners.
  */
 export function clearChatEventListeners() {
-    console.log('[ChatHandler] Clearing chat event listeners...');
+    console.log('[ChatHandler] Clearing ALL chat event listeners...');
 
-    // Use the reusable clearEventListeners function
-    clearEventListeners(document, 'data-has-chat-listener');
+    // Clear ALL chat-related data attributes
+    // This includes: data-has-chat-listener, data-has-users-listener, data-has-conversation-listener
+    const dataAttributes = [
+        'data-has-chat-listener',
+        'data-has-users-listener', 
+        'data-has-conversation-listener'
+    ];
+
+    dataAttributes.forEach(dataAttr => {
+        clearEventListeners(document, dataAttr);
+    });
 
     // Also remove the chat panel from DOM if it exists
     const chatPanel = document.querySelector('#chat-panel');
@@ -285,10 +294,14 @@ export function clearChatEventListeners() {
         chatPanel.parentNode.removeChild(chatPanel);
         console.log('[ChatHandler] Chat panel removed from DOM');
     }
+    if (chatButton && chatButton.parentNode) {
+        chatButton.parentNode.removeChild(chatButton);
+        console.log('[ChatHandler] Chat button removed from DOM');
+    }
     resetChatButtonListenerFlag()
     // Reset chat state
     chatState.isChatOpen = false;
 
-    console.log('[ChatHandler] Chat event listener cleanup complete');
+    console.log('[ChatHandler] ALL chat event listener cleanup complete');
 }
 

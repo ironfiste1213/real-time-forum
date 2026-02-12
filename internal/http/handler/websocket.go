@@ -29,22 +29,15 @@ func InitWebSocket() {
 }
 
 // WebSocketHandler handles WebSocket connections
+// The user is already authenticated by AuthMiddleware and available in the context
 func WebSocketHandler(w http.ResponseWriter, r *http.Request) {
 	// Flow: WebSocket connection attempt
 	log.Printf("[websocket.go:WebSocketHandler] Connection attempt from %s", r.RemoteAddr)
 
-	// Validate session token from cookie
-	sessionToken, err := r.Cookie("session_token")
-	if err != nil {
-		log.Printf("[websocket.go:WebSocketHandler] Missing session token")
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return
-	}
-
-	// Get user from session
-	user, err := auth.GetUserBySessionToken(sessionToken.Value)
-	if err != nil || user == nil {
-		log.Printf("[websocket.go:WebSocketHandler] Invalid session token")
+	// Get user from context (set by AuthMiddleware)
+	user, ok := auth.GetUserFromContext(r.Context())
+	if !ok || user == nil {
+		log.Printf("[websocket.go:WebSocketHandler] User not found in context")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
 		return
 	}

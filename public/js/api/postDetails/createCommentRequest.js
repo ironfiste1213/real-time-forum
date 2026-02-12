@@ -1,3 +1,6 @@
+import { handleStatusCode } from '../../tools/error/statusCodeHandler.js';
+import { handleNetworkError } from '../../tools/error/networkErrorHandler.js';
+
 /**
  * Comment API module
  * Handles creating and fetching comments for posts
@@ -19,6 +22,8 @@ export async function createComment(postId, content) {
         const data = await response.json();
         
         if (!response.ok) {
+            // Handle status code (will redirect to login on 401)
+            handleStatusCode(response);
             console.error('createCommentRequest.js: Failed to create comment:', data.message);
             throw new Error(data.message || 'Failed to create comment');
         }
@@ -26,7 +31,7 @@ export async function createComment(postId, content) {
         console.log('createCommentRequest.js: Comment created successfully');
         return data;
     } catch (error) {
-        console.error('createCommentRequest.js: Error creating comment:', error);
+        handleNetworkError(error, 'createComment');
         throw error;
     }
 }

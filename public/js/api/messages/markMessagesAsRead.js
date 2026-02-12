@@ -1,3 +1,5 @@
+import { handleStatusCode } from '../../tools/error/statusCodeHandler.js';
+import { handleNetworkError } from '../../tools/error/networkErrorHandler.js';
 
 export async function markMessagesAsRead(userId) {
     try {
@@ -17,10 +19,12 @@ export async function markMessagesAsRead(userId) {
         if (response.ok) {
             console.log(`markMessagesAsRead.js: Successfully marked messages as read for userId: ${userId}`);
         } else {
+            // Handle status code (will redirect to login on 401)
+            handleStatusCode(response);
             console.error(`markMessagesAsRead.js: Failed to mark messages as read for userId: ${userId}, status: ${response.status}`);
         }
     } catch (error) {
-        console.error(`markMessagesAsRead.js: Network error marking messages as read for userId: ${userId}, error: ${error.message}`);
+        handleNetworkError(error, 'markMessagesAsRead');
     }
 }
 

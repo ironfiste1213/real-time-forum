@@ -1,3 +1,5 @@
+import { handleStatusCode } from '../../tools/error/statusCodeHandler.js';
+import { handleNetworkError } from '../../tools/error/networkErrorHandler.js';
 
 export async function loadConversationHistory(userId, offset = 0, limit = 10) {
     try {
@@ -20,6 +22,8 @@ export async function loadConversationHistory(userId, offset = 0, limit = 10) {
         console.log('conversationHistory.js: Response received, status:', response.status);
 
         if (!response.ok) {
+            // Handle status code (will redirect to login on 401)
+            handleStatusCode(response);
             console.log('conversationHistory.js: Response not OK, returning empty array');
             return [];
         }
@@ -40,7 +44,7 @@ export async function loadConversationHistory(userId, offset = 0, limit = 10) {
         return sortedMessages;
 
     } catch (error) {
-        console.error('conversationHistory.js: Error loading conversation history:', error.message);
+        handleNetworkError(error, 'loadConversationHistory');
         // Handle fetch errors gracefully - return empty array
         return [];
     }

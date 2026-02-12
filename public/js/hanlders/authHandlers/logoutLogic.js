@@ -5,6 +5,32 @@ import { clearChatEventListeners } from "../chat/chatButtonHandler.js";
 import { closeConnection } from "../../ws/connection.js";
 import { chatState, resetChatState } from "../../ws/state.js";
 
+/**
+ * Handle unauthorized (401) response with full cleanup
+ * This ensures proper cleanup of chat UI, WebSocket, and state before redirecting to login
+ * 
+ * @param {string} destination - The destination path to redirect to after login (default: "/")
+ */
+export function handleUnauthorized(destination = "/") {
+    console.log('logoutLogic.js: handleUnauthorized() called - performing full cleanup');
+
+    // 1. Clear all chat event listeners AND remove chat panel/button from DOM
+    clearChatEventListeners();
+    // Note: clearChatEventListeners() now handles removal of chat panel and button
+
+    // 2. Close WebSocket connection
+    closeConnection();
+    console.log('logoutLogic.js: WebSocket connection closed');
+
+    // 3. Reset chat state (clears all timeouts, intervals, and state)
+    resetChatState();
+    console.log('logoutLogic.js: Chat state reset');
+
+    // 4. Redirect to login with destination
+    router({ ispush: true, path: "/login", distination: destination });
+    console.log('logoutLogic.js: Redirected to login page');
+}
+
 export async function logoutHandler(rootContainer) {
     console.log('logoutLogic.js: logoutHandler() called');
     const logoutButton = rootContainer.querySelector('#logout-button');

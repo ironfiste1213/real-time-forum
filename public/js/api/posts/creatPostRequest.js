@@ -1,4 +1,7 @@
 
+import { handleStatusCode } from '../../tools/error/statusCodeHandler.js';
+import { handleNetworkError } from '../../tools/error/networkErrorHandler.js';
+
 export async function createPostApi({ title, content, category_ids }) {
     console.log('creatPostRequest.js: createPostApi() called');
     console.log('creatPostRequest.js: Attempting to create post with title:', title);
@@ -31,6 +34,8 @@ export async function createPostApi({ title, content, category_ids }) {
         });
 
         if (!response.ok) {
+            // Handle status code (will redirect to login on 401)
+            handleStatusCode(response);
             console.log('[creatPostRequest.js:createPostApi] Post creation failed:', result.message);
             return {
                 success: false,
@@ -48,7 +53,7 @@ export async function createPostApi({ title, content, category_ids }) {
         };
     } catch (error) {
         // --- DEBUG: Log any network or parsing errors ---
-        console.error('[creatPostRequest.js:createPostApi] Network or parsing error:', error);
+        handleNetworkError(error, 'createPostApi');
         return {
             success: false,
             error: error.message || 'Network error occurred',

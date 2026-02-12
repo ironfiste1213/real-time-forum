@@ -1,4 +1,6 @@
 
+import { handleStatusCode } from '../tools/error/statusCodeHandler.js';
+
 export async function fetchUsers() {
     console.log('fetchUsers.js: fetchUsers() called');
     console.log('fetchUsers.js: Sending GET to /api/users');
@@ -23,6 +25,9 @@ export async function fetchUsers() {
             return validUsers;
         }
 
+        // Handle status code (will redirect to login on 401)
+        handleStatusCode(response);
+        
         // Response was not OK, return empty array
         console.log('fetchUsers.js: Failed to fetch users, returning empty array');
         return [];

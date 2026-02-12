@@ -15,8 +15,15 @@ import (
 
 // Rate limiting configuration
 const (
-	RateLimitRequests = 10 // Maximum requests per time window
-	RateLimitWindow   = 60 // Time window in seconds (1 minute)
+	RateLimitWindow = 60 // Time window in seconds (1 minute)
+)
+
+// Rate limiter configurations based on endpoint type
+const (
+	authLimit    = 5  // 5 requests per minute for auth endpoints (prevent brute force)
+	readLimit    = 30 // 30 requests per minute for read endpoints
+	writeLimit   = 10 // 10 requests per minute for write endpoints
+	commentLimit = 20 // 20 requests per minute for comment endpoints
 )
 
 // RateLimitInfo stores rate limit information for a user
@@ -67,24 +74,11 @@ func (rl *RateLimiter) Allow(key string) (bool, int) {
 	return true, rl.limit - info.Count
 }
 
-// GetRemaining returns remaining requests for a key
-func (rl *RateLimiter) GetRemaining(key string) int {
-	rl.mu.Lock()
-	defer rl.mu.Unlock()
-
-	now := time.Now()
-	info, exists := rl.requests[key]
-	if !exists || now.After(info.ResetTime) {
-		return rl.limit
-	}
-
-	return rl.limit - info.Count
-}
-
-// Global rate limiter instance
+// Global rate limiter instances
 var (
-	postRateLimiter    = NewRateLimiter(RateLimitRequests, time.Duration(RateLimitWindow)*time.Second)
-	commentRateLimiter = NewRateLimiter(RateLimitRequests*2, time.Duration(RateLimitWindow)*time.Second) // Allow more comments than posts
+	authRateLimiter    = NewRateLimiter(authLimit, time.Duration(RateLimitWindow)*time.Second)
+	readRateLimiter    = NewRateLimiter(readLimit, time.Duration(RateLimitWindow)*time.Second)
+	writeRateLimiter   = NewRateLimiter(writeLimit, time.Duration(RateLimitWindow)*time.Second)
 )
 
 // RateLimitMiddleware creates a rate limiting middleware for specific endpoints

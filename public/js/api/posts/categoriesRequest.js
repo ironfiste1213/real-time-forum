@@ -1,3 +1,5 @@
+import { handleStatusCode } from '../../tools/error/statusCodeHandler.js';
+import { handleNetworkError } from '../../tools/error/networkErrorHandler.js';
 
 export async function fetchCategories() {
     //console.log('categoriesRequest.js: fetchCategories() called');
@@ -19,11 +21,14 @@ export async function fetchCategories() {
             return categories;
         }
 
+        // Handle status code (will redirect to login on 401)
+        handleStatusCode(response);
+        
         // Response was not OK, return empty array
         //console.log('categoriesRequest.js: Failed to fetch categories, returning empty array');
         return [];
     } catch (error) {
-        //console.error('categoriesRequest.js: Network error:', error.message);
+        handleNetworkError(error, 'fetchCategories');
         // Network error or other fetch failures, return empty array
         return [];
     }
